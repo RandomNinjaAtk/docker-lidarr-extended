@@ -10,14 +10,14 @@ RUN \
 		git \
 		gcc \
 		python3-dev \
-		libc-dev && \
+		libc-dev \
+		yt-dlp && \
 	echo "************ install python packages ************" && \
 	pip install \
 		yq \
 		r128gain \
 		tidal-dl \
-		deemix \
-		yt-dlp
+		deemix
 
 # ports and volumes
 EXPOSE 8686
