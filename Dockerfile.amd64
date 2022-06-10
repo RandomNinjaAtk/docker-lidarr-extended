@@ -12,7 +12,6 @@ RUN \
 	echo "************ install python packages ************" && \
 	python3 -m pip install --no-cache-dir -U \
 		yq \
-		mutagen \
 		r128gain \
 		tidal-dl \
 		deemix \
