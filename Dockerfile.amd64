@@ -1,6 +1,21 @@
 FROM linuxserver/lidarr:amd64-nightly
 LABEL maintainer="RandomNinjaAtk"
 
+RUN \
+	echo "************ install packages ************" && \
+	apk add  -U --update --no-cache \
+		flac \
+		beets \
+		jq \
+		python3 \
+		py3-pip  && \
+	echo "************ install python packages ************" && \
+	python3 -m pip install --no-cache-dir -U \
+		yq \
+		mutagen \
+		r128gain \
+		tidal-dl \
+		qtfaststart
 
 # ports and volumes
 EXPOSE 8686
