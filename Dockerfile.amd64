@@ -9,6 +9,7 @@ RUN \
 		jq \
 		git \
 		gcc \
+		ffmpeg \
 		python3-dev \
 		libc-dev \
 		yt-dlp && \
