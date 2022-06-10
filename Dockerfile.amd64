@@ -1,4 +1,4 @@
-FROM linuxserver/lidarr:nightly
+FROM linuxserver/lidarr:amd64-nightly
 LABEL maintainer="RandomNinjaAtk"
 
 
