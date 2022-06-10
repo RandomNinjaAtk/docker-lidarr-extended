@@ -7,12 +7,12 @@ RUN \
 		flac \
 		beets \
 		jq \
+		git \
 		gcc \
 		python3-dev \
-		libc-dev \
-		py3-pip && \
+		libc-dev && \
 	echo "************ install python packages ************" && \
-	python3 -m pip install --no-cache-dir -U \
+	pip install \
 		yq \
 		r128gain \
 		tidal-dl \
