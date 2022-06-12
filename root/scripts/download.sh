@@ -1,8 +1,9 @@
-#!/usr/bin/env bash
+#!/usr/bin/with-contenv bash
 lidarrApiKey="$(grep "<ApiKey>" /config/config.xml | sed "s/\  <ApiKey>//;s/<\/ApiKey>//")"
 lidarrUrl="http://127.0.0.1:8686"
 XDG_CONFIG_HOME="/config/deemix/xdg"
 export XDG_CONFIG_HOME="/config/deemix/xdg"
+CountryCode=US
 
 log () {
     m_time=`date "+%F %T"`
