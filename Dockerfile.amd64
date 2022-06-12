@@ -21,6 +21,11 @@ RUN \
 		tidal-dl \
 		deemix
 
+# copy local files
+COPY root/ /
+
+WORKDIR /config
+
 # ports and volumes
 EXPOSE 8686
 VOLUME /config /music /music-videos /downloads
