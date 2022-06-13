@@ -23,12 +23,12 @@ if echo "$plexLibraries" | grep "$lidarrRootFolderPath" | read; then
 	fi
 else
 	log "ERROR: No Plex Library found containing path \"/$lidarrRootFolderPath\""
-	log "ERROR: Add \"/$lidarrRootFolderPath\" as a folder to a Plex TV Library"
+	log "ERROR: Add \"/$lidarrRootFolderPath\" as a folder to a Plex Music Library"
 	exit 1
 fi
 
 plexFolderEncoded="$(jq -R -r @uri <<<"$Lidarr_Artist_Path")"
 curl -s "$plexUrl/library/sections/$plexlibrarykey/refresh?path=$plexFolderEncoded&X-Plex-Token=$plexToken"
-log  "Plex Scan notification sent! ($plexfolder)"
+log  "Plex Scan notification sent! ($Lidarr_Artist_Path)"
 
 exit 0
