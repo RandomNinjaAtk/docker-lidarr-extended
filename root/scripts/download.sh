@@ -12,49 +12,47 @@ mkdir -p /config/xdg
 touch /config/xdg.tidal-dl.log
 
 if [ ! -f /config/xdg/.tidal-dl.json ]; then
-    	log "TIDAL :: No default config found, importing default config \"tidal.json\""
-    	if [ -f /scripts/tidal-dl.json ]; then
-    		cp /scripts/tidal-dl.json /config/xdg/.tidal-dl.json
-    		chmod 777 -R /config/xdg/
+	log "TIDAL :: No default config found, importing default config \"tidal.json\""
+	if [ -f /scripts/tidal-dl.json ]; then
+		cp /scripts/tidal-dl.json /config/xdg/.tidal-dl.json
+		chmod 777 -R /config/xdg/
     	fi
     	tidal-dl -o /downloads/lidarr/incomplete
     	tidal-dl -r P1080
-		tidal-dl -q HiFi
-    fi
+	tidal-dl -q HiFi
+fi
 
-	# check for backup token and use it if exists
-	if [ ! -f /root/.tidal-dl.token.json ]; then
-		if [ -f /config/backup/tidal-dl.token.json ]; then
-			cp -p /config/backup/tidal-dl.token.json /root/.tidal-dl.token.json
-			# remove backup token
-			rm /config/backup/tidal-dl.token.json
-		fi
+# check for backup token and use it if exists
+if [ ! -f /root/.tidal-dl.token.json ]; then
+	if [ -f /config/backup/tidal-dl.token.json ]; then
+		cp -p /config/backup/tidal-dl.token.json /root/.tidal-dl.token.json
+		# remove backup token
+		rm /config/backup/tidal-dl.token.json
 	fi
+fi
 
-	if [ -f /root/.tidal-dl.token.json ]; then
-		if [[ $(find "/config/xdg/.tidal-dl.token.json" -mtime +6 -print) ]]; then
-			log "TIDAL :: ERROR :: Token expired, removing..."
-			rm /config/xdg/.tidal-dl.token.json
-		else
-			# create backup of token to allow for container updates
-			if [ ! -d /config/backup ]; then
-				mkdir -p /config/backup
-			fi
-			cp -p /config/xdg/.tidal-dl.token.json /config/backup/tidal-dl.token.json
+if [ -f /root/.tidal-dl.token.json ]; then
+	if [[ $(find "/config/xdg/.tidal-dl.token.json" -mtime +6 -print) ]]; then
+		log "TIDAL :: ERROR :: Token expired, removing..."
+		rm /config/xdg/.tidal-dl.token.json
+	else
+		# create backup of token to allow for container updates
+		if [ ! -d /config/backup ]; then
+			mkdir -p /config/backup
 		fi
+		cp -p /config/xdg/.tidal-dl.token.json /config/backup/tidal-dl.token.json
 	fi
+fi
 
-    if [ ! -f /config/xdg/.tidal-dl.token.json ]; then
-        log "TIDAL :: ERROR :: Loading client for required authentication, please authenticate, then exit the client..."
-        tidal-dl
-    fi
+if [ ! -f /config/xdg/.tidal-dl.token.json ]; then
+	log "TIDAL :: ERROR :: Loading client for required authentication, please authenticate, then exit the client..."
+	tidal-dl
+fi
 
 
 DownloadProcess () {
-    downloadedAlbumTitleClean="$(echo "$downloadedAlbumTitle" | sed -e "s%[^[:alpha:][:digit:]._' ]% %g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
+	downloadedAlbumTitleClean="$(echo "$downloadedAlbumTitle" | sed -e "s%[^[:alpha:][:digit:]._' ]% %g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
     
-    
-
     if [ ! -d "/downloads/lidarr" ]; then
         mkdir -p /downloads/lidarr
         chmod 777 /downloads/lidarr
