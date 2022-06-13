@@ -87,13 +87,21 @@ DownloadProcess () {
 		chmod 777 /config/logs/downloaded/tidal
 		chown abc:abc /config/logs/downloaded/tidal
     fi
+
+	if [ ! -d "/downloads/lidarr/incomplete" ]; then
+		mkdir -p /downloads/lidarr/incomplete
+		chmod 777 /downloads/lidarr/incomplete
+		chown abc:abc /downloads/lidarr/incomplete
+	else
+		rm -rf /downloads/lidarr/incomplete/*
+	fi
     
     if [ "$2" = "DEEZER" ]; then
         deemix -b flac -p /downloads/lidarr/incomplete "https://www.deezer.com/us/album/$1"
         touch /config/logs/downloaded/deezer/$1
         downloadCount=$(find /downloads/lidarr/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
         if [ $downloadCount -le 0 ]; then
-            echo "download failed"
+            log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: ERROR :: download failed"
             return
         fi
     elif [ "$2" = "TIDAL" ]; then
@@ -101,7 +109,7 @@ DownloadProcess () {
         touch /config/logs/downloaded/tidal/$1
         downloadCount=$(find /downloads/lidarr/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
         if [ $downloadCount -le 0 ]; then
-            echo "download failed"
+            log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: ERROR :: download failed"
             return
         fi
     else
