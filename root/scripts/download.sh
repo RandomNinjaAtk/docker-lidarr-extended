@@ -141,7 +141,7 @@ DownloadProcess () {
 
 NotifyLidarrForImport () {
 	LidarrProcessIt=$(curl -s "$lidarrUrl/api/v1/command" --header "X-Api-Key:"${lidarrApiKey} -H "Content-Type: application/json" --data "{\"name\":\"DownloadedAlbumsScan\", \"path\":\"$1\"}")
-	echo "LIDARR IMPORT NOTIFICATION SENT! :: $1"
+	log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: LIDARR IMPORT NOTIFICATION SENT! :: $1"
 }
 
 
@@ -240,7 +240,7 @@ SearchProcess () {
 		CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId"
 		if [ $alreadyImported = true ]; then
 			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Already Imported, skipping..."
-			return
+			continue
 		fi
 
 		for dId in ${!deezeArtistIds[@]}; do
@@ -274,7 +274,7 @@ SearchProcess () {
 		CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId"
 		if [ $alreadyImported = true ]; then
 			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Already Imported, skipping..."
-			return
+			continue
 		fi
 
         if echo "${tidalArtistAlbumsData}" | jq -r .title | grep -i "^$lidarrAlbumTitle" | read; then
@@ -305,7 +305,7 @@ SearchProcess () {
 		CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId"
 		if [ $alreadyImported = true ]; then
 			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Already Imported, skipping..."
-			return
+			continue
 		fi
 
 		for dId in ${!deezeArtistIds[@]}; do
@@ -340,7 +340,7 @@ SearchProcess () {
 		CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId"
 		if [ $alreadyImported = true ]; then
 			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Already Imported, skipping..."
-			return
+			continue
 		fi
 
         tidalArtistAlbumsIds=($(echo "${tidalArtistAlbumsData}" | jq -r "select(.explicit=="false") | .id"))
@@ -397,9 +397,9 @@ ProcessWithBeets () {
 	if [ $(find "$1" -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l) -gt 0 ]; then
 		beet -l /config/beets_temp_library.blb -d "$1" import -qC "$1"
 		if [ $(find "$1" -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" -newer "/config/beets-match" | wc -l) -gt 0 ]; then
-			log ":: SUCCESS: Matched with beets!"
+			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: SUCCESS: Matched with beets!"
 		else
-			log ": ERROR :: Unable to match using beets to a musicbrainz release, marking download as failed..."
+			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: ERROR :: Unable to match using beets to a musicbrainz release, marking download as failed..."
 			touch "/config/beets-match-error"
 		fi	
 	fi
@@ -410,12 +410,12 @@ ProcessWithBeets () {
 	fi
 
 	if [ -f "/config/beets-match-error" ]; then
-		log ":: ERROR :: Beets could not match album, skipping..."
+		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: ERROR :: Beets could not match album, skipping..."
 		rm "/config/beets-match-error"
         rm -rf "$1"
 		return
 	else
-		log ":: BEETS MATCH FOUND!"
+		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle ::BEETS MATCH FOUND!"
 	fi
 
 	GetFile=$(find "$1" -type f -iname "*.flac" | head -n1)
@@ -438,13 +438,13 @@ ProcessWithBeets () {
 	fi
 	
 	if [ "${matchedLidarrAlbumArtistCleanName}" != "null" ]; then
-		log "$position :: $idNumber of $idListCount :: $tidalId :: $matchedLidarrAlbumArtistName ($matchedLidarrAlbumArtistId) found in Lidarr"
+		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $matchedLidarrAlbumArtistName ($matchedLidarrAlbumArtistId) found in Lidarr"
 	else
-		log "$position :: $idNumber of $idListCount :: $tidalId :: $matchedLidarrAlbumArtistName ($matchedLidarrAlbumArtistId) NOT found in Lidarr"
-		data=$(curl -s "$LidarrUrl/api/v1/search?term=lidarr%3A$matchedLidarrAlbumArtistId" -H "X-Api-Key: $LidarrApiKey" | jq -r ".[]")
+		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $matchedLidarrAlbumArtistName ($matchedLidarrAlbumArtistId) NOT found in Lidarr"
+		data=$(curl -s "$lidarrUrl/api/v1/search?term=lidarr%3A$matchedLidarrAlbumArtistId" -H "X-Api-Key: $lidarrApiKey" | jq -r ".[]")
 		artistName="$(echo "$data" | jq -r ".artist.artistName")"
 		foreignId="$(echo "$data" | jq -r ".foreignId")"
-		data=$(curl -s "$LidarrUrl/api/v1/rootFolder" -H "X-Api-Key: $LidarrApiKey" | jq -r ".[]")
+		data=$(curl -s "$lidarrUrl/api/v1/rootFolder" -H "X-Api-Key: $lidarrApiKey" | jq -r ".[]")
 		path="$(echo "$data" | jq -r ".path")"
 		qualityProfileId="$(echo "$data" | jq -r ".defaultQualityProfileId")"
 		metadataProfileId="$(echo "$data" | jq -r ".defaultMetadataProfileId")"
@@ -455,9 +455,9 @@ ProcessWithBeets () {
 			\"metadataProfileId\": $metadataProfileId,
 			\"rootFolderPath\": \"$path\"
 			}"
-		log "$position :: $idNumber of $idListCount :: $tidalId :: Adding Missing Artist to Lidarr :: $matchedLidarrAlbumArtistName ($matchedLidarrAlbumArtistId)..."
-		lidarrAddArtist=$(curl -s "$LidarrUrl/api/v1/artist" -X POST -H 'Content-Type: application/json' -H "X-Api-Key: $LidarrApiKey" --data-raw "$data")
-		log "$position :: $idNumber of $idListCount :: $tidalId :: Allowing Lidarr Artist Update, pause for 2 min..."
+		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Adding Missing Artist to Lidarr :: $matchedLidarrAlbumArtistName ($matchedLidarrAlbumArtistId)..."
+		lidarrAddArtist=$(curl -s "$lidarrUrl/api/v1/artist" -X POST -H 'Content-Type: application/json' -H "X-Api-Key: $lidarrApiKey" --data-raw "$data")
+		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Allowing Lidarr Artist Update, pause for 2 min..."
 		sleep 2m
 	fi
 	matchedLidarrAlbumArtistCleanName="$(echo "$matchedLidarrAlbumArtistName" | sed -e "s%[^[:alpha:][:digit:]._()' -]% %g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
