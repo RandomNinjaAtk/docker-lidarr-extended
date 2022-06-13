@@ -19,6 +19,7 @@ RUN \
 		yq \
 		r128gain \
 		tidal-dl \
+		pyacoustid \
 		deemix
 
 # copy local files
