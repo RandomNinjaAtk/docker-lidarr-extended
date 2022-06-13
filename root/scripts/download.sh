@@ -223,18 +223,29 @@ SearchProcess () {
 			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: Previously Not Found, skipping..."
 			continue
 		fi
+
+		if [ "$dlClientSource" = "deezer" ];then
+			skipTidal=true
+			skipDeezer=false
+		fi
+
+		if [ "$dlClientSource" = "tidal" ];then
+			skipDeezer=true
+			skipTidal=false
+		fi
 		
-		skipDeezer=false
-		if [ -z "$deezerArtistUrl" ]; then 
-            log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: DEEZER :: ERROR :: musicbrainz id: $lidarrArtistForeignArtistId is missing Tidal link, see: \"/config/logs/error/$lidarrArtistNameSanitized.log\" for more detail..."
-            if [ ! -d /config/logs/error ]; then
-                mkdir -p /config/logs/error
-            fi
-            if [ ! -f "/config/logs/error/$lidarrArtistNameSanitized.log" ]; then          
-                echo "Update Musicbrainz Relationship Page: https://musicbrainz.org/artist/$lidarrArtistForeignArtistId/relationships for \"${lidarrArtistName}\" with Deezer Artist Link" >> "/config/logs/error/$lidarrArtistNameSanitized.log"
-            fi
-            skipDeezer=true
-        fi
+		if [ "$skipDeezer" = "false" ]; then
+			if [ -z "$deezerArtistUrl" ]; then 
+				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: DEEZER :: ERROR :: musicbrainz id: $lidarrArtistForeignArtistId is missing Tidal link, see: \"/config/logs/error/$lidarrArtistNameSanitized.log\" for more detail..."
+				if [ ! -d /config/logs/error ]; then
+					mkdir -p /config/logs/error
+				fi
+				if [ ! -f "/config/logs/error/$lidarrArtistNameSanitized.log" ]; then          
+					echo "Update Musicbrainz Relationship Page: https://musicbrainz.org/artist/$lidarrArtistForeignArtistId/relationships for \"${lidarrArtistName}\" with Deezer Artist Link" >> "/config/logs/error/$lidarrArtistNameSanitized.log"
+				fi
+				skipDeezer=true
+			fi
+		fi
 
 		if [ "$skipDeezer" = "false" ]; then
 			for dId in ${!deezeArtistIds[@]}; do
@@ -248,17 +259,18 @@ SearchProcess () {
 			done
 		fi
         
-        skipTidal=false
-		if [ -z "$tidalArtistUrl" ]; then 
-            log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: TIDAL :: ERROR :: musicbrainz id: $lidarrArtistForeignArtistId is missing Tidal link, see: \"/config/logs/error/$lidarrArtistNameSanitized.log\" for more detail..."
-            if [ ! -d /config/logs/error ]; then
-                mkdir -p /config/logs/error
-            fi
-            if [ ! -f "/config/logs/error/$lidarrArtistNameSanitized.log" ]; then          
-                echo "Update Musicbrainz Relationship Page: https://musicbrainz.org/artist/$lidarrArtistForeignArtistId/relationships for \"${lidarrArtistName}\" with Tidal Artist Link" >> "/config/logs/error/$lidarrArtistNameSanitized.log"
-            fi
-            skipTidal=true
-        fi
+        if [ "$skipTidal" = "false" ]; then
+			if [ -z "$tidalArtistUrl" ]; then 
+				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: TIDAL :: ERROR :: musicbrainz id: $lidarrArtistForeignArtistId is missing Tidal link, see: \"/config/logs/error/$lidarrArtistNameSanitized.log\" for more detail..."
+				if [ ! -d /config/logs/error ]; then
+					mkdir -p /config/logs/error
+				fi
+				if [ ! -f "/config/logs/error/$lidarrArtistNameSanitized.log" ]; then          
+					echo "Update Musicbrainz Relationship Page: https://musicbrainz.org/artist/$lidarrArtistForeignArtistId/relationships for \"${lidarrArtistName}\" with Tidal Artist Link" >> "/config/logs/error/$lidarrArtistNameSanitized.log"
+				fi
+				skipTidal=true
+			fi
+		fi
 
 		if [ "$skipTidal" = "false" ]; then
 			if [ ! -d /config/cache/tidal ]; then
@@ -682,14 +694,19 @@ LidarrTaskStatusCheck () {
 	done
 }
 
-GetMissingCutOffList
-SearchProcess
-
-if [ "$addRelatedArtists" = "true" ]; then
-	AddRelatedArtists
+if [ "$dlClientSource" = "deezer" ] || [ "$dlClientSource" = "tidal" ] || [ "$dlClientSource" = "both" ];then
+	GetMissingCutOffList
+	SearchProcess
+else
+	log ":: ERROR :: No valid dlClientSource set"
+	log ":: ERROR :: Expected configuration :: deezer or tidal or both"
+	log ":: ERROR :: dlClientSource set as: \"$dlClientSource\""
 fi
 
-
-
+if [ "$AddRelatedArtists" = "true" ]; then
+	AddRelatedArtists
+else
+	log ":: ERROR :: AddRelatedArtists is disabled"
+fi
 
 exit
