@@ -684,8 +684,10 @@ LidarrTaskStatusCheck () {
 
 GetMissingCutOffList
 SearchProcess
-AddRelatedArtists
 
+if [ "$addRelatedArtists" = "true" ]; then
+	AddRelatedArtists
+fi
 
 
 
