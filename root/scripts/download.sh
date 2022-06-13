@@ -162,12 +162,12 @@ fi
 
 GetMissingCutOffList () {
     log "Downloading missing list..."
-    missingAlbumIds=$(curl -s "$lidarrUrl/api/v1/wanted/missing?page=1&pagesize=1000000000&sortDir=desc&sortKey=releaseDate&apikey=${lidarrApiKey}" | jq -r '.records | .[] | .id')
+    missingAlbumIds=$(curl -s "$lidarrUrl/api/v1/wanted/missing?page=1&pagesize=1000000000&sortKey=releaseDate&sortDirection=desc&apikey=${lidarrApiKey}" | jq -r '.records | .[] | .id')
     missingAlbumIdsTotal=$(echo "$missingAlbumIds" | sed -r '/^\s*$/d' | wc -l)
     log "FINDING MISSING ALBUMS: ${missingAlbumIdsTotal} Found"
 
     log "Downloading cutoff list..."
-    cutoffAlbumIds=$(curl -s "$lidarrUrl/api/v1/wanted/cutoff?page=1&pagesize=1000000000&sortDir=desc&sortKey=releaseDate&apikey=${lidarrApiKey}" | jq -r '.records | .[] | .id')
+    cutoffAlbumIds=$(curl -s "$lidarrUrl/api/v1/wanted/cutoff?page=1&pagesize=1000000000&sortKey=releaseDate&sortDirection=desc&apikey=${lidarrApiKey}" | jq -r '.records | .[] | .id')
     cutoffAlbumIdsTotal=$(echo "$cutoffAlbumIds" | sed -r '/^\s*$/d'| wc -l)
     log "FINDING CUTOFF ALBUMS: ${cutoffAlbumIdsTotal} Found"
 
@@ -202,19 +202,22 @@ SearchProcess () {
         tidalArtistUrl=$(echo "${lidarrArtistData}" | jq -r ".links | .[] | select(.name==\"tidal\") | .url")
         tidalArtistId="$(echo "$tidalArtistUrl" | grep -o '[[:digit:]]*' | sort -u)"
         deezerArtistUrl=$(echo "${lidarrArtistData}" | jq -r ".links | .[] | select(.name==\"deezer\") | .url")
-        deezeArtistId="$(echo "$deezerArtistUrl" | grep -o '[[:digit:]]*' | sort -u)"
-        log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Starting Search..."
-        if [ -f /config/logs/downloaded/notfound/$wantedAlbumId ]; then
-            log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Previously Not Found, skipping..."
-            continue
-        fi
+        deezeArtistIds=($(echo "$deezerArtistUrl" | grep -o '[[:digit:]]*' | sort -u))
+		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Starting Search..."
+		if [ -f "/config/logs/downloaded/notfound/$lidarrAlbumForeignAlbumId" ]; then
+			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Previously Not Found, skipping..."
+			continue
+		fi
+		for dId in ${!deezeArtistIds[@]}; do
+			deezeArtistId="${deezeArtistIds[$dId]}"
+			if [ ! -d /config/cache/deezer ]; then
+				mkdir -p /config/cache/deezer
+			fi
+			if [ ! -f /config/cache/deezer/$deezeArtistId-albums.json ]; then
+				curl -s "https://api.deezer.com/artist/$deezeArtistId/albums?limit=1000" > /config/cache/deezer/$deezeArtistId-albums.json
+			fi
+		done
         
-        if [ ! -d /config/cache/deezer ]; then
-            mkdir -p /config/cache/deezer
-        fi
-        if [ ! -f /config/cache/deezer/$deezeArtistId-albums.json ]; then
-            curl -s "https://api.deezer.com/artist/$deezeArtistId/albums?limit=1000" > /config/cache/deezer/$deezeArtistId-albums.json
-        fi
         if [ ! -d /config/cache/tidal ]; then
             mkdir -p /config/cache/tidal
         fi
@@ -224,12 +227,15 @@ SearchProcess () {
         if [ ! -f /config/cache/tidal/$tidalArtistId-albums.json ]; then
             curl -s "https://api.tidal.com/v1/artists/${tidalArtistId}/albums?limit=10000&countryCode=$CountryCode&filter=ALL" -H 'x-tidal-token: CzET4vdadNUFQ5JU' > /config/cache/tidal/$tidalArtistId-albums.json
         fi
-
-
-        deezerArtistAlbumsData=$(cat "/config/cache/deezer/$deezeArtistId-albums.json" | jq -r ".data | sort_by(.release_date) | sort_by(.explicit_lyrics) | reverse | .[]")
-        deezerArtistAlbumsIds=($(echo "${deezerArtistAlbumsData}" | jq -r "select(.explicit_lyrics=="true") | .id"))
-        tidalArtistAlbumsData=$(cat "/config/cache/tidal/$tidalArtistId-albums.json" | jq -r ".items | sort_by(.numberOfTracks) | sort_by(.explicit) | reverse |.[]")
+		tidalArtistAlbumsData=$(cat "/config/cache/tidal/$tidalArtistId-albums.json" | jq -r ".items | sort_by(.numberOfTracks) | sort_by(.explicit) | reverse |.[]")
         tidalArtistAlbumsIds=($(echo "${tidalArtistAlbumsData}" | jq -r "select(.explicit=="true") | .id"))
+
+		for dId in ${!deezeArtistIds[@]}; do
+			deezeArtistId="${deezeArtistIds[$dId]}"
+			deezerArtistAlbumsData=$(cat "/config/cache/deezer/$deezeArtistId-albums.json" | jq -r ".data | sort_by(.release_date) | sort_by(.explicit_lyrics) | reverse | .[]")
+			deezerArtistAlbumsIds=($(echo "${deezerArtistAlbumsData}" | jq -r "select(.explicit_lyrics=="true") | .id"))
+
+		done
 
 		CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId"
 		if [ $alreadyImported = true ]; then
@@ -237,27 +243,33 @@ SearchProcess () {
 			return
 		fi
 
-        if echo "${deezerArtistAlbumsData}" | jq -r .title | grep -i "^$lidarrAlbumTitle" | read; then
-            for id in ${!deezerArtistAlbumsIds[@]}; do
-                processNumberTwo=$(( $id + 1 ))
-                deezerArtistAlbumId="${deezerArtistAlbumsIds[$id]}"
-                deezerArtistAlbumData=$(echo "$deezerArtistAlbumsData" | jq -r "select(.id=="$deezerArtistAlbumId")")
-                deezerArtistAlbumTitleClean=$(echo ${deezerArtistAlbumData} | jq -r .title | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
-                if echo ${deezerArtistAlbumTitleClean} | grep -i "^$lidarrAlbumTitleClean" | read; then
-                    downloadedAlbumTitle="$(echo ${deezerArtistAlbumData} | jq -r .title)"
-                    downloadedReleaseDate="$(echo ${deezerArtistAlbumData} | jq -r .release_date)"
-                    downloadedReleaseYear="${downloadedReleaseDate:0:4}"
-					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumTitleClean vs $deezerArtistAlbumTitleClean :: Explicit Deezer MATCH Found"
-                    if [ -f /config/logs/downloaded/deezer/$deezerArtistAlbumId ]; then
-						log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Previously Downloaded, skipping..."
-                        continue
-                    fi
-                    DownloadProcess "$deezerArtistAlbumId" "DEEZER" "$downloadedReleaseYear"
-                fi
-            done
-        else
-            log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: No Explicit Deezer Match Found"
-        fi 
+		for dId in ${!deezeArtistIds[@]}; do
+			deezeArtistId="${deezeArtistIds[$dId]}"
+			deezerArtistAlbumsData=$(cat "/config/cache/deezer/$deezeArtistId-albums.json" | jq -r ".data | sort_by(.release_date) | sort_by(.explicit_lyrics) | reverse | .[]")
+			deezerArtistAlbumsIds=($(echo "${deezerArtistAlbumsData}" | jq -r "select(.explicit_lyrics=="true") | .id"))
+
+			if echo "${deezerArtistAlbumsData}" | jq -r .title | grep -i "^$lidarrAlbumTitle" | read; then
+				for id in ${!deezerArtistAlbumsIds[@]}; do
+					processNumberTwo=$(( $id + 1 ))
+					deezerArtistAlbumId="${deezerArtistAlbumsIds[$id]}"
+					deezerArtistAlbumData=$(echo "$deezerArtistAlbumsData" | jq -r "select(.id=="$deezerArtistAlbumId")")
+					deezerArtistAlbumTitleClean=$(echo ${deezerArtistAlbumData} | jq -r .title | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
+					if echo ${deezerArtistAlbumTitleClean} | grep -i "^$lidarrAlbumTitleClean" | read; then
+						downloadedAlbumTitle="$(echo ${deezerArtistAlbumData} | jq -r .title)"
+						downloadedReleaseDate="$(echo ${deezerArtistAlbumData} | jq -r .release_date)"
+						downloadedReleaseYear="${downloadedReleaseDate:0:4}"
+						log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumTitleClean vs $deezerArtistAlbumTitleClean :: Explicit Deezer MATCH Found"
+						if [ -f /config/logs/downloaded/deezer/$deezerArtistAlbumId ]; then
+							log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Previously Downloaded, skipping..."
+							continue
+						fi
+						DownloadProcess "$deezerArtistAlbumId" "DEEZER" "$downloadedReleaseYear"
+					fi
+				done
+			else
+				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: No Explicit Deezer Match Found"
+			fi 
+		done
 
 		CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId"
 		if [ $alreadyImported = true ]; then
@@ -296,30 +308,34 @@ SearchProcess () {
 			return
 		fi
 
-        deezerArtistAlbumsIds=($(echo "${deezerArtistAlbumsData}" | jq -r "select(.explicit_lyrics=="false") | .id"))
+		for dId in ${!deezeArtistIds[@]}; do
+			deezeArtistId="${deezeArtistIds[$dId]}"
+			deezerArtistAlbumsData=$(cat "/config/cache/deezer/$deezeArtistId-albums.json" | jq -r ".data | sort_by(.release_date) | sort_by(.explicit_lyrics) | reverse | .[]")
+			deezerArtistAlbumsIds=($(echo "${deezerArtistAlbumsData}" | jq -r "select(.explicit_lyrics=="false") | .id"))
 
-        if echo "${deezerArtistAlbumsData}" | jq -r .title | grep -i "^$lidarrAlbumTitle" | read; then
-            for id in ${!deezerArtistAlbumsIds[@]}; do
-                processNumberTwo=$(( $id + 1 ))
-                deezerArtistAlbumId="${deezerArtistAlbumsIds[$id]}"
-                deezerArtistAlbumData=$(echo "$deezerArtistAlbumsData" | jq -r "select(.id=="$deezerArtistAlbumId")")
-                deezerArtistAlbumExplicit=$(echo ${deezerArtistAlbumData} | jq -r .explicit_lyrics)
-                deezerArtistAlbumTitleClean=$(echo ${deezerArtistAlbumData} | jq -r .title | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
-                if echo ${deezerArtistAlbumTitleClean} | grep -i "^$lidarrAlbumTitleClean" | read; then
-                    downloadedAlbumTitle="$(echo ${deezerArtistAlbumData} | jq -r .title)"
-                    downloadedReleaseDate="$(echo ${deezerArtistAlbumData} | jq -r .release_date)"
-                    downloadedReleaseYear="${downloadedReleaseDate:0:4}"
-                    log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumTitleClean vs $deezerArtistAlbumTitleClean :: CLEAN Deezer MATCH Found"
-                    if [ -f /config/logs/downloaded/deezer/$deezerArtistAlbumId ]; then
-					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Previously Downloaded, skipping..."
-                        continue
-                    fi
-                    DownloadProcess "$deezerArtistAlbumId" "DEEZER" "$downloadedReleaseYear"
-                fi
-            done
-        else
-            log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: No Clean Deezer Match Found"
-        fi
+			if echo "${deezerArtistAlbumsData}" | jq -r .title | grep -i "^$lidarrAlbumTitle" | read; then
+				for id in ${!deezerArtistAlbumsIds[@]}; do
+					processNumberTwo=$(( $id + 1 ))
+					deezerArtistAlbumId="${deezerArtistAlbumsIds[$id]}"
+					deezerArtistAlbumData=$(echo "$deezerArtistAlbumsData" | jq -r "select(.id=="$deezerArtistAlbumId")")
+					deezerArtistAlbumExplicit=$(echo ${deezerArtistAlbumData} | jq -r .explicit_lyrics)
+					deezerArtistAlbumTitleClean=$(echo ${deezerArtistAlbumData} | jq -r .title | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
+					if echo ${deezerArtistAlbumTitleClean} | grep -i "^$lidarrAlbumTitleClean" | read; then
+						downloadedAlbumTitle="$(echo ${deezerArtistAlbumData} | jq -r .title)"
+						downloadedReleaseDate="$(echo ${deezerArtistAlbumData} | jq -r .release_date)"
+						downloadedReleaseYear="${downloadedReleaseDate:0:4}"
+						log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumTitleClean vs $deezerArtistAlbumTitleClean :: CLEAN Deezer MATCH Found"
+						if [ -f /config/logs/downloaded/deezer/$deezerArtistAlbumId ]; then
+						log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Previously Downloaded, skipping..."
+							continue
+						fi
+						DownloadProcess "$deezerArtistAlbumId" "DEEZER" "$downloadedReleaseYear"
+					fi
+				done
+			else
+				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: No Clean Deezer Match Found"
+			fi
+		done
 
 		CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId"
 		if [ $alreadyImported = true ]; then
@@ -353,9 +369,9 @@ SearchProcess () {
         else
             log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: No Clean Tidal Match Found"
         fi
-        mkdir -p /config/logs/downloaded/notfound
-        touch /config/logs/downloaded/notfound/$wantedAlbumId
-    done
+		mkdir -p /config/logs/downloaded/notfound
+		touch /config/logs/downloaded/notfound/$lidarrAlbumForeignAlbumId
+	done
 }
 
 ProcessWithBeets () {
