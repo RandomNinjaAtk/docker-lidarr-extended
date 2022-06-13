@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-PLEXURL="http://plexIp:32400"
-PLEXTOKEN="plexToken"
+PLEXURL="http://$plexIp:32400"
+PLEXTOKEN="$plexToken"
 lidarrApiKey="$(grep "<ApiKey>" /config/config.xml | sed "s/\  <ApiKey>//;s/<\/ApiKey>//")"
 lidarrUrl="http://127.0.0.1:8686"
 lidarrRootFolderPath="$(dirname "$Lidarr_Artist_Path")"
