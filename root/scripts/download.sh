@@ -216,6 +216,7 @@ SearchProcess () {
 			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Previously Not Found, skipping..."
 			continue
 		fi
+		
 		for dId in ${!deezeArtistIds[@]}; do
 			deezeArtistId="${deezeArtistIds[$dId]}"
 			if [ ! -d /config/cache/deezer ]; then
@@ -245,7 +246,7 @@ SearchProcess () {
 
 		done
 
-		CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId"
+		CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId" "notbeets"
 		if [ $alreadyImported = true ]; then
 			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Already Imported, skipping..."
 			continue
@@ -279,7 +280,7 @@ SearchProcess () {
 			fi 
 		done
 
-		CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId"
+		CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId" "notbeets"
 		if [ $alreadyImported = true ]; then
 			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Already Imported, skipping..."
 			continue
@@ -310,7 +311,7 @@ SearchProcess () {
             log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: No Explicit Tidal Match Found"
         fi
 
-		CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId"
+		CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId" "notbeets"
 		if [ $alreadyImported = true ]; then
 			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Already Imported, skipping..."
 			continue
@@ -345,7 +346,7 @@ SearchProcess () {
 			fi
 		done
 
-		CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId"
+		CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId" "notbeets"
 		if [ $alreadyImported = true ]; then
 			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Already Imported, skipping..."
 			continue
@@ -423,7 +424,7 @@ ProcessWithBeets () {
         rm -rf "$1"
 		return
 	else
-		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle ::BEETS MATCH FOUND!"
+		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: BEETS MATCH FOUND!"
 	fi
 
 	GetFile=$(find "$1" -type f -iname "*.flac" | head -n1)
@@ -439,11 +440,19 @@ ProcessWithBeets () {
 	matchedLidarrAlbumArtistName="$(echo "$matchedLidarrAlbumData" | jq -r ".artist.artistName")"
 	matchedLidarrAlbumArtistCleanName="$(echo "$matchedLidarrAlbumData" | jq -r ".artist.cleanName")"
 
-	CheckLidarrBeforeImport "$matchedTagsAlbumReleaseGroupId"
+	if [ ! -d /config/logs/downloaded/found ]; then
+		mkdir -p /config/logs/downloaded/found
+	fi
+
+	touch /config/logs/downloaded/found/$matchedTagsAlbumReleaseGroupId
+
+	CheckLidarrBeforeImport "$matchedTagsAlbumReleaseGroupId" "beets"
 	if [ $alreadyImported = true ]; then
 		rm -rf "$1"
 		return
 	fi
+
+	
 	
 	if [ "${matchedLidarrAlbumArtistCleanName}" != "null" ]; then
 		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $matchedLidarrAlbumArtistName ($matchedLidarrAlbumArtistId) found in Lidarr"
@@ -491,9 +500,17 @@ CheckLidarrBeforeImport () {
 		lidarrPercentOfTracks=0
 	fi
 	if [ $lidarrPercentOfTracks -gt 0 ]; then
-		log ":: ERROR :: Already Imported"
+		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: ERROR :: Already Imported"
 		alreadyImported=true
 		return
+	fi
+
+	if [ "$2" = "notbeets" ]; then
+		if [ -f "/config/logs/downloaded/found/$1" ]; then
+			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: ERROR :: Previously Found, skipping..."
+			alreadyImported=true
+			return
+		fi
 	fi
 }
 
