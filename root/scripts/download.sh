@@ -1,8 +1,6 @@
 #!/usr/bin/with-contenv bash
 lidarrApiKey="$(grep "<ApiKey>" /config/config.xml | sed "s/\  <ApiKey>//;s/<\/ApiKey>//")"
 lidarrUrl="http://127.0.0.1:8686"
-XDG_CONFIG_HOME="/config/deemix/xdg"
-export XDG_CONFIG_HOME="/config/deemix/xdg"
 CountryCode=US
 
 log () {
@@ -10,9 +8,53 @@ log () {
     echo $m_time" "$1
 }
 
+mkdir -p /config/xdg
+touch /config/xdg.tidal-dl.log
+
+if [ ! -f /config/xdg/.tidal-dl.json ]; then
+    	log "TIDAL :: No default config found, importing default config \"tidal.json\""
+    	if [ -f /scripts/tidal-dl.json ]; then
+    		cp /scripts/tidal-dl.json /config/xdg/.tidal-dl.json
+    		chmod 777 -R /config/xdg/
+    	fi
+    	tidal-dl -o /downloads/lidarr/incomplete
+    	tidal-dl -r P1080
+		tidal-dl -q HiFi
+    fi
+
+	# check for backup token and use it if exists
+	if [ ! -f /root/.tidal-dl.token.json ]; then
+		if [ -f /config/backup/tidal-dl.token.json ]; then
+			cp -p /config/backup/tidal-dl.token.json /root/.tidal-dl.token.json
+			# remove backup token
+			rm /config/backup/tidal-dl.token.json
+		fi
+	fi
+
+	if [ -f /root/.tidal-dl.token.json ]; then
+		if [[ $(find "/config/xdg/.tidal-dl.token.json" -mtime +6 -print) ]]; then
+			log "TIDAL :: ERROR :: Token expired, removing..."
+			rm /config/xdg/.tidal-dl.token.json
+		else
+			# create backup of token to allow for container updates
+			if [ ! -d /config/backup ]; then
+				mkdir -p /config/backup
+			fi
+			cp -p /config/xdg/.tidal-dl.token.json /config/backup/tidal-dl.token.json
+		fi
+	fi
+
+    if [ ! -f /config/xdg/.tidal-dl.token.json ]; then
+        log "TIDAL :: ERROR :: Loading client for required authentication, please authenticate, then exit the client..."
+        tidal-dl
+    fi
+
+
 DownloadProcess () {
     downloadedAlbumTitleClean="$(echo "$downloadedAlbumTitle" | sed -e "s%[^[:alpha:][:digit:]._' ]% %g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
     
+    
+
     if [ ! -d "/downloads/lidarr" ]; then
         mkdir -p /downloads/lidarr
         chmod 777 /downloads/lidarr
@@ -24,24 +66,41 @@ DownloadProcess () {
         chown abc:abc /downloads/lidarr/incomplete
     fi
 
+    if [ ! -d "/config/logs" ]; then
+        mkdir -p /config/logs
+        chmod 777 /config/logs
+        chown abc:abc /config/logs
+    fi
+
+    if [ ! -d "/config/logs/downloaded" ]; then
+        mkdir -p /config/logs/downloaded
+        chmod 777 /config/logs/downloaded
+        chown abc:abc /config/logs/downloaded
+    fi
+
+    if [ ! -d "/config/logs/downloaded/deezer" ]; then
+        mkdir -p /config/logs/downloaded/deezer
+        chmod 777 /config/logs/downloaded/deezer
+        chown abc:abc /config/logs/downloaded/deezer
+    fi
+
+    if [ ! -d "/config/logs/downloaded/tidal" ]; then
+        mkdir -p /config/logs/downloaded/tidal
+        chmod 777 /config/logs/downloaded/tidal
+        chown abc:abc /config/logs/downloaded/tidal
+    fi
+    
     if [ "$2" = "DEEZER" ]; then
         deemix -b flac -p /downloads/lidarr/incomplete "https://www.deezer.com/us/album/$1"
-        if [ ! -d "/config/logs" ]; then
-            mkdir -p /config/logs
-            chmod 777 /config/logs
-            chown abc:abc /config/logs
-        fi
-        if [ ! -d "/config/logs/downloaded" ]; then
-            mkdir -p /config/logs/downloaded
-            chmod 777 /config/logs/downloaded
-            chown abc:abc /config/logs/downloaded
-        fi
-        if [ ! -d "/config/logs/downloaded/deezer" ]; then
-            mkdir -p /config/logs/downloaded/deezer
-            chmod 777 /config/logs/downloaded/deezer
-            chown abc:abc /config/logs/downloaded/deezer
-        fi
         touch /config/logs/downloaded/deezer/$1
+        downloadCount=$(find /downloads/lidarr/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
+        if [ $downloadCount -le 0 ]; then
+            echo "download failed"
+            return
+        fi
+    elif [ "$2" = "TIDAL" ]; then
+        tidal-dl -l "https://tidal.com/browse/album/$1"
+        touch /config/logs/downloaded/tidal/$1
         downloadCount=$(find /downloads/lidarr/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
         if [ $downloadCount -le 0 ]; then
             echo "download failed"
@@ -50,7 +109,6 @@ DownloadProcess () {
     else
         return
     fi
-
 
     albumquality="$(find /downloads/lidarr/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | head -n 1 | egrep -i -E -o "\.{1}\w*$" | sed  's/\.//g')"
     downloadedAlbumFolder="$lidarrArtistNameSanitized-$downloadedAlbumTitleClean ($3)-${albumquality^^}-$2"
@@ -91,12 +149,12 @@ NotifyLidarrForImport () {
 
 if [ ! -z "$arlToken" ]; then
     # Create directories
-    mkdir -p /config/{cache,logs,deemix/xdg/deemix}
-	if [ -f "$XDG_CONFIG_HOME/deemix/.arl" ]; then
-		rm "$XDG_CONFIG_HOME/deemix/.arl"
+    mkdir -p /config/{cache,logs}
+	if [ -f "/config/xdg/deemix/.arl" ]; then
+		rm "/config/xdg/deemix/.arl"
 	fi
-	if [ ! -f "$XDG_CONFIG_HOME/deemix/.arl" ]; then
-		echo -n "$arlToken" > "$XDG_CONFIG_HOME/deemix/.arl"
+	if [ ! -f "/config/xdg/deemix/.arl" ]; then
+		echo -n "$arlToken" > "/config/xdg/deemix/.arl"
 	fi
     log "ARL Token: Configured"
 else
@@ -210,6 +268,9 @@ SearchProcess () {
                     fi
                     downloadedReleaseYear="${downloadedReleaseDate:0:4}"
                     echo "Tidal Explicit MATCH"
+                    if [ -f /config/logs/downloaded/tidal/$tidalArtistAlbumId ]; then
+                        continue
+                    fi
                     DownloadProcess "$tidalArtistAlbumId" "TIDAL" "$downloadedReleaseYear"
                 fi
             done
@@ -257,6 +318,9 @@ SearchProcess () {
                     fi
                     downloadedReleaseYear="${downloadedReleaseDate:0:4}"
                     echo "CLEAN Tidal MATCH"
+                    if [ -f /config/logs/downloaded/tidal/$tidalArtistAlbumId ]; then
+                        continue
+                    fi
                     DownloadProcess "$tidalArtistAlbumId" "TIDAL" "$downloadedReleaseYear"
                 fi
             done
@@ -309,7 +373,7 @@ ProcessWithBeets () {
         rm -rf "$1"
 		return
 	else
-		log ": BEETS MATCH FOUND!"
+		log ":: BEETS MATCH FOUND!"
 	fi
 
 	GetFile=$(find "$1" -type f -iname "*.flac" | head -n1)
@@ -324,6 +388,19 @@ ProcessWithBeets () {
 	matchedLidarrAlbumArtistId="$(echo "$matchedLidarrAlbumData" | jq -r ".artist.foreignArtistId")"
 	matchedLidarrAlbumArtistName="$(echo "$matchedLidarrAlbumData" | jq -r ".artist.artistName")"
 	matchedLidarrAlbumArtistCleanName="$(echo "$matchedLidarrAlbumData" | jq -r ".artist.cleanName")"
+
+    lidarrAlbumData=$(curl -s --header "X-Api-Key:"${lidarrApiKey} --request GET  "$lidarrUrl/api/v1/album/" | jq -r ".[]")
+
+	lidarrPercentOfTracks=$(echo "$lidarrAlbumData" | jq -r "select(.foreignAlbumId==\"$matchedTagsAlbumReleaseGroupId\") | .statistics.percentOfTracks")
+	if [ "$lidarrPercentOfTracks" = "null" ]; then
+    	lidarrPercentOfTracks=0
+	fi
+	if [ $lidarrPercentOfTracks -gt 0 ]; then
+    	log ":: ERROR :: Already Imported"
+		rm -rf "$1"
+		return
+	fi
+
 	if [ "${matchedLidarrAlbumArtistCleanName}" != "null" ]; then
 		log "$position :: $idNumber of $idListCount :: $tidalId :: $matchedLidarrAlbumArtistName ($matchedLidarrAlbumArtistId) found in Lidarr"
 	else
