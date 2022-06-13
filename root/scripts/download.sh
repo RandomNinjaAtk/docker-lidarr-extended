@@ -100,6 +100,9 @@ DownloadProcess () {
     
     if [ "$2" = "DEEZER" ]; then
         deemix -b flac -p /downloads/lidarr/incomplete "https://www.deezer.com/us/album/$1"
+		if [ -d "/tmp/deemix-imgs" ]; then
+			rm -rf /tmp/deemix-imgs
+		fi
         touch /config/logs/downloaded/deezer/$1
         downloadCount=$(find /downloads/lidarr/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
         if [ $downloadCount -le 0 ]; then
