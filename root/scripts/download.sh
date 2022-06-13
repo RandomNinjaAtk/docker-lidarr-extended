@@ -386,12 +386,12 @@ ProcessWithBeets () {
 	
 	trackcount=$(find "$1" -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
 
-	if [ -f /config/beets_temp_library.blb ]; then
-		rm /config/beets_temp_library.blb
+	if [ -f /scripts/library.blb ]; then
+		rm /scripts/library.blb
 		sleep 0.1
-		fi
-	if [ -f /config/beets_temp.log ]; then 
-		rm /config/beets_temp.log
+	fi
+	if [ -f /scripts/beets/beets.log ]; then 
+		rm /scripts/beets.log
 		sleep 0.1
 	fi
 
@@ -403,7 +403,7 @@ ProcessWithBeets () {
 	sleep 0.1
 
 	if [ $(find "$1" -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l) -gt 0 ]; then
-		beet -l /config/beets_temp_library.blb -d "$1" import -qC "$1"
+		beet -c /scripts/beets-config.yaml -l /scripts/library.blb -d "$1" import -qC "$1"
 		if [ $(find "$1" -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" -newer "/config/beets-match" | wc -l) -gt 0 ]; then
 			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: SUCCESS: Matched with beets!"
 		else
