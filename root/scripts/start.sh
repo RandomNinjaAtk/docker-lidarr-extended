@@ -1,7 +1,7 @@
 #!/usr/bin/with-contenv bash
 
 echo "Starting Script...."
-processstartid="$(ps -A -o pid,cmd|grep "/scripts/start.bash" | grep -v grep | head -n 1 | awk '{print $1}')"
+processstartid="$(ps -A -o pid,cmd|grep "/scripts/start.sh" | grep -v grep | head -n 1 | awk '{print $1}')"
 echo "To kill script, use the following command:"
 echo "kill -9 $processstartid"
 for (( ; ; )); do
