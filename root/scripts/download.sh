@@ -173,7 +173,7 @@ DeemixClientSetup () {
 	else
 		log "ERROR: arlToken setting invalid, currently set to: $arlToken"
 	fi
-fi
+}
 
 GetMissingCutOffList () {
     log "Downloading missing list..."
@@ -698,6 +698,8 @@ LidarrTaskStatusCheck () {
 
 if [ "$dlClientSource" = "deezer" ] || [ "$dlClientSource" = "both" ]; then
 	DeemixClientSetup
+fi
+
 if [ "$dlClientSource" = "tidal" ] || [ "$dlClientSource" = "both" ]; then
 	TidalClientSetup
 fi
