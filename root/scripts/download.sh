@@ -21,7 +21,7 @@ TidalClientSetup () {
 			cp /scripts/tidal-dl.json /config/xdg/.tidal-dl.json
 			chmod 777 -R /config/xdg/
 		fi
-		tidal-dl -o /downloads/lidarr/incomplete
+		tidal-dl -o /downloads/lidarr-extended/incomplete
 		tidal-dl -r P1080
 		tidal-dl -q HiFi
 	fi
@@ -57,15 +57,15 @@ TidalClientSetup () {
 DownloadProcess () {
 	downloadedAlbumTitleClean="$(echo "$downloadedAlbumTitle" | sed -e "s%[^[:alpha:][:digit:]._' ]% %g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
 
-	if [ ! -d "/downloads/lidarr" ]; then
-		mkdir -p /downloads/lidarr
-		chmod 777 /downloads/lidarr
-		chown abc:abc /downloads/lidarr
+	if [ ! -d "/downloads/lidarr-extended" ]; then
+		mkdir -p /downloads/lidarr-extended
+		chmod 777 /downloads/lidarr-extended
+		chown abc:abc /downloads/lidarr-extended
 	fi
-	if [ ! -d "/downloads/lidarr/incomplete" ]; then
-		mkdir -p /downloads/lidarr/incomplete
-		chmod 777 /downloads/lidarr/incomplete
-		chown abc:abc /downloads/lidarr/incomplete
+	if [ ! -d "/downloads/lidarr-extended/incomplete" ]; then
+		mkdir -p /downloads/lidarr-extended/incomplete
+		chmod 777 /downloads/lidarr-extended/incomplete
+		chown abc:abc /downloads/lidarr-extended/incomplete
 	fi
 
 	if [ ! -d "/config/extended/logs" ]; then
@@ -90,23 +90,23 @@ DownloadProcess () {
 		mkdir -p /config/extended/logs/downloaded/tidal
 		chmod 777 /config/extended/logs/downloaded/tidal
 		chown abc:abc /config/extended/logs/downloaded/tidal
-    fi
+	fi
 
-	if [ ! -d "/downloads/lidarr/incomplete" ]; then
-		mkdir -p /downloads/lidarr/incomplete
-		chmod 777 /downloads/lidarr/incomplete
-		chown abc:abc /downloads/lidarr/incomplete
+	if [ ! -d "/downloads/lidarr-extended/incomplete" ]; then
+		mkdir -p /downloads/lidarr-extended/incomplete
+		chmod 777 /downloads/lidarr-extended/incomplete
+		chown abc:abc /downloads/lidarr-extended/incomplete
 	else
-		rm -rf /downloads/lidarr/incomplete/*
+		rm -rf /downloads/lidarr-extended/incomplete/*
 	fi
     
     if [ "$2" = "DEEZER" ]; then
-        deemix -b flac -p /downloads/lidarr/incomplete "https://www.deezer.com/us/album/$1"
+        deemix -b flac -p /downloads/lidarr-extended/incomplete "https://www.deezer.com/us/album/$1"
 		if [ -d "/tmp/deemix-imgs" ]; then
 			rm -rf /tmp/deemix-imgs
 		fi
         touch /config/extended/logs/downloaded/deezer/$1
-        downloadCount=$(find /downloads/lidarr/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
+        downloadCount=$(find /downloads/lidarr-extended/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
         if [ $downloadCount -le 0 ]; then
             log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: ERROR :: download failed"
             return
@@ -114,7 +114,7 @@ DownloadProcess () {
     elif [ "$2" = "TIDAL" ]; then
         tidal-dl -l "https://tidal.com/browse/album/$1"
         touch /config/extended/logs/downloaded/tidal/$1
-        downloadCount=$(find /downloads/lidarr/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
+        downloadCount=$(find /downloads/lidarr-extended/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
         if [ $downloadCount -le 0 ]; then
             log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: ERROR :: download failed"
             return
@@ -137,19 +137,19 @@ DownloadProcess () {
             chmod 777 /downloads/lidarr/complete
             chown abc:abc /downloads/lidarr/complete
         fi
-        mkdir -p "/downloads/lidarr/complete/$downloadedAlbumFolder"
-        mv "$file" "/downloads/lidarr/complete/$downloadedAlbumFolder"/
+        mkdir -p "/downloads/lidarr-extended/complete/$downloadedAlbumFolder"
+        mv "$file" "/downloads/lidarr-extended/complete/$downloadedAlbumFolder"/
         
     done
-    chmod 777 "/downloads/lidarr/complete/$downloadedAlbumFolder"
-    chown abc:abc "/downloads/lidarr/complete/$downloadedAlbumFolder"
-    chmod 666 "/downloads/lidarr/complete/$downloadedAlbumFolder"/*
-    chown abc:abc "/downloads/lidarr/complete/$downloadedAlbumFolder"/*
+    chmod 777 "/downloads/lidarr-extended/complete/$downloadedAlbumFolder"
+    chown abc:abc "/downloads/lidarr-extended/complete/$downloadedAlbumFolder"
+    chmod 666 "/downloads/lidarr-extended/complete/$downloadedAlbumFolder"/*
+    chown abc:abc "/downloads/lidarr-extended/complete/$downloadedAlbumFolder"/*
 
-    ProcessWithBeets "/downloads/lidarr/complete/$downloadedAlbumFolder" "${albumquality^^}" "$2"
+    ProcessWithBeets "/downloads/lidarr-extended/complete/$downloadedAlbumFolder" "${albumquality^^}" "$2"
 
-    if [ -d "/downloads/lidarr/complete/$downloadedAlbumFolder" ]; then
-        NotifyLidarrForImport "/downloads/lidarr/complete/$downloadedAlbumFolder"
+    if [ -d "/downloads/lidarr-extended/complete/$downloadedAlbumFolder" ]; then
+        NotifyLidarrForImport "/downloads/lidarr-extended/complete/$downloadedAlbumFolder"
     fi
     rm -rf /downloads/lidarr/incomplete/*
 }
