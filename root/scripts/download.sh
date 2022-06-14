@@ -151,7 +151,7 @@ DownloadProcess () {
     if [ -d "/downloads/lidarr-extended/complete/$downloadedAlbumFolder" ]; then
         NotifyLidarrForImport "/downloads/lidarr-extended/complete/$downloadedAlbumFolder"
     fi
-    rm -rf /downloads/lidarr/incomplete/*
+    rm -rf /downloads/lidarr-extended/incomplete/*
 }
 
 NotifyLidarrForImport () {
