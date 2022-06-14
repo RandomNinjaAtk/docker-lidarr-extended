@@ -29,7 +29,7 @@ chmod 777 /config/lidarr-extended/cache
 chmod 777 /config/lidarr-extended/logs
 chmod 666 /config/lidarr-extended/cache/*
 chmod 666 /config/lidarr-extended/logs/*
-chmod 777 -R /config/lidarr-extended/scripts
+chmod -R 777 /config/lidarr-extended/scripts
 chown -R abc:abc /config/lidarr-extended
 
 
