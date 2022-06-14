@@ -123,19 +123,19 @@ DownloadProcess () {
         return
     fi
 
-    albumquality="$(find /downloads/lidarr/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | head -n 1 | egrep -i -E -o "\.{1}\w*$" | sed  's/\.//g')"
+    albumquality="$(find /downloads/lidarr-extended/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | head -n 1 | egrep -i -E -o "\.{1}\w*$" | sed  's/\.//g')"
     downloadedAlbumFolder="$lidarrArtistNameSanitized-$downloadedAlbumTitleClean ($3)-${albumquality^^}-$2"
 
-    find "/downloads/lidarr/incomplete" -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" -print0 | while IFS= read -r -d '' audio; do
+    find "/downloads/lidarr-extended/incomplete" -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" -print0 | while IFS= read -r -d '' audio; do
         file="${audio}"
         filenoext="${file%.*}"
         filename="$(basename "$audio")"
         extension="${filename##*.}"
         filenamenoext="${filename%.*}"
-        if [ ! -d "/downloads/lidarr/complete" ]; then
-            mkdir -p /downloads/lidarr/complete
-            chmod 777 /downloads/lidarr/complete
-            chown abc:abc /downloads/lidarr/complete
+        if [ ! -d "/downloads/lidarr-extended/complete" ]; then
+            mkdir -p /downloads/lidarr-extended/complete
+            chmod 777 /downloads/lidarr-extended/complete
+            chown abc:abc /downloads/lidarr-extended/complete
         fi
         mkdir -p "/downloads/lidarr-extended/complete/$downloadedAlbumFolder"
         mv "$file" "/downloads/lidarr-extended/complete/$downloadedAlbumFolder"/
