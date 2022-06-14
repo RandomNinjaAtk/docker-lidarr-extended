@@ -17,8 +17,8 @@ TidalClientSetup () {
 	touch /config/xdg/.tidal-dl.log
 	if [ ! -f /config/xdg/.tidal-dl.json ]; then
 		log "TIDAL :: No default config found, importing default config \"tidal.json\""
-		if [ -f /scripts/tidal-dl.json ]; then
-			cp /scripts/tidal-dl.json /config/xdg/.tidal-dl.json
+		if [ -f /config/extended/scripts/tidal-dl.json ]; then
+			cp /config/extended/scripts/tidal-dl.json /config/xdg/.tidal-dl.json
 			chmod 777 -R /config/xdg/
 		fi
 		tidal-dl -o /downloads/lidarr-extended/incomplete
@@ -464,7 +464,7 @@ ProcessWithBeets () {
 		rm /scripts/library.blb
 		sleep 0.1
 	fi
-	if [ -f /scripts/beets/beets.log ]; then 
+	if [ -f /scripts/beets.log ]; then 
 		rm /scripts/beets.log
 		sleep 0.1
 	fi
