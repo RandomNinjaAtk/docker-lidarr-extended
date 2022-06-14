@@ -62,10 +62,19 @@ DownloadProcess () {
 		chmod 777 /downloads/lidarr-extended
 		chown abc:abc /downloads/lidarr-extended
 	fi
+	
 	if [ ! -d "/downloads/lidarr-extended/incomplete" ]; then
 		mkdir -p /downloads/lidarr-extended/incomplete
 		chmod 777 /downloads/lidarr-extended/incomplete
 		chown abc:abc /downloads/lidarr-extended/incomplete
+	else
+		rm -rf /downloads/lidarr-extended/incomplete/*
+	fi
+	
+	if [ ! -d "/downloads/lidarr-extended/complete" ]; then
+		mkdir -p /downloads/lidarr-extended/complete
+		chmod 777 /downloads/lidarr-extended/complete
+		chown abc:abc /downloads/lidarr-extended/complete
 	fi
 
 	if [ ! -d "/config/extended/logs" ]; then
@@ -90,14 +99,6 @@ DownloadProcess () {
 		mkdir -p /config/extended/logs/downloaded/tidal
 		chmod 777 /config/extended/logs/downloaded/tidal
 		chown abc:abc /config/extended/logs/downloaded/tidal
-	fi
-
-	if [ ! -d "/downloads/lidarr-extended/incomplete" ]; then
-		mkdir -p /downloads/lidarr-extended/incomplete
-		chmod 777 /downloads/lidarr-extended/incomplete
-		chown abc:abc /downloads/lidarr-extended/incomplete
-	else
-		rm -rf /downloads/lidarr-extended/incomplete/*
 	fi
     
     if [ "$2" = "DEEZER" ]; then
