@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 lidarrApiKey="$(grep "<ApiKey>" /config/config.xml | sed "s/\  <ApiKey>//;s/<\/ApiKey>//")"
 lidarrUrl="http://127.0.0.1:8686"
-lidarrRootFolderPath="$(dirname "$Lidarr_Artist_Path")"
+lidarrRootFolderPath="$(dirname "$lidarr_artist_path")"
 exec &>> "/config/logs/PlexNotify.txt"
 chmod 777 "/config/logs/PlexNotify.txt"
 
@@ -10,7 +10,7 @@ log () {
     echo $m_time" "$1
 }
 
-if [ "$Lidarr_EventType" == "Test" ]; then
+if [ "$lidarr_eventtype" == "Test" ]; then
 	log "Tested"
 	exit 0	
 fi
