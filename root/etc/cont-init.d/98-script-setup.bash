@@ -24,15 +24,14 @@ fi
 
 
 # set permissions
-chmod 777 "/config/lidarr-extended"
-chmod 777 "/config/lidarr-extended/scripts"
-chmod 777 "/config/lidarr-extended/cache"
-chmod 777 "/config/lidarr-extended/logs"
-chown -R abc:abc "/config/lidarr-extended"
-chown -R abc:abc "/config/lidarr-extended/cache"
-chown -R abc:abc "/config/lidarr-extended/scripts"
-chown -R abc:abc "/config/lidarr-extended/logs"
+chmod 777 /config/lidarr-extended
+chmod 777 /config/lidarr-extended/cache
+chmod 777 /config/lidarr-extended/logs
+chmod 666 /config/lidarr-extended/cache/*
+chmod 666 /config/lidarr-extended/logs/*
+chmod 777 -R /config/lidarr-extended/scripts
+chown -R abc:abc /config/lidarr-extended
+
 
 echo "Complete..."
-
 exit $?
