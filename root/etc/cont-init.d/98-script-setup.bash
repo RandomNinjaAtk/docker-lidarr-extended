@@ -1,14 +1,20 @@
 #!/usr/bin/with-contenv bash
 
+# create extended directory if missing
+if [ ! -d "/config/extended" ]; then
+	mkdir -p "/config/extended"
+fi
+
 # create scripts directory if missing
 if [ ! -d "/config/extended/scripts" ]; then
 	mkdir -p "/config/extended/scripts"
 else
-	echo "Updating scripts..."
+	echo "Removing previous scripts..."
 	rm -rf /config/extended/scripts/*
 fi
 
-if [ -d "/config/lidarr-extended/scripts" ]; then
+if [ -d "/config/extended/scripts" ]; then
+	echo "Importing extended scripts..."
 	cp -r /scripts/* /config/extended/scripts/
 fi
 
@@ -21,7 +27,6 @@ fi
 if [ ! -d "/config/extended/logs" ]; then
 	mkdir -p "/config/extended/logs"
 fi
-
 
 # set permissions
 chmod 777 /config/extended
