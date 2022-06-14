@@ -163,7 +163,7 @@ NotifyLidarrForImport () {
 DeemixClientSetup () {
 	if [ ! -z "$arlToken" ]; then
 		# Create directories
-		mkdir -p /config/{cache,logs}
+		mkdir -p /config/xdg/deemix
 		if [ -f "/config/xdg/deemix/.arl" ]; then
 			rm "/config/xdg/deemix/.arl"
 		fi
@@ -253,11 +253,11 @@ SearchProcess () {
 		if [ "$skipDeezer" = "false" ]; then
 			for dId in ${!deezeArtistIds[@]}; do
 				deezeArtistId="${deezeArtistIds[$dId]}"
-				if [ ! -d /config/cache/deezer ]; then
-					mkdir -p /config/cache/deezer
+				if [ ! -d /config/extended/cache/deezer ]; then
+					mkdir -p /config/extended/cache/deezer
 				fi
-				if [ ! -f /config/cache/deezer/$deezeArtistId-albums.json ]; then
-					curl -s "https://api.deezer.com/artist/$deezeArtistId/albums?limit=1000" > /config/cache/deezer/$deezeArtistId-albums.json
+				if [ ! -f /config/extended/cache/deezer/$deezeArtistId-albums.json ]; then
+					curl -s "https://api.deezer.com/artist/$deezeArtistId/albums?limit=1000" > /config/extended/cache/deezer/$deezeArtistId-albums.json
 				fi
 			done
 		fi
@@ -276,23 +276,23 @@ SearchProcess () {
 		fi
 
 		if [ "$skipTidal" = "false" ]; then
-			if [ ! -d /config/cache/tidal ]; then
-				mkdir -p /config/cache/tidal
+			if [ ! -d /config/extended/cache/tidal ]; then
+				mkdir -p /config/extended/cache/tidal
 			fi
-			if [ ! -f /config/cache/tidal/$tidalArtistId-videos.json ]; then
-				curl -s "https://api.tidal.com/v1/artists/${tidalArtistId}/videos?limit=10000&countryCode=$CountryCode&filter=ALL" -H 'x-tidal-token: CzET4vdadNUFQ5JU' > /config/cache/tidal/$tidalArtistId-videos.json
+			if [ ! -f /config/extended/cache/tidal/$tidalArtistId-videos.json ]; then
+				curl -s "https://api.tidal.com/v1/artists/${tidalArtistId}/videos?limit=10000&countryCode=$CountryCode&filter=ALL" -H 'x-tidal-token: CzET4vdadNUFQ5JU' > /config/extended/cache/tidal/$tidalArtistId-videos.json
 			fi
-			if [ ! -f /config/cache/tidal/$tidalArtistId-albums.json ]; then
-				curl -s "https://api.tidal.com/v1/artists/${tidalArtistId}/albums?limit=10000&countryCode=$CountryCode&filter=ALL" -H 'x-tidal-token: CzET4vdadNUFQ5JU' > /config/cache/tidal/$tidalArtistId-albums.json
+			if [ ! -f /config/extended/cache/tidal/$tidalArtistId-albums.json ]; then
+				curl -s "https://api.tidal.com/v1/artists/${tidalArtistId}/albums?limit=10000&countryCode=$CountryCode&filter=ALL" -H 'x-tidal-token: CzET4vdadNUFQ5JU' > /config/extended/cache/tidal/$tidalArtistId-albums.json
 			fi
-			tidalArtistAlbumsData=$(cat "/config/cache/tidal/$tidalArtistId-albums.json" | jq -r ".items | sort_by(.numberOfTracks) | sort_by(.explicit) | reverse |.[]")
+			tidalArtistAlbumsData=$(cat "/config/extended/cache/tidal/$tidalArtistId-albums.json" | jq -r ".items | sort_by(.numberOfTracks) | sort_by(.explicit) | reverse |.[]")
 			tidalArtistAlbumsIds=($(echo "${tidalArtistAlbumsData}" | jq -r "select(.explicit=="true") | .id"))
 		fi
 	
 		if [ "$skipDeezer" = "false" ]; then
 			for dId in ${!deezeArtistIds[@]}; do
 				deezeArtistId="${deezeArtistIds[$dId]}"
-				deezerArtistAlbumsData=$(cat "/config/cache/deezer/$deezeArtistId-albums.json" | jq -r ".data | sort_by(.release_date) | sort_by(.explicit_lyrics) | reverse | .[]")
+				deezerArtistAlbumsData=$(cat "/config/extended/cache/deezer/$deezeArtistId-albums.json" | jq -r ".data | sort_by(.release_date) | sort_by(.explicit_lyrics) | reverse | .[]")
 				deezerArtistAlbumsIds=($(echo "${deezerArtistAlbumsData}" | jq -r "select(.explicit_lyrics=="true") | .id"))
 			done
 		fi
@@ -307,7 +307,7 @@ SearchProcess () {
 		if [ "$skipDeezer" = "false" ]; then
 			for dId in ${!deezeArtistIds[@]}; do
 				deezeArtistId="${deezeArtistIds[$dId]}"
-				deezerArtistAlbumsData=$(cat "/config/cache/deezer/$deezeArtistId-albums.json" | jq -r ".data | sort_by(.release_date) | sort_by(.explicit_lyrics) | reverse | .[]")
+				deezerArtistAlbumsData=$(cat "/config/extended/cache/deezer/$deezeArtistId-albums.json" | jq -r ".data | sort_by(.release_date) | sort_by(.explicit_lyrics) | reverse | .[]")
 				deezerArtistAlbumsIds=($(echo "${deezerArtistAlbumsData}" | jq -r "select(.explicit_lyrics=="true") | .id"))
 
 				if echo "${deezerArtistAlbumsData}" | jq -r .title | grep -i "^$lidarrAlbumTitle" | read; then
@@ -381,7 +381,7 @@ SearchProcess () {
 		if [ "$skipDeezer" = "false" ]; then
 			for dId in ${!deezeArtistIds[@]}; do
 				deezeArtistId="${deezeArtistIds[$dId]}"
-				deezerArtistAlbumsData=$(cat "/config/cache/deezer/$deezeArtistId-albums.json" | jq -r ".data | sort_by(.release_date) | sort_by(.explicit_lyrics) | reverse | .[]")
+				deezerArtistAlbumsData=$(cat "/config/extended/cache/deezer/$deezeArtistId-albums.json" | jq -r ".data | sort_by(.release_date) | sort_by(.explicit_lyrics) | reverse | .[]")
 				deezerArtistAlbumsIds=($(echo "${deezerArtistAlbumsData}" | jq -r "select(.explicit_lyrics=="false") | .id"))
 
 				if echo "${deezerArtistAlbumsData}" | jq -r .title | grep -i "^$lidarrAlbumTitle" | read; then
