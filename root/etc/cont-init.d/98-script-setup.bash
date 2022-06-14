@@ -32,8 +32,6 @@ fi
 chmod 777 /config/extended
 chmod 777 /config/extended/cache
 chmod 777 /config/extended/logs
-chmod 666 /config/extended/cache/*
-chmod 666 /config/extended/logs/*
 chmod -R 777 /config/extended/scripts
 chown -R abc:abc /config/extended
 
