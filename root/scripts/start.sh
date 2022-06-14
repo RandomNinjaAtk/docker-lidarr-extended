@@ -1,7 +1,7 @@
 #!/usr/bin/with-contenv bash
 
 echo "Starting Script...."
-processstartid="$(ps -A -o pid,cmd|grep "/config/lidarr-extended/scripts/start.sh" | grep -v grep | head -n 1 | awk '{print $1}')"
+processstartid="$(ps -A -o pid,cmd|grep "/config/lidarr/scripts/start.sh" | grep -v grep | head -n 1 | awk '{print $1}')"
 echo "To kill script, use the following command:"
 echo "kill -9 $processstartid"
 for (( ; ; )); do
@@ -11,7 +11,7 @@ for (( ; ; )); do
 		chmod 777 "/config/extended/logs" 
 		chown abc:abc "/config/extended/logs" 
 	fi
-	bash /config/lidarr-extended/scripts/download.sh 2>&1 | tee "/config/extended/logs/script_run_${i}_$(date +"%Y_%m_%d_%I_%M_%p").log" > /proc/1/fd/1 2>/proc/1/fd/2
+	bash /config/lidarr/scripts/download.sh 2>&1 | tee "/config/extended/logs/script_run_${i}_$(date +"%Y_%m_%d_%I_%M_%p").log" > /proc/1/fd/1 2>/proc/1/fd/2
 	if [ -f "/config/extended/logs/log-cleanup" ]; then
 		rm "/config/extended/logs/log-cleanup"
 	fi
