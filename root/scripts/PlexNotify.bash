@@ -2,7 +2,8 @@
 lidarrApiKey="$(grep "<ApiKey>" /config/config.xml | sed "s/\  <ApiKey>//;s/<\/ApiKey>//")"
 lidarrUrl="http://127.0.0.1:8686"
 lidarrRootFolderPath="$(dirname "$Lidarr_Artist_Path")"
-exec &>> "/config/logs/PlexNotify.log"
+exec &>> "/config/logs/PlexNotify.txt"
+chmod 777 "/config/logs/PlexNotify.txt"
 
 log () {
     m_time=`date "+%F %T"`
