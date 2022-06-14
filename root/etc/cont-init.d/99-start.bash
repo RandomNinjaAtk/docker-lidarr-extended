@@ -11,10 +11,10 @@ echo "------------------------------------------------------------"
 
 if [ "$autoStart" = "true" ]; then
 	echo "Automatic Start Enabled, starting..."
-	bash /config/lidarr/scripts/start.sh
+	bash /config/extended/scripts/start.sh
 else
 	echo "Automatic Start Disabled, manually run using this command:"
-	echo "bash /config/lidarr/scripts/start.sh"
+	echo "bash /config/extended/scripts/start.sh"
 fi
 
 exit $?
