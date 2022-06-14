@@ -199,7 +199,7 @@ GetMissingCutOffList () {
 SearchProcess () {
     wantedListAlbumIds=($(echo "${missingAlbumIds}" && echo "${cutoffAlbumIds}"))
     for id in ${!wantedListAlbumIds[@]}; do
-        processNumber=$(( $id + 1 ))
+		processNumber=$(( $id + 1 ))
         wantedAlbumId="${wantedListAlbumIds[$id]}"
         lidarrAlbumData="$(curl -s "$lidarrUrl/api/v1/album/$wantedAlbumId?apikey=${lidarrApiKey}")"
         lidarrAlbumTitle=$(echo "$lidarrAlbumData" | jq -r ".title")
@@ -553,12 +553,12 @@ ProcessWithBeets () {
 
 
 	downloadedAlbumFolder="${matchedLidarrAlbumArtistCleanName}-${matchedTagsAlbumTitleClean} ($matchedTagsAlbumYear)-$2-$3"
-    if [ "$1" != "/downloads/lidarr/complete/$downloadedAlbumFolder" ];then
-	    mv "$1" "/downloads/lidarr/complete/$downloadedAlbumFolder"
-	    chmod 777 "/downloads/lidarr/complete/$downloadedAlbumFolder"
-        chown abc:abc "/downloads/lidarr/complete/$downloadedAlbumFolder"
-        chmod 666 "/downloads/lidarr/complete/$downloadedAlbumFolder"/*
-        chown abc:abc "/downloads/lidarr/complete/$downloadedAlbumFolder"/*
+    if [ "$1" != "/downloads/lidarr-extended/complete/$downloadedAlbumFolder" ];then
+	    mv "$1" "/downloads/lidarr-extended/complete/$downloadedAlbumFolder"
+	    chmod 777 "/downloads/lidarr-extended/complete/$downloadedAlbumFolder"
+        chown abc:abc "/downloads/lidarr-extended/complete/$downloadedAlbumFolder"
+        chmod 666 "/downloads/lidarr-extended/complete/$downloadedAlbumFolder"/*
+        chown abc:abc "/downloads/lidarr-extended/complete/$downloadedAlbumFolder"/*
     fi
 }
 
