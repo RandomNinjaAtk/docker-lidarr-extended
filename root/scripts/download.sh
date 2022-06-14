@@ -68,28 +68,28 @@ DownloadProcess () {
 		chown abc:abc /downloads/lidarr/incomplete
 	fi
 
-	if [ ! -d "/config/logs" ]; then
-		mkdir -p /config/logs
-		chmod 777 /config/logs
-		chown abc:abc /config/logs
+	if [ ! -d "/config/extended/logs" ]; then
+		mkdir -p /config/extended/logs
+		chmod 777 /config/extended/logs
+		chown abc:abc /config/extended/logs
 	fi
 
-	if [ ! -d "/config/logs/downloaded" ]; then
-		mkdir -p /config/logs/downloaded
-		chmod 777 /config/logs/downloaded
-		chown abc:abc /config/logs/downloaded
+	if [ ! -d "/config/extended/logs/downloaded" ]; then
+		mkdir -p /config/extended/logs/downloaded
+		chmod 777 /config/extended/logs/downloaded
+		chown abc:abc /config/extended/logs/downloaded
 	fi
 
-	if [ ! -d "/config/logs/downloaded/deezer" ]; then
-		mkdir -p /config/logs/downloaded/deezer
-		chmod 777 /config/logs/downloaded/deezer
-		chown abc:abc /config/logs/downloaded/deezer
+	if [ ! -d "/config/extended/logs/downloaded/deezer" ]; then
+		mkdir -p /config/extended/logs/downloaded/deezer
+		chmod 777 /config/extended/logs/downloaded/deezer
+		chown abc:abc /config/extended/logs/downloaded/deezer
 	fi
 
-	if [ ! -d "/config/logs/downloaded/tidal" ]; then
-		mkdir -p /config/logs/downloaded/tidal
-		chmod 777 /config/logs/downloaded/tidal
-		chown abc:abc /config/logs/downloaded/tidal
+	if [ ! -d "/config/extended/logs/downloaded/tidal" ]; then
+		mkdir -p /config/extended/logs/downloaded/tidal
+		chmod 777 /config/extended/logs/downloaded/tidal
+		chown abc:abc /config/extended/logs/downloaded/tidal
     fi
 
 	if [ ! -d "/downloads/lidarr/incomplete" ]; then
@@ -105,7 +105,7 @@ DownloadProcess () {
 		if [ -d "/tmp/deemix-imgs" ]; then
 			rm -rf /tmp/deemix-imgs
 		fi
-        touch /config/logs/downloaded/deezer/$1
+        touch /config/extended/logs/downloaded/deezer/$1
         downloadCount=$(find /downloads/lidarr/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
         if [ $downloadCount -le 0 ]; then
             log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: ERROR :: download failed"
@@ -113,7 +113,7 @@ DownloadProcess () {
         fi
     elif [ "$2" = "TIDAL" ]; then
         tidal-dl -l "https://tidal.com/browse/album/$1"
-        touch /config/logs/downloaded/tidal/$1
+        touch /config/extended/logs/downloaded/tidal/$1
         downloadCount=$(find /downloads/lidarr/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
         if [ $downloadCount -le 0 ]; then
             log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: ERROR :: download failed"
@@ -221,7 +221,7 @@ SearchProcess () {
         deezerArtistUrl=$(echo "${lidarrArtistData}" | jq -r ".links | .[] | select(.name==\"deezer\") | .url")
         deezeArtistIds=($(echo "$deezerArtistUrl" | grep -o '[[:digit:]]*' | sort -u))
 		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: Starting Search..."
-		if [ -f "/config/logs/downloaded/notfound/$lidarrAlbumForeignAlbumId" ]; then
+		if [ -f "/config/extended/logs/downloaded/notfound/$lidarrAlbumForeignAlbumId" ]; then
 			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: Previously Not Found, skipping..."
 			continue
 		fi
@@ -239,10 +239,10 @@ SearchProcess () {
 		if [ "$skipDeezer" = "false" ]; then
 			if [ -z "$deezerArtistUrl" ]; then 
 				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: DEEZER :: ERROR :: musicbrainz id: $lidarrArtistForeignArtistId is missing Tidal link, see: \"/config/logs/error/$lidarrArtistNameSanitized.log\" for more detail..."
-				if [ ! -d /config/logs/error ]; then
-					mkdir -p /config/logs/error
+				if [ ! -d /config/extended/logs/error ]; then
+					mkdir -p /config/extended/logs/error
 				fi
-				if [ ! -f "/config/logs/error/$lidarrArtistNameSanitized.log" ]; then          
+				if [ ! -f "/config/extended/logs/error/$lidarrArtistNameSanitized.log" ]; then          
 					echo "Update Musicbrainz Relationship Page: https://musicbrainz.org/artist/$lidarrArtistForeignArtistId/relationships for \"${lidarrArtistName}\" with Deezer Artist Link" >> "/config/logs/error/$lidarrArtistNameSanitized.log"
 				fi
 				skipDeezer=true
@@ -264,10 +264,10 @@ SearchProcess () {
         if [ "$skipTidal" = "false" ]; then
 			if [ -z "$tidalArtistUrl" ]; then 
 				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: TIDAL :: ERROR :: musicbrainz id: $lidarrArtistForeignArtistId is missing Tidal link, see: \"/config/logs/error/$lidarrArtistNameSanitized.log\" for more detail..."
-				if [ ! -d /config/logs/error ]; then
-					mkdir -p /config/logs/error
+				if [ ! -d /config/extended/logs/error ]; then
+					mkdir -p /config/extended/logs/error
 				fi
-				if [ ! -f "/config/logs/error/$lidarrArtistNameSanitized.log" ]; then          
+				if [ ! -f "/config/extended/logs/error/$lidarrArtistNameSanitized.log" ]; then          
 					echo "Update Musicbrainz Relationship Page: https://musicbrainz.org/artist/$lidarrArtistForeignArtistId/relationships for \"${lidarrArtistName}\" with Tidal Artist Link" >> "/config/logs/error/$lidarrArtistNameSanitized.log"
 				fi
 				skipTidal=true
@@ -320,7 +320,7 @@ SearchProcess () {
 							downloadedReleaseDate="$(echo ${deezerArtistAlbumData} | jq -r .release_date)"
 							downloadedReleaseYear="${downloadedReleaseDate:0:4}"
 							log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumTitleClean vs $deezerArtistAlbumTitleClean :: Explicit Deezer MATCH Found"
-							if [ -f /config/logs/downloaded/deezer/$deezerArtistAlbumId ]; then
+							if [ -f /config/extended/logs/downloaded/deezer/$deezerArtistAlbumId ]; then
 								log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Previously Downloaded, skipping..."
 								continue
 							fi
@@ -357,7 +357,7 @@ SearchProcess () {
 						fi
 						downloadedReleaseYear="${downloadedReleaseDate:0:4}"
 						log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumTitleClean vs $tidalArtistAlbumTitleClean :: Explicit Tidal Match Found"
-						if [ -f /config/logs/downloaded/tidal/$tidalArtistAlbumId ]; then
+						if [ -f /config/extended/logs/downloaded/tidal/$tidalArtistAlbumId ]; then
 							log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Previously Downloaded, skipping..."
 							continue
 						fi
@@ -395,7 +395,7 @@ SearchProcess () {
 							downloadedReleaseDate="$(echo ${deezerArtistAlbumData} | jq -r .release_date)"
 							downloadedReleaseYear="${downloadedReleaseDate:0:4}"
 							log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumTitleClean vs $deezerArtistAlbumTitleClean :: CLEAN Deezer MATCH Found"
-							if [ -f /config/logs/downloaded/deezer/$deezerArtistAlbumId ]; then
+							if [ -f /config/extended/logs/downloaded/deezer/$deezerArtistAlbumId ]; then
 							log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Previously Downloaded, skipping..."
 								continue
 							fi
@@ -436,7 +436,7 @@ SearchProcess () {
 						fi
 						downloadedReleaseYear="${downloadedReleaseDate:0:4}"
 						log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumTitleClean vs $tidalArtistAlbumTitleClean :: CLEAN Tidal Match Found"
-						if [ -f /config/logs/downloaded/tidal/$tidalArtistAlbumId ]; then
+						if [ -f /config/extended/logs/downloaded/tidal/$tidalArtistAlbumId ]; then
 							log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Previously Downloaded, skipping..."
 							continue
 						fi
@@ -450,8 +450,8 @@ SearchProcess () {
 		fi
 
 
-		mkdir -p /config/logs/downloaded/notfound
-		touch /config/logs/downloaded/notfound/$lidarrAlbumForeignAlbumId
+		mkdir -p /config/extended/logs/downloaded/notfound
+		touch /config/extended/logs/downloaded/notfound/$lidarrAlbumForeignAlbumId
 	done
 }
 
@@ -512,11 +512,11 @@ ProcessWithBeets () {
 	matchedLidarrAlbumArtistName="$(echo "$matchedLidarrAlbumData" | jq -r ".artist.artistName")"
 	matchedLidarrAlbumArtistCleanName="$(echo "$matchedLidarrAlbumData" | jq -r ".artist.cleanName")"
 
-	if [ ! -d /config/logs/downloaded/found ]; then
-		mkdir -p /config/logs/downloaded/found
+	if [ ! -d /config/extended/logs/downloaded/found ]; then
+		mkdir -p /config/extended/logs/downloaded/found
 	fi
 
-	touch /config/logs/downloaded/found/$matchedTagsAlbumReleaseGroupId
+	touch /config/extended/logs/downloaded/found/$matchedTagsAlbumReleaseGroupId
 
 	CheckLidarrBeforeImport "$matchedTagsAlbumReleaseGroupId" "beets"
 	if [ $alreadyImported = true ]; then
@@ -580,7 +580,7 @@ CheckLidarrBeforeImport () {
 	fi
 
 	if [ "$2" = "notbeets" ]; then
-		if [ -f "/config/logs/downloaded/found/$1" ]; then
+		if [ -f "/config/extended/logs/downloaded/found/$1" ]; then
 			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: ERROR :: Previously Found, skipping..."
 			alreadyImported=true
 			return
@@ -596,7 +596,7 @@ AddRelatedArtists () {
 	lidarrListIds="$(echo "${lidarrArtistsData}" | jq -r ".[].foreignArtistId")"
 	log "$lidarrArtistTotal Artists Found"
 	deezerArtistsUrl=$(echo "${lidarrArtistsData}" | jq -r ".[].links | .[] | select(.name==\"deezer\") | .url")
-    deezeArtistIds="$(echo "$deezerArtistsUrl" | grep -o '[[:digit:]]*' | sort -u)"
+	deezeArtistIds="$(echo "$deezerArtistsUrl" | grep -o '[[:digit:]]*' | sort -u)"
 
 	for id in ${!lidarrList[@]}; do
 		artistNumber=$(( $id + 1 ))
@@ -604,7 +604,7 @@ AddRelatedArtists () {
 		lidarrArtistData=$(echo "${lidarrArtistsData}" | jq -r ".[] | select(.foreignArtistId==\"${musicbrainzId}\")")
 		lidarrArtistName="$(echo "${lidarrArtistData}" | jq -r " .artistName")"
 		deezerArtistUrl=$(echo "${lidarrArtistData}" | jq -r ".links | .[] | select(.name==\"deezer\") | .url")
-        deezerArtistIds=($(echo "$deezerArtistUrl" | grep -o '[[:digit:]]*' | sort -u))
+		deezerArtistIds=($(echo "$deezerArtistUrl" | grep -o '[[:digit:]]*' | sort -u))
 
 		for dId in ${!deezerArtistIds[@]}; do
 			deezerArtistId="${deezerArtistIds[$dId]}"
