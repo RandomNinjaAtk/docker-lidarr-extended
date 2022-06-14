@@ -29,6 +29,7 @@ if [ ! -d "/config/extended/logs" ]; then
 fi
 
 # set permissions
+chmod 755 /etc/services.d/extended
 chmod 777 /config/extended
 chmod 777 /config/extended/cache
 chmod 777 /config/extended/logs
