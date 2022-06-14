@@ -16,7 +16,7 @@ for (( ; ; )); do
 		rm "/config/logs/log-cleanup"
 	fi
 	touch -d "8 hours ago" "/config/logs/log-cleanup"
-	if find "/config/logs" -type f -iname "extended_script_run_*.txt" -not -newer "/config/extended/logs/log-cleanup" | read; then
+	if find "/config/logs" -type f -iname "extended_script_run_*.txt" -not -newer "/config/logs/log-cleanup" | read; then
 		find "/config/logs" -type f -iname "*.log" -not -newer "/config/logs/log-cleanup" -delete
 	fi
 	if [ -f "/config/logs/log-cleanup" ]; then
