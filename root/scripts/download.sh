@@ -591,17 +591,18 @@ CheckLidarrBeforeImport () {
 
 
 AddRelatedArtists () {
-	lidarrArtistsData=$(curl -s --header "X-Api-Key:"${lidarrApiKey} --request GET  "$lidarrUrl/api/v1/Artist/")
+	lidarrArtistsData=$(curl -s "$lidarrUrl/api/v1/api/v1/artist?apikey=${lidarrApiKey}")
 	lidarrArtistTotal=$(echo "${lidarrArtistsData}"| jq -r '.[].sortName' | wc -l)
-	lidarrList=($(echo "${lidarrArtistsData}" | jq -r ".[].foreignArtistId"))
-	lidarrListIds="$(echo "${lidarrArtistsData}" | jq -r ".[].foreignArtistId")"
+	lidarrArtistList=($(echo "${lidarrArtistsData}" | jq -r ".[].foreignArtistId"))
+	lidarrArtistIds="$(echo "${lidarrArtistsData}" | jq -r ".[].foreignArtistId")"
+	lidarrArtistLinkDeezerIds="$(echo "${lidarrArtistsData}" | jq -r ".[] | .links[] | select(.name==\"deezer\") | .url" | grep -o '[[:digit:]]*')"
 	log "$lidarrArtistTotal Artists Found"
 	deezerArtistsUrl=$(echo "${lidarrArtistsData}" | jq -r ".[].links | .[] | select(.name==\"deezer\") | .url")
 	deezeArtistIds="$(echo "$deezerArtistsUrl" | grep -o '[[:digit:]]*' | sort -u)"
 
-	for id in ${!lidarrList[@]}; do
+	for id in ${!lidarrArtistList[@]}; do
 		artistNumber=$(( $id + 1 ))
-		musicbrainzId="${lidarrList[$id]}"
+		musicbrainzId="${lidarrArtistList[$id]}"
 		lidarrArtistData=$(echo "${lidarrArtistsData}" | jq -r ".[] | select(.foreignArtistId==\"${musicbrainzId}\")")
 		lidarrArtistName="$(echo "${lidarrArtistData}" | jq -r " .artistName")"
 		deezerArtistUrl=$(echo "${lidarrArtistData}" | jq -r ".links | .[] | select(.name==\"deezer\") | .url")
@@ -665,7 +666,7 @@ AddRelatedArtists () {
 						\"rootFolderPath\": \"$path\"
 						}"
 
-					if echo "$lidarrListIds" | grep "^${musicbrainz_main_artist_id}$" | read; then
+					if echo "$lidarrArtistIds" | grep "^${musicbrainz_main_artist_id}$" | read; then
 						log "$artistName to already in Lidarr ($musicbrainz_main_artist_id)..."
 						continue
 					fi
@@ -673,7 +674,7 @@ AddRelatedArtists () {
 
 					LidarrTaskStatusCheck
 
-					curl -s "$lidarrUrl/api/v1/artist" -X POST -H 'Content-Type: application/json' -H "X-Api-Key: $lidarrApiKey" --data-raw "$data"
+					lidarrAddArtist=$(curl -s "$lidarrUrl/api/v1/artist" -X POST -H 'Content-Type: application/json' -H "X-Api-Key: $lidarrApiKey" --data-raw "$data")
 					
 				else
 					matched_id=false
@@ -689,7 +690,8 @@ AddRelatedArtists () {
 LidarrTaskStatusCheck () {
 	until false
 	do
-		if curl -s "$lidarrUrl/api/v1/command?apikey=${lidarrApiKey}" | jq -r .[].status | grep -v completed | grep -v failed | read; then
+		taskCount=$(curl -s "$lidarrUrl/api/v1/command?apikey=${lidarrApiKey}" | jq -r .[].status | grep -v completed | grep -v failed | wc -l)
+		if [ "$taskCount" -gt "3" ]; then
 			sleep 1
 		else
 			break
@@ -714,6 +716,7 @@ else
 	log ":: ERROR :: dlClientSource set as: \"$dlClientSource\""
 fi
 
+AddRelatedArtists=true
 if [ "$AddRelatedArtists" = "true" ]; then
 	AddRelatedArtists
 else
