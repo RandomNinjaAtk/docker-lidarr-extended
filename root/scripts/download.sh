@@ -591,7 +591,7 @@ CheckLidarrBeforeImport () {
 
 
 AddRelatedArtists () {
-	lidarrArtistsData=$(curl -s "$lidarrUrl/api/v1/api/v1/artist?apikey=${lidarrApiKey}")
+	lidarrArtistsData="$(curl -s "$lidarrUrl/api/v1/artist?apikey=${lidarrApiKey}")"
 	lidarrArtistTotal=$(echo "${lidarrArtistsData}"| jq -r '.[].sortName' | wc -l)
 	lidarrArtistList=($(echo "${lidarrArtistsData}" | jq -r ".[].foreignArtistId"))
 	lidarrArtistIds="$(echo "${lidarrArtistsData}" | jq -r ".[].foreignArtistId")"
@@ -716,7 +716,6 @@ else
 	log ":: ERROR :: dlClientSource set as: \"$dlClientSource\""
 fi
 
-AddRelatedArtists=true
 if [ "$AddRelatedArtists" = "true" ]; then
 	AddRelatedArtists
 else
