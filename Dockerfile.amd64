@@ -1,6 +1,9 @@
 FROM linuxserver/lidarr:amd64-nightly
 LABEL maintainer="RandomNinjaAtk"
 
+ENV dockerTitle="lidarr-extended"
+ENV dockerVersion="1.0.0001"
+
 RUN \
 	echo "************ install packages ************" && \
 	apk add  -U --update --no-cache \
