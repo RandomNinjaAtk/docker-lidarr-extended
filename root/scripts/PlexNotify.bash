@@ -2,7 +2,7 @@
 lidarrApiKey="$(grep "<ApiKey>" /config/config.xml | sed "s/\  <ApiKey>//;s/<\/ApiKey>//")"
 lidarrUrl="http://127.0.0.1:8686"
 lidarrRootFolderPath="$(dirname "$lidarr_artist_path")"
-#exec &>> "/config/logs/PlexNotify.txt"
+exec &>> "/config/logs/PlexNotify.txt"
 chmod 777 "/config/logs/PlexNotify.txt"
 
 log () {
