@@ -28,10 +28,89 @@ Configuration () {
 	log ""
 	sleep 2
 	log "############# $dockerTitle"
-	log "############# SCRIPT VERSION 1.0.0001"
+	log "############# SCRIPT VERSION 1.0.0002"
 	log "############# DOCKER VERSION $dockerVersion"
 }
 
+AddDeezerTopArtists () {
+	lidarrArtistsData="$(curl -s "$lidarrUrl/api/v1/artist?apikey=${lidarrApiKey}")"
+	lidarrArtistIds="$(echo "${lidarrArtistsData}" | jq -r ".[].foreignArtistId")"
+	deezerArtistsUrl=$(echo "${lidarrArtistsData}" | jq -r ".[].links | .[] | select(.name==\"deezer\") | .url")
+	deezeArtistIds="$(echo "$deezerArtistsUrl" | grep -o '[[:digit:]]*' | sort -u)"
+	getDeezerTopArtistsData=$(curl -s https://api.deezer.com/chart/0/artists | jq -r ".data[]")
+	getDeezerTopArtistsIds=($(curl -s https://api.deezer.com/chart/0/artists | jq -r ".data[].id"))
+	getDeezerTopArtistsIdsCount=$(curl -s https://api.deezer.com/chart/0/artists | jq -r ".data[].id" | wc -l)
+	log ":: Finding Top Artists..."
+	log ":: $getDeezerTopArtistsIdsCount Top Artists Found"
+	for id in ${!getDeezerTopArtistsIds[@]}; do
+		currentprocess=$(( $id + 1 ))
+		deezerArtistId="${getDeezerTopArtistsIds[$id]}"
+		deezerArtistName="$(echo $getDeezerTopArtistsData | jq -r "select(.id==$deezerArtistId) | .name")"
+		log ":: $currentprocess of $getDeezerTopArtistsIdsCount :: $deezerArtistName :: Searching Musicbrainz for Deezer artist id ($deezerArtistId)"
+
+		if echo "$deezeArtistIds" | grep "^${deezerArtistId}$" | read; then
+			log ":: $currentprocess of $getDeezerTopArtistsIdsCount :: $deezerArtistName :: $deezerArtistId already in Lidarr..."
+			continue
+		fi
+
+		query_data=$(curl -s -A "$agent" "https://musicbrainz.org/ws/2/url?query=url:%22https://www.deezer.com/artist/${deezerArtistId}%22&fmt=json")
+		count=$(echo "$query_data" | jq -r ".count")
+		if [ "$count" == "0" ]; then
+			sleep 1.5
+			query_data=$(curl -s -A "$agent" "https://musicbrainz.org/ws/2/url?query=url:%22http://www.deezer.com/artist/${deezerArtistId}%22&fmt=json")
+			count=$(echo "$query_data" | jq -r ".count")
+			sleep 1.5
+		fi
+							
+		if [ "$count" == "0" ]; then
+			query_data=$(curl -s -A "$agent" "https://musicbrainz.org/ws/2/url?query=url:%22http://deezer.com/artist/${deezerArtistId}%22&fmt=json")
+			count=$(echo "$query_data" | jq -r ".count")
+			sleep 1.5
+		fi
+							
+		if [ "$count" == "0" ]; then
+			query_data=$(curl -s -A "$agent" "https://musicbrainz.org/ws/2/url?query=url:%22https://deezer.com/artist/${deezerArtistId}%22&fmt=json")
+			count=$(echo "$query_data" | jq -r ".count")
+		fi
+							
+		if [ "$count" != "0" ]; then
+			musicbrainz_main_artist_id=$(echo "$query_data" | jq -r '.urls[]."relation-list"[].relations[].artist.id' | head -n 1)
+			sleep 1.5
+			artist_data=$(curl -s -A "$agent" "https://musicbrainz.org/ws/2/artist/$musicbrainz_main_artist_id?fmt=json")
+			artist_sort_name="$(echo "$artist_data" | jq -r '."sort-name"')"
+			artist_formed="$(echo "$artist_data" | jq -r '."begin-area".name')"
+			artist_born="$(echo "$artist_data" | jq -r '."life-span".begin')"
+			gender="$(echo "$artist_data" | jq -r ".gender")"
+			matched_id=true
+			data=$(curl -s "$lidarrUrl/api/v1/search?term=lidarr%3A$musicbrainz_main_artist_id" -H "X-Api-Key: $lidarrApiKey" | jq -r ".[]")
+			artistName="$(echo "$data" | jq -r ".artist.artistName")"
+			foreignId="$(echo "$data" | jq -r ".foreignId")"
+			data=$(curl -s "$lidarrUrl/api/v1/rootFolder" -H "X-Api-Key: $lidarrApiKey" | jq -r ".[]")
+			path="$(echo "$data" | jq -r ".path")"
+			qualityProfileId="$(echo "$data" | jq -r ".defaultQualityProfileId")"
+			metadataProfileId="$(echo "$data" | jq -r ".defaultMetadataProfileId")"
+			data="{
+				\"artistName\": \"$artistName\",
+				\"foreignArtistId\": \"$foreignId\",
+				\"qualityProfileId\": $qualityProfileId,
+				\"metadataProfileId\": $metadataProfileId,
+				\"monitored\":true,
+				\"monitor\":\"all\",
+				\"rootFolderPath\": \"$path\"
+				}"
+
+			if echo "$lidarrArtistIds" | grep "^${musicbrainz_main_artist_id}$" | read; then
+				log ":: $currentprocess of $getDeezerTopArtistsIdsCount :: $deezerArtistName :: Already in Lidarr ($musicbrainz_main_artist_id), skipping..."
+				continue
+			fi
+			log ":: $currentprocess of $getDeezerTopArtistsIdsCount :: $deezerArtistName :: Adding $artistName to Lidarr ($musicbrainz_main_artist_id)..."
+			LidarrTaskStatusCheck
+			# lidarrAddArtist=$(curl -s "$lidarrUrl/api/v1/artist" -X POST -H 'Content-Type: application/json' -H "X-Api-Key: $lidarrApiKey" --data-raw "$data")
+		else
+			log ":: $currentprocess of $getDeezerTopArtistsIdsCount :: $deezerArtistName :: Artist not found in Musicbrainz, please add \"https://deezer.com/artist/${deezerArtistId}\" to the correct artist on Musicbrainz"
+		fi
+	done
+}
 
 DArtistAlbumList () {
 	
@@ -654,7 +733,6 @@ CheckLidarrBeforeImport () {
 	fi
 }
 
-
 AddRelatedArtists () {
 	lidarrArtistsData="$(curl -s "$lidarrUrl/api/v1/artist?apikey=${lidarrApiKey}")"
 	lidarrArtistTotal=$(echo "${lidarrArtistsData}"| jq -r '.[].sortName' | wc -l)
@@ -765,6 +843,18 @@ LidarrTaskStatusCheck () {
 }
 
 Configuration
+
+if [ "$addDeezerTopArtists" = "true" ]; then
+	AddDeezerTopArtists
+else
+	log ":: ERROR :: addDeezerTopArtists is disabled"
+fi
+
+if [ "$AddRelatedArtists" = "true" ]; then
+	AddRelatedArtists
+else
+	log ":: ERROR :: AddRelatedArtists is disabled"
+fi
 
 if [ "$dlClientSource" = "deezer" ] || [ "$dlClientSource" = "both" ]; then
 	DeemixClientSetup
