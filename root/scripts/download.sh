@@ -1,6 +1,7 @@
 #!/usr/bin/with-contenv bash
-lidarrApiKey="$(grep "<ApiKey>" /config/config.xml | sed "s/\  <ApiKey>//;s/<\/ApiKey>//")"
-lidarrUrl="http://127.0.0.1:8686"
+lidarrUrlBase="/$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
+lidarrApiKey="$(cat /config/config.xml | xq | jq -r .Config.ApiKey)"
+lidarrUrl="http://127.0.0.1:8686${lidarrUrlBase}"
 agent="lidarr-extended ( https://github.com/RandomNinjaAtk/docker-lidarr-extended )"
 musicbrainzMirror=https://musicbrainz.org
 CountryCode=US
