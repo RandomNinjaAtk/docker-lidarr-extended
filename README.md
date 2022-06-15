@@ -31,6 +31,7 @@ Container images are configured using parameters passed at runtime (such as thos
 
 | Parameter | Function |
 | --- | --- |
+| `-p 8686` | The port for the Lidarr webinterface |
 | `-v /config` | Configuration files for Lidarr. |
 | `-v /downloads` | Path to your download folder location. (<strong>required path</strong>)|
 | `-v /music` | Path to your music folder location.|
