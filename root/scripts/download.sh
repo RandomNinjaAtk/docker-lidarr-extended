@@ -18,6 +18,20 @@ log () {
 
 mkdir -p /config/xdg
 
+Configuration () {
+	processstartid="$(ps -A -o pid,cmd|grep "start.sh" | grep -v grep | head -n 1 | awk '{print $1}')"
+	processdownloadid="$(ps -A -o pid,cmd|grep "download.sh" | grep -v grep | head -n 1 | awk '{print $1}')"
+	log "To kill script, use the following command:"
+	log "kill -9 $processstartid"
+	log "kill -9 $processdownloadid"
+	log ""
+	log ""
+	sleep 2
+	log "############# $dockerTitle"
+	log "############# SCRIPT VERSION 1.0.0001"
+	log "############# DOCKER VERSION $dockerVersion"
+}
+
 
 DArtistAlbumList () {
 	
@@ -749,6 +763,8 @@ LidarrTaskStatusCheck () {
 		fi
 	done
 }
+
+Configuration
 
 if [ "$dlClientSource" = "deezer" ] || [ "$dlClientSource" = "both" ]; then
 	DeemixClientSetup
