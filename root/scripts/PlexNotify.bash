@@ -2,7 +2,7 @@
 lidarrApiKey="$(grep "<ApiKey>" /config/config.xml | sed "s/\  <ApiKey>//;s/<\/ApiKey>//")"
 lidarrUrl="http://127.0.0.1:8686"
 lidarrRootFolderPath="$(dirname "$lidarr_artist_path")"
-exec &>> "/config/logs/PlexNotify.txt"
+#exec &>> "/config/logs/PlexNotify.txt"
 chmod 777 "/config/logs/PlexNotify.txt"
 
 log () {
@@ -17,7 +17,7 @@ fi
 
 plexLibraries="$(curl -s "$plexUrl/library/sections?X-Plex-Token=$plexToken" | xq .)"
 if echo "$plexLibraries" | grep "$lidarrRootFolderPath" | read; then
-	if echo "$plexLibraries" | jq -r ".MediaContainer.Directory[] | select(.Location.\"@path\"==\"$lidarrRootFolderPath\") | .\"@key\"" | head -n 1 &>/dev/null; then
+	if echo "$plexLibraries" | jq -r ".MediaContainer.Directory[] | select(.Location.\"@path\"==\"$lidarrRootFolderPath\") | .\"@key\"" &>/dev/null; then
 		plexlibrarykey="$(echo "$plexLibraries" | jq -r ".MediaContainer.Directory[] | select(.Location.\"@path\"==\"$lidarrRootFolderPath\") | .\"@key\"" | head -n 1)"
 	else
 		plexlibrarykey="$(echo "$plexLibraries" | jq -r ".MediaContainer.Directory | select(.Location.\"@path\"==\"$lidarrRootFolderPath\") | .\"@key\"" | head -n 1)"
@@ -32,8 +32,8 @@ else
 	exit 1
 fi
 
-plexFolderEncoded="$(jq -R -r @uri <<<"$Lidarr_Artist_Path")"
+plexFolderEncoded="$(jq -R -r @uri <<<"$lidarr_artist_path")"
 curl -s "$plexUrl/library/sections/$plexlibrarykey/refresh?path=$plexFolderEncoded&X-Plex-Token=$plexToken"
-log  "Plex Scan notification sent! ($Lidarr_Artist_Path)"
+log  "Plex Scan notification sent! ($lidarr_artist_path)"
 
 exit 0
