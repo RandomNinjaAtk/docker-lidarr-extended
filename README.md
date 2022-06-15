@@ -33,7 +33,7 @@ Container images are configured using parameters passed at runtime (such as thos
 | --- | --- |
 | `-v /config` | Configuration files for Lidarr. |
 | `-v /downloads` | Path to your download folder location. (<strong>required path</strong>)|
-| `-v /music` | Path to your music folder location. (<strong>required path</strong>)|
+| `-v /music` | Path to your music folder location.|
 | `-v /music-videos` | Path to your music-videos folder location.|
 | `-e PUID=1000` | for UserID - see below for explanation |
 | `-e PGID=1000` | for GroupID - see below for explanation |
