@@ -1,5 +1,10 @@
 #!/usr/bin/with-contenv bash
-lidarrUrlBase="/$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
+lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
+if [ "$lidarrUrlBase" = "null" ]; then
+	lidarrUrlBase=""
+else
+	lidarrUrlBase="/$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
+fi
 lidarrApiKey="$(cat /config/config.xml | xq | jq -r .Config.ApiKey)"
 lidarrUrl="http://127.0.0.1:8686${lidarrUrlBase}"
 agent="lidarr-extended ( https://github.com/RandomNinjaAtk/docker-lidarr-extended )"
