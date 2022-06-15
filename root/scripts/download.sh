@@ -14,77 +14,50 @@ mkdir -p /config/xdg
 
 
 DArtistAlbumList () {
-	touch -d "168 hours ago" /config/extended/cache/cache-info-check
-	if [ -f /config/cache/artists/$artistid/checked ]; then
-		if find /config/cache/artists/$artistid -type f -iname "checked" -not -newer "/config/cache/cache-info-check" | read; then
-			rm /config/cache/artists/$artistid/checked
-			if [ -f /config/cache/artists/$artistid/albumlist.json ]; then
-				rm /config/cache/artists/$artistid/albumlist.json
-			fi
-			if [ -f /config/cache/artists/$artistid/albumlistlower.json ]; then
-				rm /config/cache/artists/$artistid/albumlistlower.json
-			fi
-		else
-			log "$logheader :: Cached info good"
-		fi
-	fi
-	rm /config/cache/cache-info-check
-
-	if [ ! -f /config/cache/artists/$artistid/checked ]; then
-		albumcount="$(python3 /scripts/artist_discograpy.py "$artistid" | sort -u | wc -l)"
-		if [ -d /config/cache/artists/$artistid/albums ]; then
-			cachecount=$(ls /config/cache/artists/$artistid/albums/* | wc -l)
-		else
-			cachecount=0
+	
+	albumcount="$(python3 /config/extended/scripts/discography.py "$1" | sort -u | wc -l)"
+	
+	log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Searching for All Albums...."
+	log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle ::  $albumcount Albums found!"
+	albumids=($(python3 /config/extended/scripts/discography.py "$1" | sort -u))
+	
+	
+	for id in ${!albumids[@]}; do
+		currentprocess=$(( $id + 1 ))
+		albumid="${albumids[$id]}"
+		if [ ! -d /config/extended/cache/deezer/ ]; then
+			mkdir -p /config/extended/cache/deezer
+			chmod 777 /config/extended/cache/deezer
+			chown -R abc:abc /config/extended/cache/deezer
 		fi
 
-		if [ $albumcount != $cachecount ]; then
-			log "$logheader :: Searching for All Albums...."
-			log "$logheader :: $albumcount Albums found!"
-			albumids=($(python3 /scripts/artist_discograpy.py "$artistid" | sort -u))
-			if [ ! -d "/config/temp" ]; then
-				mkdir "/config/temp"
-			fi
-			for id in ${!albumids[@]}; do
-				currentprocess=$(( $id + 1 ))
-				albumid="${albumids[$id]}"
-				if [ ! -d /config/cache/artists/$artistid/albums ]; then
-					mkdir -p /config/cache/artists/$artistid/albums
-					chmod $FolderPermissions /config/cache/artists/$artistid
-					chmod $FolderPermissions /config/cache/artists/$artistid/albums
-					chown -R abc:abc /config/cache/artists/$artistid
-				fi
-				if [ -f /config/cache/artists/$artistid/albums/${albumid}-reg.json ]; then
-					rm /config/cache/artists/$artistid/albums/${albumid}.json
-				fi
-				if [ ! -f /config/cache/artists/$artistid/albums/${albumid}-reg.json ]; then
-					if wget "https://api.deezer.com/album/${albumid}" -O "/config/temp/${albumid}.json" -q; then
-						log "$logheader :: $currentprocess of $albumcount :: Downloading Album info..."
-						mv /config/temp/${albumid}.json /config/cache/artists/$artistid/albums/${albumid}-reg.json
-						chmod $FilePermissions /config/cache/artists/$artistid/albums/${albumid}-reg.json
-						albumdata=$(cat /config/cache/artists/$artistid/albums/${albumid}-reg.json)
-						converttofilelower=${albumdata,,}
-						echo "$converttofilelower" > /config/cache/artists/$artistid/albums/${albumid}-lower.json
-						chmod $FilePermissions /config/cache/artists/$artistid/albums/${albumid}-lower.json
-					else
-						log "$logheader :: $currentprocess of $albumcount :: Error getting album information"
-					fi
-				else
-					log "$logheader :: $currentprocess of $albumcount :: Album info already downloaded"
-				fi
-			done
-			touch /config/cache/artists/$artistid/checked
-			chmod $FilePermissions /config/cache/artists/$artistid/checked
-			chown -R abc:abc /config/cache/artists/$artistid
-			if [ -d "/config/temp" ]; then
-				rm -rf "/config/temp"
+		if [ ! -f /config/extended/cache/deezer/${albumid}.json ]; then
+			if wget "https://api.deezer.com/album/${albumid}" -O "/config/extended/cache/deezer/${albumid}.json" -q; then
+				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $currentprocess of $albumcount :: Downloading Album info..."
+				chmod 666 /config/extended/cache/deezer/${albumid}.json
+				chown abc:abc /config/extended/cache/deezer/${albumid}.json			
+			else
+				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $currentprocess of $albumcount :: Error getting album information"
 			fi
 		else
-			touch /config/cache/artists/$artistid/checked
-			chmod $FilePermissions /config/cache/artists/$artistid/checked
-			chown -R abc:abc /config/cache/artists/$artistid
+			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $currentprocess of $albumcount :: Album info already downloaded"
 		fi
+	done
+	if [ -f /config/extended/cache/deezer/$1-albums.json ]; then
+		rm /config/extended/cache/deezer/$1-albums.json
 	fi
+	if [ -f /config/extended/cache/deezer/$1-albums-temp.json ]; then
+		rm /config/extended/cache/deezer/$1-albums-temp.json
+	fi
+	echo "[" >> /config/extended/cache/deezer/$1-albums-temp.json
+	for id in ${!albumids[@]}; do
+		albumid="${albumids[$id]}"
+		cat "/config/extended/cache/deezer/${albumid}.json" | jq -r | sed 's/^/ /' | sed '$s/}/},/g' >> /config/extended/cache/deezer/$1-albums-temp.json
+	done
+	cat /config/extended/cache/deezer/$1-albums-temp.json | sed '$ d' >> /config/extended/cache/deezer/$1-albums.json
+	echo " }" >> /config/extended/cache/deezer/$1-albums.json
+	echo "]" >> /config/extended/cache/deezer/$1-albums.json
+	rm /config/extended/cache/deezer/$1-albums-temp.json
 }
 
 TidalClientSetup () {
@@ -330,9 +303,7 @@ SearchProcess () {
 				if [ ! -d /config/extended/cache/deezer ]; then
 					mkdir -p /config/extended/cache/deezer
 				fi
-				if [ ! -f /config/extended/cache/deezer/$deezeArtistId-albums.json ]; then
-					curl -s "https://api.deezer.com/artist/$deezeArtistId/albums?limit=1000" > /config/extended/cache/deezer/$deezeArtistId-albums.json
-				fi
+				DArtistAlbumList "$deezeArtistId"
 			done
 		fi
         
@@ -366,7 +337,7 @@ SearchProcess () {
 		if [ "$skipDeezer" = "false" ]; then
 			for dId in ${!deezeArtistIds[@]}; do
 				deezeArtistId="${deezeArtistIds[$dId]}"
-				deezerArtistAlbumsData=$(cat "/config/extended/cache/deezer/$deezeArtistId-albums.json" | jq -r ".data | sort_by(.release_date) | sort_by(.explicit_lyrics) | reverse | .[]")
+				deezerArtistAlbumsData=$(cat "/config/extended/cache/deezer/$deezeArtistId-albums.json" | jq -r "sort_by(.release_date) | sort_by(.explicit_lyrics) | reverse | .[]")
 				deezerArtistAlbumsIds=($(echo "${deezerArtistAlbumsData}" | jq -r "select(.explicit_lyrics=="true") | .id"))
 			done
 		fi
@@ -381,7 +352,7 @@ SearchProcess () {
 		if [ "$skipDeezer" = "false" ]; then
 			for dId in ${!deezeArtistIds[@]}; do
 				deezeArtistId="${deezeArtistIds[$dId]}"
-				deezerArtistAlbumsData=$(cat "/config/extended/cache/deezer/$deezeArtistId-albums.json" | jq -r ".data | sort_by(.release_date) | sort_by(.explicit_lyrics) | reverse | .[]")
+				deezerArtistAlbumsData=$(cat "/config/extended/cache/deezer/$deezeArtistId-albums.json" | jq -r "sort_by(.release_date) | sort_by(.explicit_lyrics) | reverse | .[]")
 				deezerArtistAlbumsIds=($(echo "${deezerArtistAlbumsData}" | jq -r "select(.explicit_lyrics=="true") | .id"))
 
 				if echo "${deezerArtistAlbumsData}" | jq -r .title | grep -i "^$lidarrAlbumTitle" | read; then
@@ -455,7 +426,7 @@ SearchProcess () {
 		if [ "$skipDeezer" = "false" ]; then
 			for dId in ${!deezeArtistIds[@]}; do
 				deezeArtistId="${deezeArtistIds[$dId]}"
-				deezerArtistAlbumsData=$(cat "/config/extended/cache/deezer/$deezeArtistId-albums.json" | jq -r ".data | sort_by(.release_date) | sort_by(.explicit_lyrics) | reverse | .[]")
+				deezerArtistAlbumsData=$(cat "/config/extended/cache/deezer/$deezeArtistId-albums.json" | jq -r "sort_by(.release_date) | sort_by(.explicit_lyrics) | reverse | .[]")
 				deezerArtistAlbumsIds=($(echo "${deezerArtistAlbumsData}" | jq -r "select(.explicit_lyrics=="false") | .id"))
 
 				if echo "${deezerArtistAlbumsData}" | jq -r .title | grep -i "^$lidarrAlbumTitle" | read; then
