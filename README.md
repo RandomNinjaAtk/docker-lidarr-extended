@@ -41,7 +41,8 @@ Container images are configured using parameters passed at runtime (such as thos
 | `-e autoStart=true` | true = enabled :: Runs script automatically on startup |
 | `-e dlClientSource=both` | deezer, tidal or both :: set to both, to use both clients, tidal requires extra steps, view logging output |
 | `-e arlToken=` | User ARL token for deemix client |
-| `-e addRelatedArtists=false` | true = enabled :: Enabling this will enable the extended script to automatically add artists that are related to your existing Lidarr artists from Deezer |
+| `-e addDeezerTopArtists=false` | true = enabled :: Enabling this will enable the extended script to automatically add artists that are on the Deezer Top Artist Chart to your existing Lidarr instance |
+| `-e addRelatedArtists=false` | true = enabled :: WARNING !!! WARNING !!! Enabling this can cause an endless loop of additional artists.... Enabling this will enable the extended script to automatically add artists that are related to your existing Lidarr artists from Deezer |
 | `-e plexUrl=http://x.x.x.x:32400` | ONLY used if PlexNotify.bash is used...|
 | `-e plexToken=` | ONLY used if PlexNotify.bash is used... |
 
