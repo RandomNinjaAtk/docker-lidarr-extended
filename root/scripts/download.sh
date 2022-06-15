@@ -13,6 +13,80 @@ log () {
 mkdir -p /config/xdg
 
 
+DArtistAlbumList () {
+	touch -d "168 hours ago" /config/extended/cache/cache-info-check
+	if [ -f /config/cache/artists/$artistid/checked ]; then
+		if find /config/cache/artists/$artistid -type f -iname "checked" -not -newer "/config/cache/cache-info-check" | read; then
+			rm /config/cache/artists/$artistid/checked
+			if [ -f /config/cache/artists/$artistid/albumlist.json ]; then
+				rm /config/cache/artists/$artistid/albumlist.json
+			fi
+			if [ -f /config/cache/artists/$artistid/albumlistlower.json ]; then
+				rm /config/cache/artists/$artistid/albumlistlower.json
+			fi
+		else
+			log "$logheader :: Cached info good"
+		fi
+	fi
+	rm /config/cache/cache-info-check
+
+	if [ ! -f /config/cache/artists/$artistid/checked ]; then
+		albumcount="$(python3 /scripts/artist_discograpy.py "$artistid" | sort -u | wc -l)"
+		if [ -d /config/cache/artists/$artistid/albums ]; then
+			cachecount=$(ls /config/cache/artists/$artistid/albums/* | wc -l)
+		else
+			cachecount=0
+		fi
+
+		if [ $albumcount != $cachecount ]; then
+			log "$logheader :: Searching for All Albums...."
+			log "$logheader :: $albumcount Albums found!"
+			albumids=($(python3 /scripts/artist_discograpy.py "$artistid" | sort -u))
+			if [ ! -d "/config/temp" ]; then
+				mkdir "/config/temp"
+			fi
+			for id in ${!albumids[@]}; do
+				currentprocess=$(( $id + 1 ))
+				albumid="${albumids[$id]}"
+				if [ ! -d /config/cache/artists/$artistid/albums ]; then
+					mkdir -p /config/cache/artists/$artistid/albums
+					chmod $FolderPermissions /config/cache/artists/$artistid
+					chmod $FolderPermissions /config/cache/artists/$artistid/albums
+					chown -R abc:abc /config/cache/artists/$artistid
+				fi
+				if [ -f /config/cache/artists/$artistid/albums/${albumid}-reg.json ]; then
+					rm /config/cache/artists/$artistid/albums/${albumid}.json
+				fi
+				if [ ! -f /config/cache/artists/$artistid/albums/${albumid}-reg.json ]; then
+					if wget "https://api.deezer.com/album/${albumid}" -O "/config/temp/${albumid}.json" -q; then
+						log "$logheader :: $currentprocess of $albumcount :: Downloading Album info..."
+						mv /config/temp/${albumid}.json /config/cache/artists/$artistid/albums/${albumid}-reg.json
+						chmod $FilePermissions /config/cache/artists/$artistid/albums/${albumid}-reg.json
+						albumdata=$(cat /config/cache/artists/$artistid/albums/${albumid}-reg.json)
+						converttofilelower=${albumdata,,}
+						echo "$converttofilelower" > /config/cache/artists/$artistid/albums/${albumid}-lower.json
+						chmod $FilePermissions /config/cache/artists/$artistid/albums/${albumid}-lower.json
+					else
+						log "$logheader :: $currentprocess of $albumcount :: Error getting album information"
+					fi
+				else
+					log "$logheader :: $currentprocess of $albumcount :: Album info already downloaded"
+				fi
+			done
+			touch /config/cache/artists/$artistid/checked
+			chmod $FilePermissions /config/cache/artists/$artistid/checked
+			chown -R abc:abc /config/cache/artists/$artistid
+			if [ -d "/config/temp" ]; then
+				rm -rf "/config/temp"
+			fi
+		else
+			touch /config/cache/artists/$artistid/checked
+			chmod $FilePermissions /config/cache/artists/$artistid/checked
+			chown -R abc:abc /config/cache/artists/$artistid
+		fi
+	fi
+}
+
 TidalClientSetup () {
 	touch /config/xdg/.tidal-dl.log
 	if [ ! -f /config/xdg/.tidal-dl.json ]; then
