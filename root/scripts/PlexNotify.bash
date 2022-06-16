@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 lidarrRootFolderPath="$(dirname "$lidarr_artist_path")"
+# auto-clean up log file to reduce space usage
+if [ -f "/config/logs/PlexNotify.txt" ]; then
+	find /config/logs -type f -name "PlexNotify.txt" -size +1024k -delete
+fi
 exec &>> "/config/logs/PlexNotify.txt"
 chmod 777 "/config/logs/PlexNotify.txt"
 
