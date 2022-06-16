@@ -11,6 +11,12 @@ agent="lidarr-extended ( https://github.com/RandomNinjaAtk/docker-lidarr-extende
 musicbrainzMirror=https://musicbrainz.org
 CountryCode=US
 
+# Debugging settings
+#topLimit=25
+#addDeezerTopArtists=true
+#addDeezerTopAlbumArtists=true
+#addDeezerTopTrackArtists=true
+
 log () {
 	m_time=`date "+%F %T"`
 	echo $m_time" "$1
@@ -28,27 +34,59 @@ Configuration () {
 	log ""
 	sleep 2
 	log "############# $dockerTitle"
-	log "############# SCRIPT VERSION 1.0.0004"
+	log "############# SCRIPT VERSION 1.0.0005"
 	log "############# DOCKER VERSION $dockerVersion"
+	
+	if [ -z $topLimit ]; then
+		topLimit=10
+	fi
+
+	if [ "$addDeezerTopArtists" = "true" ]; then
+		log ":: Add Deezer Top $topLimit Artists is enabled"
+	else
+		log ":: Add Deezer Top Artists is disabled (enable by setting addDeezerTopArtists=true)"
+	fi
+
+	if [ "$addDeezerTopAlbumArtists" = "true" ]; then
+		log ":: Add Deezer Top $topLimit Album Artists is enabled"
+	else
+		log ":: Add Deezer Top Album Artists is disabled (enable by setting addDeezerTopAlbumArtists=true)"
+	fi
+
+	if [ "$addDeezerTopTrackArtists" = "true" ]; then
+		log ":: Add Deezer Top $topLimit Track Artists is enabled"
+	else
+		log ":: Add Deezer Top Track Artists is disabled (enable by setting addDeezerTopTrackArtists=true)"
+	fi
+
+	if [ "$addRelatedArtists" = "true" ]; then
+		log ":: Add Deezer Related Artists is enabled"
+		
+	else
+		log ":: Add Deezer Related Artists is disabled (enable by setting addRelatedArtists=true)"
+	fi
 }
 
+
+
+
 AddDeezerTopArtists () {
-	getDeezerArtistsIds=($(curl -s https://api.deezer.com/chart/0/artists | jq -r ".data[].id"))
-	getDeezerArtistsIdsCount=$(curl -s https://api.deezer.com/chart/0/artists | jq -r ".data[].id" | wc -l)
+	getDeezerArtistsIds=($(curl -s "https://api.deezer.com/chart/0/artists?limit=$1" | jq -r ".data[].id"))
+	getDeezerArtistsIdsCount=$(curl -s "https://api.deezer.com/chart/0/artists?limit=$1" | jq -r ".data[].id" | wc -l)
 	description="Top Artists"
 	AddDeezerArtistToLidarr
 }
 
 AddDeezerTopAlbumArtists () {
-	getDeezerArtistsIds=($(curl -s https://api.deezer.com/chart/0/albums | jq -r ".data[].artist.id"))
-	getDeezerArtistsIdsCount=$(curl -s https://api.deezer.com/chart/0/albums | jq -r ".data[].artist.id" | wc -l)
+	getDeezerArtistsIds=($(curl -s "https://api.deezer.com/chart/0/albums?limit=$1" | jq -r ".data[].artist.id"))
+	getDeezerArtistsIdsCount=$(curl -s "https://api.deezer.com/chart/0/albums?limit=$1" | jq -r ".data[].artist.id" | wc -l)
 	description="Top Album Artists"
 	AddDeezerArtistToLidarr
 }
 
 AddDeezerTopTrackArtists () {
-	getDeezerArtistsIds=($(curl -s https://api.deezer.com/chart/0/tracks | jq -r ".data[].artist.id"))
-	getDeezerArtistsIdsCount=$(curl -s https://api.deezer.com/chart/0/tracks | jq -r ".data[].artist.id" | wc -l)
+	getDeezerArtistsIds=($(curl -s "https://api.deezer.com/chart/0/tracks?limit=$1" | jq -r ".data[].artist.id"))
+	getDeezerArtistsIdsCount=$(curl -s "https://api.deezer.com/chart/0/tracks?limit=$1" | jq -r ".data[].artist.id" | wc -l)
 	description="Top Track Artists"
 	AddDeezerArtistToLidarr
 }
@@ -334,29 +372,29 @@ DeemixClientSetup () {
 		if [ ! -f "/config/xdg/deemix/.arl" ]; then
 			echo -n "$arlToken" > "/config/xdg/deemix/.arl"
 		fi
-		log "ARL Token: Configured"
+		log ":: ARL Token: Configured"
 	else
-		log "ERROR: arlToken setting invalid, currently set to: $arlToken"
+		log ":: ERROR :: arlToken setting invalid, currently set to: $arlToken"
 	fi
 }
 
 GetMissingCutOffList () {
-    log "Downloading missing list..."
+    log ":: Downloading missing list..."
     missingAlbumIds=$(curl -s "$lidarrUrl/api/v1/wanted/missing?page=1&pagesize=1000000000&sortKey=releaseDate&sortDirection=desc&apikey=${lidarrApiKey}" | jq -r '.records | .[] | .id')
     missingAlbumIdsTotal=$(echo "$missingAlbumIds" | sed -r '/^\s*$/d' | wc -l)
-    log "FINDING MISSING ALBUMS: ${missingAlbumIdsTotal} Found"
+    log ":: FINDING MISSING ALBUMS: ${missingAlbumIdsTotal} Found"
 
-    log "Downloading cutoff list..."
+    log ":: Downloading cutoff list..."
     cutoffAlbumIds=$(curl -s "$lidarrUrl/api/v1/wanted/cutoff?page=1&pagesize=1000000000&sortKey=releaseDate&sortDirection=desc&apikey=${lidarrApiKey}" | jq -r '.records | .[] | .id')
     cutoffAlbumIdsTotal=$(echo "$cutoffAlbumIds" | sed -r '/^\s*$/d'| wc -l)
-    log "FINDING CUTOFF ALBUMS: ${cutoffAlbumIdsTotal} Found"
+    log ":: FINDING CUTOFF ALBUMS: ${cutoffAlbumIdsTotal} Found"
 
     wantedListAlbumIds="$(echo "${missingAlbumIds}" && echo "${cutoffAlbumIds}")"
     wantedListAlbumTotal=$(echo "$wantedListAlbumIds" | sed -r '/^\s*$/d' | wc -l)
-    log "Searching for $wantedListAlbumTotal items"
+    log ":: Searching for $wantedListAlbumTotal items"
 
     if [ $wantedListAlbumTotal = 0 ]; then
-        log "No items to find, end"
+        log ":: No items to find, end"
         exit
     fi
 }
@@ -795,26 +833,19 @@ LidarrTaskStatusCheck () {
 Configuration
 
 if [ "$addDeezerTopArtists" = "true" ]; then
-	AddDeezerTopArtists
-else
-	log ":: ERROR :: addDeezerTopArtists is disabled"
+	AddDeezerTopArtists "$topLimit"
 fi
+
 if [ "$addDeezerTopAlbumArtists" = "true" ]; then
-	AddDeezerTopAlbumArtists
-else
-	log ":: ERROR :: addDeezerTopAlbumArtists is disabled"
+	AddDeezerTopAlbumArtists "$topLimit"
 fi
 
 if [ "$addDeezerTopTrackArtists" = "true" ]; then
-	AddDeezerTopTrackArtists
-else
-	log ":: ERROR :: addDeezerTopTrackArtists is disabled"
+	AddDeezerTopTrackArtists "$topLimit"
 fi
 
 if [ "$addRelatedArtists" = "true" ]; then
 	AddRelatedArtists
-else
-	log ":: ERROR :: addRelatedArtists is disabled"
 fi
 
 if [ "$dlClientSource" = "deezer" ] || [ "$dlClientSource" = "both" ]; then
@@ -832,12 +863,6 @@ else
 	log ":: ERROR :: No valid dlClientSource set"
 	log ":: ERROR :: Expected configuration :: deezer or tidal or both"
 	log ":: ERROR :: dlClientSource set as: \"$dlClientSource\""
-fi
-
-if [ "$AddRelatedArtists" = "true" ]; then
-	AddRelatedArtists
-else
-	log ":: ERROR :: AddRelatedArtists is disabled"
 fi
 
 exit
