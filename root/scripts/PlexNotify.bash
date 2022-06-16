@@ -1,18 +1,21 @@
 #!/usr/bin/env bash
-lidarrApiKey="$(grep "<ApiKey>" /config/config.xml | sed "s/\  <ApiKey>//;s/<\/ApiKey>//")"
-lidarrUrl="http://127.0.0.1:8686"
 lidarrRootFolderPath="$(dirname "$lidarr_artist_path")"
 exec &>> "/config/logs/PlexNotify.txt"
 chmod 777 "/config/logs/PlexNotify.txt"
 
 log () {
     m_time=`date "+%F %T"`
-    echo $m_time" "$1
+    echo $m_time" :: "$1
 }
 
 if [ "$lidarr_eventtype" == "Test" ]; then
 	log "Tested"
 	exit 0	
+fi
+
+if [ -z "$plexToken" ]; then
+	log "ERROR :: Plex Token Not configured"
+	exit
 fi
 
 plexLibraries="$(curl -s "$plexUrl/library/sections?X-Plex-Token=$plexToken" | xq .)"
