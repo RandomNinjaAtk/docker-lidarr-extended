@@ -39,6 +39,7 @@ Container images are configured using parameters passed at runtime (such as thos
 | `-e PUID=1000` | for UserID - see below for explanation |
 | `-e PGID=1000` | for GroupID - see below for explanation |
 | `-e autoStart=true` | true = enabled :: Runs script automatically on startup |
+| `-e configureLidarrWithOptimalSettings=true` | true = enabled :: Automatically configures Lidarr with optimal settings |
 | `-e dlClientSource=both` | deezer, tidal or both :: set to both, to use both clients, tidal requires extra steps, view logging output |
 | `-e arlToken=` | User ARL token for deemix client |
 | `-e addDeezerTopArtists=false` | true = enabled :: Enabling this will enable the extended script to automatically add artists that are on the Deezer Top Artist Chart to your existing Lidarr instance |
