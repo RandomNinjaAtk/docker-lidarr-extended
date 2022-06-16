@@ -28,7 +28,7 @@ Configuration () {
 	log ""
 	sleep 2
 	log "############# $dockerTitle"
-	log "############# SCRIPT VERSION 1.0.0003"
+	log "############# SCRIPT VERSION 1.0.0004"
 	log "############# DOCKER VERSION $dockerVersion"
 }
 
@@ -50,6 +50,7 @@ AddDeezerTopTrackArtists () {
 	getDeezerArtistsIds=($(curl -s https://api.deezer.com/chart/0/tracks | jq -r ".data[].artist.id"))
 	getDeezerArtistsIdsCount=$(curl -s https://api.deezer.com/chart/0/tracks | jq -r ".data[].artist.id" | wc -l)
 	description="Top Track Artists"
+	AddDeezerArtistToLidarr
 }
 
 AddDeezerArtistToLidarr () {
