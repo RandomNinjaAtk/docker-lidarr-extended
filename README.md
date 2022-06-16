@@ -44,6 +44,7 @@ Container images are configured using parameters passed at runtime (such as thos
 | `-e addDeezerTopArtists=false` | true = enabled :: Enabling this will enable the extended script to automatically add artists that are on the Deezer Top Artist Chart to your existing Lidarr instance |
 | `-e addDeezerTopAlbumArtists=false` | true = enabled :: Enabling this will enable the extended script to automatically add artists that are on the Deezer Top Album Chart to your existing Lidarr instance |
 | `-e addDeezerTopTrackArtists=false` | true = enabled :: Enabling this will enable the extended script to automatically add artists that are on the Deezer Top Track Chart to your existing Lidarr instance |
+| `-e topLimit=10` | This setting controls the amount of Top Artist (Albums/Tracks/Artists) to add to Lidarr from Deezer |
 | `-e addRelatedArtists=false` | true = enabled :: WARNING !!! WARNING !!! Enabling this can cause an endless loop of additional artists.... Enabling this will enable the extended script to automatically add artists that are related to your existing Lidarr artists from Deezer |
 | `-e plexUrl=http://x.x.x.x:32400` | ONLY used if PlexNotify.bash is used...|
 | `-e plexToken=` | ONLY used if PlexNotify.bash is used... |
