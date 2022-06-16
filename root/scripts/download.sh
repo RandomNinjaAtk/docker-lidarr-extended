@@ -16,6 +16,7 @@ CountryCode=US
 #addDeezerTopArtists=true
 #addDeezerTopAlbumArtists=true
 #addDeezerTopTrackArtists=true
+#configureLidarrWithOptimalSettings=true
 
 log () {
 	m_time=`date "+%F %T"`
@@ -34,7 +35,7 @@ Configuration () {
 	log ""
 	sleep 2
 	log "############# $dockerTitle"
-	log "############# SCRIPT VERSION 1.0.0005"
+	log "############# SCRIPT VERSION 1.0.0006"
 	log "############# DOCKER VERSION $dockerVersion"
 	
 	if [ -z $topLimit ]; then
@@ -64,6 +65,13 @@ Configuration () {
 		
 	else
 		log ":: Add Deezer Related Artists is disabled (enable by setting addRelatedArtists=true)"
+	fi
+
+	if [ "$configureLidarrWithOptimalSettings" = "true" ]; then
+		log ":: Configure Lidarr with optimal settings is enabled"
+		
+	else
+		log ":: Configure Lidarr with optimal settings is disabled (enable by setting configureLidarrWithOptimalSettings=true)"
 	fi
 }
 
@@ -376,6 +384,16 @@ DeemixClientSetup () {
 	else
 		log ":: ERROR :: arlToken setting invalid, currently set to: $arlToken"
 	fi
+}
+
+ConfigureLidarrWithOptimalSettings () {
+
+	log ":: Configuring Lidarr Track Naming Settings"
+	postSettingsToLidarr=$(curl -s "$lidarrUrl/api/v1/config/naming" -X PUT -H 'Content-Type: application/json' -H "X-Api-Key: ${lidarrApiKey}" --data-raw '{"renameTracks":true,"replaceIllegalCharacters":true,"standardTrackFormat":"{Artist Name} - {Album Type} - {Release Year} - {Album Title}{ (Album Disambiguation)}/{medium:00}{track:00} - {Track Title}","multiDiscTrackFormat":"{Artist Name} - {Album Type} - {Release Year} - {Album Title}{ (Album Disambiguation)}/{medium:00}{track:00} - {Track Title}","artistFolderFormat":"{Artist Name}{ (Artist Disambiguation)}","includeArtistName":false,"includeAlbumTitle":false,"includeQuality":false,"replaceSpaces":false,"id":1}')
+
+	log ":: Configuring Lidarr Media Management Settings"
+	postSettingsToLidarr=$(curl -s "$lidarrUrl/api/v1/config/mediamanagement" -X PUT -H 'Content-Type: application/json' -H "X-Api-Key: ${lidarrApiKey}" --data-raw '{"autoUnmonitorPreviouslyDownloadedTracks":false,"recycleBin":"","recycleBinCleanupDays":7,"downloadPropersAndRepacks":"preferAndUpgrade","createEmptyArtistFolders":true,"deleteEmptyFolders":true,"fileDate":"none","watchLibraryForChanges":true,"rescanAfterRefresh":"always","allowFingerprinting":"newFiles","setPermissionsLinux":true,"chmodFolder":"777","chownGroup":"abc","skipFreeSpaceCheckWhenImporting":false,"minimumFreeSpaceWhenImporting":100,"copyUsingHardlinks":true,"importExtraFiles":true,"extraFileExtensions":"jpg,png,lrc","id":1}')
+
 }
 
 GetMissingCutOffList () {
@@ -831,6 +849,10 @@ LidarrTaskStatusCheck () {
 }
 
 Configuration
+
+if [ "$configureLidarrWithOptimalSettings" = "true" ]; then
+	ConfigureLidarrWithOptimalSettings
+fi
 
 if [ "$addDeezerTopArtists" = "true" ]; then
 	AddDeezerTopArtists "$topLimit"
