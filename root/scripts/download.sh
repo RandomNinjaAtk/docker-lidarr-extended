@@ -36,7 +36,7 @@ Configuration () {
 	log ""
 	sleep 2
 	log "############# $dockerTitle"
-	log "############# SCRIPT VERSION 1.0.0020"
+	log "############# SCRIPT VERSION 1.0.0021"
 	log "############# DOCKER VERSION $dockerVersion"
 	
 	if [ -z $topLimit ]; then
@@ -482,6 +482,8 @@ SearchProcess () {
         lidarrAlbumData="$(curl -s "$lidarrUrl/api/v1/album/$wantedAlbumId?apikey=${lidarrApiKey}")"
         lidarrAlbumTitle=$(echo "$lidarrAlbumData" | jq -r ".title")
         lidarrAlbumTitleClean=$(echo "$lidarrAlbumTitle" | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
+		lidarrAlbumTitleCleanSpaces=$(echo "$lidarrAlbumTitle" | sed -e "s%[^[:alpha:][:digit:]]% %g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
+		lidarrAlbumTitleFirstWord=${lidarrAlbumTitleCleanSpaces%% *}
 		lidarrAlbumForeignAlbumId=$(echo "$lidarrAlbumData" | jq -r ".foreignAlbumId")
         lidarrAlbumReleases=$(echo "$lidarrAlbumData" | jq -r ".releases")
         #echo $lidarrAlbumData | jq -r 
@@ -604,7 +606,8 @@ SearchProcess () {
 			for dId in ${!deezeArtistIds[@]}; do
 				deezeArtistId="${deezeArtistIds[$dId]}"
 				deezerArtistAlbumsData=$(cat "/config/extended/cache/deezer/$deezeArtistId-albums.json" | jq -r "sort_by(.release_date) | sort_by(.explicit_lyrics) | reverse | .[]")
-				deezerArtistAlbumsIds=($(echo "${deezerArtistAlbumsData}" | jq -r "select(.explicit_lyrics=="true") | .id"))
+				
+				deezerArtistAlbumsIds=($(echo "${deezerArtistAlbumsData}" | jq -r "select(.explicit_lyrics=="true") | select(.title | test(\"^$lidarrAlbumTitleFirstWord\";\"i\")) | .id"))
 
 				if echo "${deezerArtistAlbumsData}" | jq -r .title | grep -i "^$lidarrAlbumTitle" | read; then
 					for id in ${!deezerArtistAlbumsIds[@]}; do
@@ -678,7 +681,7 @@ SearchProcess () {
 			for dId in ${!deezeArtistIds[@]}; do
 				deezeArtistId="${deezeArtistIds[$dId]}"
 				deezerArtistAlbumsData=$(cat "/config/extended/cache/deezer/$deezeArtistId-albums.json" | jq -r "sort_by(.release_date) | sort_by(.explicit_lyrics) | reverse | .[]")
-				deezerArtistAlbumsIds=($(echo "${deezerArtistAlbumsData}" | jq -r "select(.explicit_lyrics=="false") | .id"))
+				deezerArtistAlbumsIds=($(echo "${deezerArtistAlbumsData}" | jq -r "select(.explicit_lyrics=="false") | select(.title | test(\"^$lidarrAlbumTitleFirstWord\";\"i\")) | .id"))
 
 				if echo "${deezerArtistAlbumsData}" | jq -r .title | grep -i "^$lidarrAlbumTitle" | read; then
 					for id in ${!deezerArtistAlbumsIds[@]}; do
