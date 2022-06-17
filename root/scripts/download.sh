@@ -36,7 +36,7 @@ Configuration () {
 	log ""
 	sleep 2
 	log "############# $dockerTitle"
-	log "############# SCRIPT VERSION 1.0.0026"
+	log "############# SCRIPT VERSION 1.0.0027"
 	log "############# DOCKER VERSION $dockerVersion"
 	
 	if [ -z $topLimit ]; then
@@ -570,7 +570,9 @@ SearchProcess () {
 				if [ ! -d /config/extended/cache/deezer ]; then
 					mkdir -p /config/extended/cache/deezer
 				fi
-				DArtistAlbumList "$deezeArtistId"
+				if [ ! -f /config/extended/cache/deezer/$deezeArtistId-albums.json ]; then
+					DArtistAlbumList "$deezeArtistId"
+				fi
 			done
 		fi
         
