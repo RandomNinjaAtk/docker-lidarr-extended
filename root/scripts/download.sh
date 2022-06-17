@@ -36,7 +36,7 @@ Configuration () {
 	log ""
 	sleep 2
 	log "############# $dockerTitle"
-	log "############# SCRIPT VERSION 1.0.0025"
+	log "############# SCRIPT VERSION 1.0.0026"
 	log "############# DOCKER VERSION $dockerVersion"
 	
 	if [ -z $topLimit ]; then
@@ -455,9 +455,9 @@ ConfigureLidarrWithOptimalSettings () {
 	log ":: Configuring Lidarr Standard Metadata Profile"
 	postSettingsToLidarr=$(curl -s "$lidarrUrl/api/v1/metadataprofile/1?" -X PUT -H 'Content-Type: application/json' -H "X-Api-Key: ${lidarrApiKey}" --data-raw '{"name":"Standard","primaryAlbumTypes":[{"albumType":{"id":2,"name":"Single"},"allowed":true},{"albumType":{"id":4,"name":"Other"},"allowed":true},{"albumType":{"id":1,"name":"EP"},"allowed":true},{"albumType":{"id":3,"name":"Broadcast"},"allowed":true},{"albumType":{"id":0,"name":"Album"},"allowed":true}],"secondaryAlbumTypes":[{"albumType":{"id":0,"name":"Studio"},"allowed":true},{"albumType":{"id":3,"name":"Spokenword"},"allowed":true},{"albumType":{"id":2,"name":"Soundtrack"},"allowed":true},{"albumType":{"id":7,"name":"Remix"},"allowed":true},{"albumType":{"id":9,"name":"Mixtape/Street"},"allowed":true},{"albumType":{"id":6,"name":"Live"},"allowed":true},{"albumType":{"id":4,"name":"Interview"},"allowed":true},{"albumType":{"id":8,"name":"DJ-mix"},"allowed":true},{"albumType":{"id":10,"name":"Demo"},"allowed":true},{"albumType":{"id":1,"name":"Compilation"},"allowed":true}],"releaseStatuses":[{"releaseStatus":{"id":3,"name":"Pseudo-Release"},"allowed":false},{"releaseStatus":{"id":1,"name":"Promotion"},"allowed":false},{"releaseStatus":{"id":0,"name":"Official"},"allowed":true},{"releaseStatus":{"id":2,"name":"Bootleg"},"allowed":false}],"id":1}')
 
-	touch /config/logs/autoconfig
-	chmod 666 /config/logs/autoconfig
-	chown abc:abc /config/logs/autoconfig
+	touch /config/extended/logs/autoconfig
+	chmod 666 /config/extended/logs/autoconfig
+	chown abc:abc /config/extended/logs/autoconfig
 
 }
 
@@ -552,6 +552,7 @@ SearchProcess () {
 		if [ "$skipDeezer" = "false" ]; then
 			if [ -z "$deezerArtistUrl" ]; then 
 				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: DEEZER :: ERROR :: musicbrainz id: $lidarrArtistForeignArtistId is missing Tidal link, see: \"/config/logs/deezer-arist-id-not-found.txt\" for more detail..."
+				touch "/config/logs/deezer-arist-id-not-found.txt"
 				if cat "/config/logs/deezer-arist-id-not-found.txt" | grep "https://musicbrainz.org/artist/$lidarrArtistForeignArtistId/relationships" | read; then
 					sleep 0.01
 				else
@@ -576,6 +577,7 @@ SearchProcess () {
         if [ "$skipTidal" = "false" ]; then
 			if [ -z "$tidalArtistUrl" ]; then 
 				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: TIDAL :: ERROR :: musicbrainz id: $lidarrArtistForeignArtistId is missing Tidal link, see: \"/config/logs/tidal-arist-id-not-found.txt\" for more detail..."
+				touch "/config/logs/tidal-arist-id-not-found.txt" 
 				if cat "/config/logs/tidal-arist-id-not-found.txt" | grep "https://musicbrainz.org/artist/$lidarrArtistForeignArtistId/relationships" | read; then
 					sleep 0.01
 				else
@@ -949,12 +951,13 @@ LidarrTaskStatusCheck () {
 Configuration
 
 if [ "$configureLidarrWithOptimalSettings" = "true" ]; then
-	if [ ! -f /config/logs/autoconfig ]; then
+	if [ ! -f /config/extended/logs/autoconfig
+ ]; then
 		ConfigureLidarrWithOptimalSettings
 	else
 		log ":: Lidarr previously configured with optimal settings, skipping..."
 		log ":: To re-configure Lidarr, delete the following file:"
-		log ":: /config/logs/autoconfig" 
+		log ":: /config/extended/logs/autoconfig" 
 	fi
 fi
 
