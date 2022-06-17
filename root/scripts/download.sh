@@ -36,7 +36,7 @@ Configuration () {
 	log ""
 	sleep 2
 	log "############# $dockerTitle"
-	log "############# SCRIPT VERSION 1.0.0019"
+	log "############# SCRIPT VERSION 1.0.0020"
 	log "############# DOCKER VERSION $dockerVersion"
 	
 	if [ -z $topLimit ]; then
@@ -207,22 +207,40 @@ DArtistAlbumList () {
 			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $currentprocess of $albumcount :: Album info already downloaded"
 		fi
 	done
-	if [ -f /config/extended/cache/deezer/$1-albums.json ]; then
-		rm /config/extended/cache/deezer/$1-albums.json
-	fi
+	
 	if [ -f /config/extended/cache/deezer/$1-albums-temp.json ]; then
 		rm /config/extended/cache/deezer/$1-albums-temp.json
 	fi
-	log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Creating album list from $albumcount found albums..."
-	echo "[" >> /config/extended/cache/deezer/$1-albums-temp.json
-	for id in ${!albumids[@]}; do
-		albumid="${albumids[$id]}"
-		cat "/config/extended/cache/deezer/${albumid}.json" | jq -r | sed 's/^/ /' | sed '$s/}/},/g' >> /config/extended/cache/deezer/$1-albums-temp.json
-	done
-	cat /config/extended/cache/deezer/$1-albums-temp.json | sed '$ d' >> /config/extended/cache/deezer/$1-albums.json
-	echo " }" >> /config/extended/cache/deezer/$1-albums.json
-	echo "]" >> /config/extended/cache/deezer/$1-albums.json
-	rm /config/extended/cache/deezer/$1-albums-temp.json
+
+	if [ -f /config/extended/cache/deezer/$1-albums.json ]; then
+		testFile=$(cat /config/extended/cache/deezer/$1-albums.json)
+		if jq -e . >/dev/null 2>&1 <<<"$testFile"; then
+			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Existing album list verified..."
+			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Checking album list age..."
+			if find /config/extended/cache/deezer -type f -name "$1-albums.json" -mtime +1 | read; then
+				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Existing Album list older than 1 day, purging to create updated list..."
+				find /config/extended/cache/deezer -type f -name "$1-albums.json" -mtime +1 -delete
+			else
+				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Existing Album list is not older than 1 day..."
+			fi
+		else
+			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Existing album list failed verification..."
+			rm /config/extended/cache/deezer/$1-albums.json
+		fi
+	fi
+	
+	if [ ! -f /config/extended/cache/deezer/$1-albums.json ]; then
+		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Creating album list from $albumcount found albums..."
+		echo "[" >> /config/extended/cache/deezer/$1-albums-temp.json
+		for id in ${!albumids[@]}; do
+			albumid="${albumids[$id]}"
+			cat "/config/extended/cache/deezer/${albumid}.json" | jq -r | sed 's/^/ /' | sed '$s/}/},/g' >> /config/extended/cache/deezer/$1-albums-temp.json
+		done
+		cat /config/extended/cache/deezer/$1-albums-temp.json | sed '$ d' >> /config/extended/cache/deezer/$1-albums.json
+		echo " }" >> /config/extended/cache/deezer/$1-albums.json
+		echo "]" >> /config/extended/cache/deezer/$1-albums.json
+		rm /config/extended/cache/deezer/$1-albums-temp.json
+	fi
 }
 
 TidalClientSetup () {
