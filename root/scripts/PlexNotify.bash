@@ -17,11 +17,6 @@ if [ "$lidarr_eventtype" == "Test" ]; then
 	exit 0	
 fi
 
-if [ -z "$plexToken" ]; then
-	log "ERROR :: Plex Token Not configured"
-	exit
-fi
-
 plexLibraries="$(curl -s "$plexUrl/library/sections?X-Plex-Token=$plexToken" | xq .)"
 if echo "$plexLibraries" | grep "$lidarrRootFolderPath" | read; then
 	if echo "$plexLibraries" | jq -r ".MediaContainer.Directory[] | select(.Location.\"@path\"==\"$lidarrRootFolderPath\") | .\"@key\"" &>/dev/null; then
@@ -34,9 +29,17 @@ if echo "$plexLibraries" | grep "$lidarrRootFolderPath" | read; then
 		exit 1
 	fi
 else
-	log "ERROR: No Plex Library found containing path \"/$lidarrRootFolderPath\""
-	log "ERROR: Add \"/$lidarrRootFolderPath\" as a folder to a Plex Music Library"
-	exit 1
+	if echo "$plexLibraries" | grep -i "Unauthorized" | read; then
+		log "ERROR :: Cannot connect to Plex"
+		log "ERROR :: plexUrl or plexToken is invalid"
+		log "ERROR :: plexUrl is currently set to \"$plexUrl\""
+		log "ERROR :: plexToken is currently set to \"$plexToken\""
+		exit 1
+	else
+		log "ERROR: No Plex Library found containing path \"$lidarrRootFolderPath\""
+		log "ERROR: Add \"$lidarrRootFolderPath\" as a folder to a Plex Music Library"
+		exit 1
+	fi
 fi
 
 plexFolderEncoded="$(jq -R -r @uri <<<"$lidarr_artist_path")"
