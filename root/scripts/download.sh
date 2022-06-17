@@ -36,7 +36,7 @@ Configuration () {
 	log ""
 	sleep 2
 	log "############# $dockerTitle"
-	log "############# SCRIPT VERSION 1.0.0017"
+	log "############# SCRIPT VERSION 1.0.0018"
 	log "############# DOCKER VERSION $dockerVersion"
 	
 	if [ -z $topLimit ]; then
@@ -213,6 +213,7 @@ DArtistAlbumList () {
 	if [ -f /config/extended/cache/deezer/$1-albums-temp.json ]; then
 		rm /config/extended/cache/deezer/$1-albums-temp.json
 	fi
+	log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Creating album list from $albumcount found albums..."
 	echo "[" >> /config/extended/cache/deezer/$1-albums-temp.json
 	for id in ${!albumids[@]}; do
 		albumid="${albumids[$id]}"
