@@ -36,7 +36,7 @@ Configuration () {
 	log ""
 	sleep 2
 	log "############# $dockerTitle"
-	log "############# SCRIPT VERSION 1.0.0027"
+	log "############# SCRIPT VERSION 1.0.0028"
 	log "############# DOCKER VERSION $dockerVersion"
 	
 	if [ -z $topLimit ]; then
@@ -570,7 +570,7 @@ SearchProcess () {
 				if [ ! -d /config/extended/cache/deezer ]; then
 					mkdir -p /config/extended/cache/deezer
 				fi
-				if [ ! -f /config/extended/cache/deezer/$deezeArtistId-albums.json ]; then
+				if [ ! -f "/config/extended/cache/deezer/$deezeArtistId-albums.json" ]; then
 					DArtistAlbumList "$deezeArtistId"
 				fi
 			done
@@ -953,8 +953,7 @@ LidarrTaskStatusCheck () {
 Configuration
 
 if [ "$configureLidarrWithOptimalSettings" = "true" ]; then
-	if [ ! -f /config/extended/logs/autoconfig
- ]; then
+	if [ ! -f /config/extended/logs/autoconfig ]; then
 		ConfigureLidarrWithOptimalSettings
 	else
 		log ":: Lidarr previously configured with optimal settings, skipping..."
