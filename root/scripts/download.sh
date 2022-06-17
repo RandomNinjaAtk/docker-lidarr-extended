@@ -36,7 +36,7 @@ Configuration () {
 	log ""
 	sleep 2
 	log "############# $dockerTitle"
-	log "############# SCRIPT VERSION 1.0.0022"
+	log "############# SCRIPT VERSION 1.0.0023"
 	log "############# DOCKER VERSION $dockerVersion"
 	
 	if [ -z $topLimit ]; then
@@ -285,7 +285,8 @@ TidalClientSetup () {
 	fi
 	
 	if [ -d /config/extended/cache/tidal ]; then
-		find /config/extended/cache/deezer -type f -name "*.json" -delete
+		log ":: TIDAL :: Purging album list cache..."
+		find /config/extended/cache/tidal -type f -name "*.json" -delete
 	fi
 }
 
@@ -410,7 +411,9 @@ DeemixClientSetup () {
 	else
 		log ":: DEEZER :: ERROR :: arlToken setting invalid, currently set to: $arlToken"
 	fi
+	
 	if [ -d /config/extended/cache/deezer ]; then
+		log ":: DEEZER :: Purging album list cache..."
 		find /config/extended/cache/deezer -type f -name "*-albums.json" -delete
 	fi
 }
