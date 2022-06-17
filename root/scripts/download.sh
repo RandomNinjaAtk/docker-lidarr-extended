@@ -36,7 +36,7 @@ Configuration () {
 	log ""
 	sleep 2
 	log "############# $dockerTitle"
-	log "############# SCRIPT VERSION 1.0.0028"
+	log "############# SCRIPT VERSION 1.0.0029"
 	log "############# DOCKER VERSION $dockerVersion"
 	
 	if [ -z $topLimit ]; then
@@ -845,30 +845,32 @@ ProcessWithBeets () {
 		return
 	fi
 
-	
-	
-	if [ "${matchedLidarrAlbumArtistCleanName}" != "null" ]; then
-		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $matchedLidarrAlbumArtistName ($matchedLidarrAlbumArtistId) found in Lidarr"
+	if [ "$matchedLidarrAlbumArtistId" = "89ad4ac3-39f7-470e-963a-56509c546377" ]; then
+		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $matchedLidarrAlbumArtistName is Varoius Artists, skipping..."
 	else
-		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $matchedLidarrAlbumArtistName ($matchedLidarrAlbumArtistId) NOT found in Lidarr"
-		data=$(curl -s "$lidarrUrl/api/v1/search?term=lidarr%3A$matchedLidarrAlbumArtistId" -H "X-Api-Key: $lidarrApiKey" | jq -r ".[]")
-		artistName="$(echo "$data" | jq -r ".artist.artistName")"
-		foreignId="$(echo "$data" | jq -r ".foreignId")"
-		data=$(curl -s "$lidarrUrl/api/v1/rootFolder" -H "X-Api-Key: $lidarrApiKey" | jq -r ".[]")
-		path="$(echo "$data" | jq -r ".path")"
-		qualityProfileId="$(echo "$data" | jq -r ".defaultQualityProfileId")"
-		metadataProfileId="$(echo "$data" | jq -r ".defaultMetadataProfileId")"
-		data="{
-			\"artistName\": \"$artistName\",
-			\"foreignArtistId\": \"$foreignId\",
-			\"qualityProfileId\": $qualityProfileId,
-			\"metadataProfileId\": $metadataProfileId,
-			\"rootFolderPath\": \"$path\"
-			}"
-		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Adding Missing Artist to Lidarr :: $matchedLidarrAlbumArtistName ($matchedLidarrAlbumArtistId)..."
-		lidarrAddArtist=$(curl -s "$lidarrUrl/api/v1/artist" -X POST -H 'Content-Type: application/json' -H "X-Api-Key: $lidarrApiKey" --data-raw "$data")
-		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Allowing Lidarr Artist Update, pause for 2 min..."
-		sleep 2m
+		if [ "${matchedLidarrAlbumArtistCleanName}" != "null" ]; then
+			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $matchedLidarrAlbumArtistName ($matchedLidarrAlbumArtistId) found in Lidarr"
+		else
+			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $matchedLidarrAlbumArtistName ($matchedLidarrAlbumArtistId) NOT found in Lidarr"
+			data=$(curl -s "$lidarrUrl/api/v1/search?term=lidarr%3A$matchedLidarrAlbumArtistId" -H "X-Api-Key: $lidarrApiKey" | jq -r ".[]")
+			artistName="$(echo "$data" | jq -r ".artist.artistName")"
+			foreignId="$(echo "$data" | jq -r ".foreignId")"
+			data=$(curl -s "$lidarrUrl/api/v1/rootFolder" -H "X-Api-Key: $lidarrApiKey" | jq -r ".[]")
+			path="$(echo "$data" | jq -r ".path")"
+			qualityProfileId="$(echo "$data" | jq -r ".defaultQualityProfileId")"
+			metadataProfileId="$(echo "$data" | jq -r ".defaultMetadataProfileId")"
+			data="{
+				\"artistName\": \"$artistName\",
+				\"foreignArtistId\": \"$foreignId\",
+				\"qualityProfileId\": $qualityProfileId,
+				\"metadataProfileId\": $metadataProfileId,
+				\"rootFolderPath\": \"$path\"
+				}"
+			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Adding Missing Artist to Lidarr :: $matchedLidarrAlbumArtistName ($matchedLidarrAlbumArtistId)..."
+			lidarrAddArtist=$(curl -s "$lidarrUrl/api/v1/artist" -X POST -H 'Content-Type: application/json' -H "X-Api-Key: $lidarrApiKey" --data-raw "$data")
+			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Allowing Lidarr Artist Update, pause for 2 min..."
+			LidarrTaskStatusCheck
+		fi
 	fi
 	matchedLidarrAlbumArtistCleanName="$(echo "$matchedLidarrAlbumArtistName" | sed -e "s%[^[:alpha:][:digit:]._()' -]% %g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
 
