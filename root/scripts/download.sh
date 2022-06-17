@@ -36,7 +36,7 @@ Configuration () {
 	log ""
 	sleep 2
 	log "############# $dockerTitle"
-	log "############# SCRIPT VERSION 1.0.0021"
+	log "############# SCRIPT VERSION 1.0.0022"
 	log "############# DOCKER VERSION $dockerVersion"
 	
 	if [ -z $topLimit ]; then
@@ -283,6 +283,10 @@ TidalClientSetup () {
 		log ":: TIDAL :: ERROR :: Loading client for required authentication, please authenticate, then exit the client..."
 		tidal-dl
 	fi
+	
+	if [ -d /config/extended/cache/tidal ]; then
+		find /config/extended/cache/deezer -type f -name "*.json" -delete
+	fi
 }
 
 DownloadProcess () {
@@ -405,6 +409,9 @@ DeemixClientSetup () {
 		log ":: DEEZER :: ARL Token: Configured"
 	else
 		log ":: DEEZER :: ERROR :: arlToken setting invalid, currently set to: $arlToken"
+	fi
+	if [ -d /config/extended/cache/deezer ]; then
+		find /config/extended/cache/deezer -type f -name "*-albums.json" -delete
 	fi
 }
 
@@ -572,9 +579,7 @@ SearchProcess () {
 			if [ ! -d /config/extended/cache/tidal ]; then
 				mkdir -p /config/extended/cache/tidal
 			fi
-			
-			find /config/extended/cache/tidal -type f -mtime +7 -delete
-			
+						
 			if [ ! -f /config/extended/cache/tidal/$tidalArtistId-videos.json ]; then
 				curl -s "https://api.tidal.com/v1/artists/${tidalArtistId}/videos?limit=10000&countryCode=$CountryCode&filter=ALL" -H 'x-tidal-token: CzET4vdadNUFQ5JU' > /config/extended/cache/tidal/$tidalArtistId-videos.json
 			fi
