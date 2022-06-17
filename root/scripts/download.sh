@@ -35,7 +35,7 @@ Configuration () {
 	log ""
 	sleep 2
 	log "############# $dockerTitle"
-	log "############# SCRIPT VERSION 1.0.0010"
+	log "############# SCRIPT VERSION 1.0.0011"
 	log "############# DOCKER VERSION $dockerVersion"
 	
 	if [ -z $topLimit ]; then
@@ -430,9 +430,9 @@ GetMissingCutOffList () {
 SearchProcess () {
     wantedListAlbumIds=($(echo "${missingAlbumIds}" && echo "${cutoffAlbumIds}"))
     for id in ${!wantedListAlbumIds[@]}; do
-		processNumber=$(( $id + 1 ))
-        wantedAlbumId="${wantedListAlbumIds[$id]}"
-        lidarrAlbumData="$(curl -s "$lidarrUrl/api/v1/album/$wantedAlbumId?apikey=${lidarrApiKey}")"
+	processNumber=$(( $id + 1 ))
+	wantedAlbumId="${wantedListAlbumIds[$id]}"
+	lidarrAlbumData="$(curl -s "$lidarrUrl/api/v1/album/$wantedAlbumId?apikey=${lidarrApiKey}")"
         lidarrAlbumTitle=$(echo "$lidarrAlbumData" | jq -r ".title")
         lidarrAlbumTitleClean=$(echo "$lidarrAlbumTitle" | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
 		lidarrAlbumForeignAlbumId=$(echo "$lidarrAlbumData" | jq -r ".foreignAlbumId")
@@ -512,12 +512,17 @@ SearchProcess () {
 			if [ ! -d /config/extended/cache/tidal ]; then
 				mkdir -p /config/extended/cache/tidal
 			fi
+			
+			find /config/extended/cache/tidal -type f -mtime +7 -delete
+			
 			if [ ! -f /config/extended/cache/tidal/$tidalArtistId-videos.json ]; then
 				curl -s "https://api.tidal.com/v1/artists/${tidalArtistId}/videos?limit=10000&countryCode=$CountryCode&filter=ALL" -H 'x-tidal-token: CzET4vdadNUFQ5JU' > /config/extended/cache/tidal/$tidalArtistId-videos.json
 			fi
+
 			if [ ! -f /config/extended/cache/tidal/$tidalArtistId-albums.json ]; then
 				curl -s "https://api.tidal.com/v1/artists/${tidalArtistId}/albums?limit=10000&countryCode=$CountryCode&filter=ALL" -H 'x-tidal-token: CzET4vdadNUFQ5JU' > /config/extended/cache/tidal/$tidalArtistId-albums.json
 			fi
+
 			tidalArtistAlbumsData=$(cat "/config/extended/cache/tidal/$tidalArtistId-albums.json" | jq -r ".items | sort_by(.numberOfTracks) | sort_by(.explicit) | reverse |.[]")
 			tidalArtistAlbumsIds=($(echo "${tidalArtistAlbumsData}" | jq -r "select(.explicit=="true") | .id"))
 		fi
