@@ -36,7 +36,7 @@ Configuration () {
 	log ""
 	sleep 2
 	log "############# $dockerTitle"
-	log "############# SCRIPT VERSION 1.0.0029"
+	log "############# SCRIPT VERSION 1.0.0030"
 	log "############# DOCKER VERSION $dockerVersion"
 	
 	if [ -z $topLimit ]; then
@@ -847,6 +847,8 @@ ProcessWithBeets () {
 
 	if [ "$matchedLidarrAlbumArtistId" = "89ad4ac3-39f7-470e-963a-56509c546377" ]; then
 		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $matchedLidarrAlbumArtistName is Varoius Artists, skipping..."
+		rm -rf "$1"
+		return
 	else
 		if [ "${matchedLidarrAlbumArtistCleanName}" != "null" ]; then
 			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $matchedLidarrAlbumArtistName ($matchedLidarrAlbumArtistId) found in Lidarr"
@@ -876,13 +878,13 @@ ProcessWithBeets () {
 
 
 	downloadedAlbumFolder="${matchedLidarrAlbumArtistCleanName}-${matchedTagsAlbumTitleClean} ($matchedTagsAlbumYear)-$2-$3"
-    if [ "$1" != "/downloads/lidarr-extended/complete/$downloadedAlbumFolder" ];then
-	    mv "$1" "/downloads/lidarr-extended/complete/$downloadedAlbumFolder"
-	    chmod 777 "/downloads/lidarr-extended/complete/$downloadedAlbumFolder"
-        chown abc:abc "/downloads/lidarr-extended/complete/$downloadedAlbumFolder"
-        chmod 666 "/downloads/lidarr-extended/complete/$downloadedAlbumFolder"/*
-        chown abc:abc "/downloads/lidarr-extended/complete/$downloadedAlbumFolder"/*
-    fi
+	if [ "$1" != "/downloads/lidarr-extended/complete/$downloadedAlbumFolder" ];then
+		mv "$1" "/downloads/lidarr-extended/complete/$downloadedAlbumFolder"
+		chmod 777 "/downloads/lidarr-extended/complete/$downloadedAlbumFolder"
+		chown abc:abc "/downloads/lidarr-extended/complete/$downloadedAlbumFolder"
+		chmod 666 "/downloads/lidarr-extended/complete/$downloadedAlbumFolder"/*
+		chown abc:abc "/downloads/lidarr-extended/complete/$downloadedAlbumFolder"/*
+	fi
 }
 
 CheckLidarrBeforeImport () {
