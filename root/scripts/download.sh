@@ -35,7 +35,7 @@ Configuration () {
 	log ""
 	sleep 2
 	log "############# $dockerTitle"
-	log "############# SCRIPT VERSION 1.0.0014"
+	log "############# SCRIPT VERSION 1.0.0015"
 	log "############# DOCKER VERSION $dockerVersion"
 	
 	if [ -z $topLimit ]; then
@@ -413,7 +413,17 @@ ConfigureLidarrWithOptimalSettings () {
 	log ":: Configuring Lidarr UI Settings"
 	postSettingsToLidarr=$(curl -s "$lidarrUrl/api/v1/config/u" -X PUT -H 'Content-Type: application/json' -H "X-Api-Key: ${lidarrApiKey}" --data-raw '{"firstDayOfWeek":0,"calendarWeekColumnHeader":"ddd M/D","shortDateFormat":"MMM D YYYY","longDateFormat":"dddd, MMMM D YYYY","timeFormat":"h(:mm)a","showRelativeDates":true,"enableColorImpairedMode":true,"uiLanguage":1,"expandAlbumByDefault":true,"expandSingleByDefault":true,"expandEPByDefault":true,"expandBroadcastByDefault":true,"expandOtherByDefault":true,"id":1}')
 
-	if curl -s "$lidarrUrl/api/v1/rootFolder" -H "X-Api-Key: ${lidarrApiKey}" | grep "[]" | read; then
+	if curl -s "$lidarrUrl/api/v1/rootFolder" -H "X-Api-Key: ${lidarrApiKey}" | sed '1q' | grep "\[\]" | read; then
+		log ":: ERROR :: No root folder found"
+		log ":: Configuring root folder..."
+		getSettingsToLidarr=$(curl -s "$lidarrUrl/api/v1/filesystem?path=%2Fmusic&allowFoldersWithoutTrailingSlashes=false&includeFiles=false" -H "X-Api-Key: ${lidarrApiKey}")
+		postSettingsToLidarr=$(curl -s "$lidarrUrl/api/v1/rootFolder?" -X POST -H 'Content-Type: application/json' -H "X-Api-Key: ${lidarrApiKey}" --data-raw '{"defaultTags":[],"defaultQualityProfileId":1,"defaultMetadataProfileId":1,"name":"Music","path":"/music"}')
+	fi
+
+}
+
+LidarrRootFolderCheck () {
+	if curl -s "$lidarrUrl/api/v1/rootFolder" -H "X-Api-Key: ${lidarrApiKey}" | sed '1q' | grep "\[\]" | read; then
 		log ":: ERROR :: No root folder found"
 		log ":: ERROR :: Configure root folder in Lidarr to continue..."
 		log ":: ERROR :: Exiting..."
@@ -888,6 +898,8 @@ Configuration
 if [ "$configureLidarrWithOptimalSettings" = "true" ]; then
 	ConfigureLidarrWithOptimalSettings
 fi
+
+LidarrRootFolderCheck
 
 if [ "$addDeezerTopArtists" = "true" ]; then
 	AddDeezerTopArtists "$topLimit"
