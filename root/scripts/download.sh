@@ -12,6 +12,7 @@ musicbrainzMirror=https://musicbrainz.org
 CountryCode=US
 
 # Debugging settings
+#dlClientSource=deezer
 #topLimit=25
 #addDeezerTopArtists=true
 #addDeezerTopAlbumArtists=true
@@ -35,7 +36,7 @@ Configuration () {
 	log ""
 	sleep 2
 	log "############# $dockerTitle"
-	log "############# SCRIPT VERSION 1.0.0015"
+	log "############# SCRIPT VERSION 1.0.0016"
 	log "############# DOCKER VERSION $dockerVersion"
 	
 	if [ -z $topLimit ]; then
@@ -476,7 +477,18 @@ SearchProcess () {
         tidalArtistId="$(echo "$tidalArtistUrl" | grep -o '[[:digit:]]*' | sort -u)"
         deezerArtistUrl=$(echo "${lidarrArtistData}" | jq -r ".links | .[] | select(.name==\"deezer\") | .url")
         deezeArtistIds=($(echo "$deezerArtistUrl" | grep -o '[[:digit:]]*' | sort -u))
-		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: Starting Search..."
+		lidarrAlbumReleaseDate=$(echo "$lidarrAlbumData" | jq -r .releaseDate)
+		lidarrAlbumReleaseDate=${lidarrAlbumReleaseDate:0:10}
+		lidarrAlbumReleaseDateClean="$(echo $lidarrAlbumReleaseDate | sed -e "s%[^[:digit:]]%%g")"
+		currentDate="$(date "+%F")"
+		currentDateClean="$(echo "$currentDate" | sed -e "s%[^[:digit:]]%%g")"
+		if [[ ${currentDateClean} -gt ${lidarrAlbumReleaseDateClean} ]]; then
+			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: Starting Search..."
+		else
+			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: Album ($lidarrAlbumReleaseDate) has not been released, skipping..."
+			continue
+		fi
+
 		if [ -f "/config/extended/logs/downloaded/notfound/$lidarrAlbumForeignAlbumId" ]; then
 			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: Previously Not Found, skipping..."
 			continue
