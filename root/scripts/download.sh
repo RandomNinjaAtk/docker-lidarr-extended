@@ -36,7 +36,7 @@ Configuration () {
 	log ""
 	sleep 2
 	log "############# $dockerTitle"
-	log "############# SCRIPT VERSION 1.0.0024"
+	log "############# SCRIPT VERSION 1.0.0025"
 	log "############# DOCKER VERSION $dockerVersion"
 	
 	if [ -z $topLimit ]; then
@@ -551,12 +551,13 @@ SearchProcess () {
 		
 		if [ "$skipDeezer" = "false" ]; then
 			if [ -z "$deezerArtistUrl" ]; then 
-				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: DEEZER :: ERROR :: musicbrainz id: $lidarrArtistForeignArtistId is missing Tidal link, see: \"/config/logs/error/$lidarrArtistNameSanitized.log\" for more detail..."
-				if [ ! -d /config/extended/logs/error ]; then
-					mkdir -p /config/extended/logs/error
-				fi
-				if [ ! -f "/config/extended/logs/error/$lidarrArtistNameSanitized.log" ]; then          
-					echo "Update Musicbrainz Relationship Page: https://musicbrainz.org/artist/$lidarrArtistForeignArtistId/relationships for \"${lidarrArtistName}\" with Deezer Artist Link" >> "/config/logs/error/$lidarrArtistNameSanitized.log"
+				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: DEEZER :: ERROR :: musicbrainz id: $lidarrArtistForeignArtistId is missing Tidal link, see: \"/config/logs/deezer-arist-id-not-found.txt\" for more detail..."
+				if cat "/config/logs/deezer-arist-id-not-found.txt" | grep "https://musicbrainz.org/artist/$lidarrArtistForeignArtistId/relationships" | read; then
+					sleep 0.01
+				else
+					echo "Update Musicbrainz Relationship Page: https://musicbrainz.org/artist/$lidarrArtistForeignArtistId/relationships for \"${lidarrArtistName}\" with Deezer Artist Link" >> "/config/logs/deezer-arist-id-not-found.txt"
+					chmod 666 "/config/logs/deezer-arist-id-not-found.txt"
+					chown abc:abc "/config/logs/deezer-arist-id-not-found.txt"
 				fi
 				skipDeezer=true
 			fi
@@ -574,12 +575,13 @@ SearchProcess () {
         
         if [ "$skipTidal" = "false" ]; then
 			if [ -z "$tidalArtistUrl" ]; then 
-				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: TIDAL :: ERROR :: musicbrainz id: $lidarrArtistForeignArtistId is missing Tidal link, see: \"/config/logs/error/$lidarrArtistNameSanitized.log\" for more detail..."
-				if [ ! -d /config/extended/logs/error ]; then
-					mkdir -p /config/extended/logs/error
-				fi
-				if [ ! -f "/config/extended/logs/error/$lidarrArtistNameSanitized.log" ]; then          
-					echo "Update Musicbrainz Relationship Page: https://musicbrainz.org/artist/$lidarrArtistForeignArtistId/relationships for \"${lidarrArtistName}\" with Tidal Artist Link" >> "/config/logs/error/$lidarrArtistNameSanitized.log"
+				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: TIDAL :: ERROR :: musicbrainz id: $lidarrArtistForeignArtistId is missing Tidal link, see: \"/config/logs/tidal-arist-id-not-found.txt\" for more detail..."
+				if cat "/config/logs/tidal-arist-id-not-found.txt" | grep "https://musicbrainz.org/artist/$lidarrArtistForeignArtistId/relationships" | read; then
+					sleep 0.01
+				else
+					echo "Update Musicbrainz Relationship Page: https://musicbrainz.org/artist/$lidarrArtistForeignArtistId/relationships for \"${lidarrArtistName}\" with Tidal Artist Link" >> "/config/logs/tidal-arist-id-not-found.txt"
+					chmod 666 "/config/logs/tidal-arist-id-not-found.txt"
+					chown abc:abc "/config/logs/tidal-arist-id-not-found.txt"
 				fi
 				skipTidal=true
 			fi
