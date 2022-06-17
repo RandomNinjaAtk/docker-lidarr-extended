@@ -36,7 +36,7 @@ Configuration () {
 	log ""
 	sleep 2
 	log "############# $dockerTitle"
-	log "############# SCRIPT VERSION 1.0.0018"
+	log "############# SCRIPT VERSION 1.0.0019"
 	log "############# DOCKER VERSION $dockerVersion"
 	
 	if [ -z $topLimit ]; then
@@ -226,9 +226,10 @@ DArtistAlbumList () {
 }
 
 TidalClientSetup () {
+	log ":: TIDAL :: Verifying tidal-dl configuration"
 	touch /config/xdg/.tidal-dl.log
 	if [ ! -f /config/xdg/.tidal-dl.json ]; then
-		log "TIDAL :: No default config found, importing default config \"tidal.json\""
+		log ":: TIDAL :: No default config found, importing default config \"tidal.json\""
 		if [ -f /config/extended/scripts/tidal-dl.json ]; then
 			cp /config/extended/scripts/tidal-dl.json /config/xdg/.tidal-dl.json
 			chmod 777 -R /config/xdg/
@@ -249,7 +250,7 @@ TidalClientSetup () {
 
 	if [ -f /root/.tidal-dl.token.json ]; then
 		if [[ $(find "/config/xdg/.tidal-dl.token.json" -mtime +6 -print) ]]; then
-			log "TIDAL :: ERROR :: Token expired, removing..."
+			log ":: TIDAL :: ERROR :: Token expired, removing..."
 			rm /config/xdg/.tidal-dl.token.json
 		else
 			# create backup of token to allow for container updates
@@ -261,7 +262,7 @@ TidalClientSetup () {
 	fi
 
 	if [ ! -f /config/xdg/.tidal-dl.token.json ]; then
-		log "TIDAL :: ERROR :: Loading client for required authentication, please authenticate, then exit the client..."
+		log ":: TIDAL :: ERROR :: Loading client for required authentication, please authenticate, then exit the client..."
 		tidal-dl
 	fi
 }
@@ -373,6 +374,7 @@ NotifyLidarrForImport () {
 }
 
 DeemixClientSetup () {
+	log ":: DEEZER :: Verifying deemix configuration"
 	if [ ! -z "$arlToken" ]; then
 		# Create directories
 		mkdir -p /config/xdg/deemix
@@ -382,9 +384,9 @@ DeemixClientSetup () {
 		if [ ! -f "/config/xdg/deemix/.arl" ]; then
 			echo -n "$arlToken" > "/config/xdg/deemix/.arl"
 		fi
-		log ":: ARL Token: Configured"
+		log ":: DEEZER :: ARL Token: Configured"
 	else
-		log ":: ERROR :: arlToken setting invalid, currently set to: $arlToken"
+		log ":: DEEZER :: ERROR :: arlToken setting invalid, currently set to: $arlToken"
 	fi
 }
 
