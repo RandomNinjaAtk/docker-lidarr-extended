@@ -2,10 +2,17 @@ FROM linuxserver/lidarr:amd64-nightly
 LABEL maintainer="RandomNinjaAtk"
 
 ENV dockerTitle="lidarr-extended"
-ENV dockerVersion="1.0.0002"
+ENV dockerVersion="1.0.0003"
+ENV autoStart=true
+ENV configureLidarrWithOptimalSettings=false
 ENV audioFormat=native
 ENV audioBitrate=lossless
 ENV audioLyricType=both
+ENV addDeezerTopArtists=false
+ENV addDeezerTopAlbumArtists=false
+ENV addDeezerTopTrackArtists=false
+ENV topLimit=10
+ENV addRelatedArtists=false
 
 RUN \
 	echo "************ install packages ************" && \
