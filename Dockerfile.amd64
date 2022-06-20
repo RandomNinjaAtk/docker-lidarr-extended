@@ -2,7 +2,7 @@ FROM linuxserver/lidarr:amd64-nightly
 LABEL maintainer="RandomNinjaAtk"
 
 ENV dockerTitle="lidarr-extended"
-ENV dockerVersion="1.0.0004"
+ENV dockerVersion="1.0.0005"
 ENV LANG=en_US.UTF-8
 ENV autoStart=true
 ENV configureLidarrWithOptimalSettings=false
@@ -28,6 +28,7 @@ RUN \
 		ffmpeg \
 		python3-dev \
 		libc-dev \
+		gpgme-dev \
 		py3-pip \
 		yt-dlp && \
 	echo "************ install python packages ************" && \
