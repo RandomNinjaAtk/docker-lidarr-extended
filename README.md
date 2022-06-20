@@ -52,9 +52,75 @@ Container images are configured using parameters passed at runtime (such as thos
 | `-e plexUrl=http://x.x.x.x:32400` | ONLY used if PlexNotify.bash is used...|
 | `-e plexToken=` | ONLY used if PlexNotify.bash is used... |
 
+## Usage
+
+Here are some example snippets to help you get started creating a container.
+
+### docker
+
+```
+docker create \
+  --name=lidarr-extended \
+  -v /path/to/config/files:/config
+  -v /path/to/downloads:/downloads
+  -v /path/to/music:/music
+  -v /path/to/music-videos:/music-videos
+  -e PUID=1000
+  -e PGID=1000
+  -e autoStart=true
+  -e configureLidarrWithOptimalSettings=true
+  -e audioFormat=native
+  -e audioBitrate=lossless
+  -e dlClientSource=both
+  -e arlToken=Token_Goes_Here
+  -e addDeezerTopArtists=true
+  -e addDeezerTopAlbumArtists=true
+  -e addDeezerTopTrackArtists=true
+  -e topLimit=10
+  -e addRelatedArtists=true
+  -e plexUrl=http://x.x.x.x:32400
+  -e plexToken=Token_Goes_Here
+  --restart unless-stopped \
+  randomninjaatk/lidarr-extended 
+```
+
+
+### docker-compose
+
+Compatible with docker-compose v2 schemas.
+
+```
+version: "2.1"
+services:
+  lidarr-extended:
+    image: randomninjaatk/lidarr-extended 
+    container_name: lidarr-extended 
+    volumes:
+      - /path/to/config/files:/config
+      - /path/to/downloads:/downloads
+      - /path/to/music:/music
+      - /path/to/music-videos:/music-videos
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - autoStart=true
+      - configureLidarrWithOptimalSettings=true
+      - audioFormat=native
+      - audioBitrate=lossless
+      - dlClientSource=both
+      - arlToken=Token_Goes_Here
+      - addDeezerTopArtists=true
+      - addDeezerTopAlbumArtists=true
+      - addDeezerTopTrackArtists=true
+      - topLimit=10
+      - addRelatedArtists=true
+      - plexUrl=http://x.x.x.x:32400
+      - plexToken=Token_Goes_Here
+    restart: unless-stopped
+```
+
 # Credits
 - [Deemix download client](https://deemix.app/)
 - [Musicbrainz](https://musicbrainz.org/)
 - [Lidarr](https://lidarr.audio/)
-- [r128gain](https://github.com/desbma/r128gain)
 - [Tidal-Media-Downloader client](https://github.com/yaronzz/Tidal-Media-Downloader)
