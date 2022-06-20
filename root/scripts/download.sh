@@ -14,10 +14,12 @@ CountryCode=US
 # Debugging settings
 #dlClientSource=deezer
 #topLimit=25
-#addDeezerTopArtists=true
-#addDeezerTopAlbumArtists=true
-#addDeezerTopTrackArtists=true
-#configureLidarrWithOptimalSettings=true
+#addDeezerTopArtists=false
+#addDeezerTopAlbumArtists=false
+#addDeezerTopTrackArtists=false
+#configureLidarrWithOptimalSettings=false
+#audioFormat=opus
+#audioBitrate=160
 
 log () {
 	m_time=`date "+%F %T"`
@@ -36,7 +38,7 @@ Configuration () {
 	log ""
 	sleep 2
 	log "############# $dockerTitle"
-	log "############# SCRIPT VERSION 1.0.0030"
+	log "############# SCRIPT VERSION 1.0.0031"
 	log "############# DOCKER VERSION $dockerVersion"
 	
 	if [ -z $topLimit ]; then
@@ -74,10 +76,32 @@ Configuration () {
 	else
 		log ":: Configure Lidarr with optimal settings is disabled (enable by setting configureLidarrWithOptimalSettings=true)"
 	fi
+
+	log ":: Output format = $audioFormat"
+	log ":: Output bitrate = $audioBitrate"
 }
 
-
-
+DownloadFormat () {
+	if [ $audioFormat = native ]; then
+		if [ $audioBitrate = lossless ]; then
+			tidal-dl -q HiFi
+			deemixQuality=flac
+		elif [ $audioBitrate = high ]; then
+			tidal-dl -q High
+			deemixQuality=320
+		elif [ $audioBitrate = low ]; then
+			tidal-dl -q Normal
+			deemixQuality=128
+		else
+			log ":: ERROR :: Invalid quality options set..."
+			log ":: ERROR :: Exiting..."
+			exit
+		fi
+	else
+		tidal-dl -q HiFi
+		deemixQuality=flac
+	fi
+}
 
 AddDeezerTopArtists () {
 	getDeezerArtistsIds=($(curl -s "https://api.deezer.com/chart/0/artists?limit=$1" | jq -r ".data[].id"))
@@ -254,7 +278,6 @@ TidalClientSetup () {
 		fi
 		tidal-dl -o /downloads/lidarr-extended/incomplete
 		tidal-dl -r P1080
-		tidal-dl -q HiFi
 	fi
 
 	# check for backup token and use it if exists
@@ -338,7 +361,7 @@ DownloadProcess () {
 	fi
     
     if [ "$2" = "DEEZER" ]; then
-        deemix -b flac -p /downloads/lidarr-extended/incomplete "https://www.deezer.com/us/album/$1"
+        deemix -b $deemixQuality -p /downloads/lidarr-extended/incomplete "https://www.deezer.com/us/album/$1"
 		if [ -d "/tmp/deemix-imgs" ]; then
 			rm -rf /tmp/deemix-imgs
 		fi
@@ -359,6 +382,44 @@ DownloadProcess () {
     else
         return
     fi
+
+	if [ audioFormat != native ]; then
+		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Converting Flac Audio to  ${audioFormat^^} ${audioBitrate}k"
+		if [ $audioFormat = opus ]; then
+			options="-acodec libopus -ab ${audioBitrate}k -application audio -vbr off"
+		    extension="opus"
+		fi
+
+		if [ $audioFormat = mp3 ]; then
+			options="-acodec libmp3lame -ab ${audioBitrate}k"
+			extension="mp3"
+		fi
+
+		if [ $audioFormat = aac ]; then
+			options="-c:a libfdk_aac -b:a ${audioBitrate}k -movflags faststart"
+			extension="m4a"
+		fi
+
+		if [ $audioFormat = alac ]; then
+			options="-c:a alac -movflags faststart"
+			extension="m4a"
+		fi
+
+		find "/downloads/lidarr-extended/incomplete" -type f -iname "*.flac" -print0 | while IFS= read -r -d '' audio; do
+			file="${audio}"
+			filename="$(basename "$audio")"
+			foldername="$(dirname "$audio")"
+        	filenamenoext="${filename%.*}"
+			if ffmpeg -loglevel warning -hide_banner -nostats -i "$file" -n -vn $options "$foldername/${filenamenoext}.$extension" < /dev/null; then
+				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $filename :: Conversion to $audioFormat (${audioBitrate}k) successful"
+				rm "$file"
+			else
+				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $filename :: ERROR :: Conversion Failed"
+				rm "$foldername/${filenamenoext}.$extension"
+			fi
+		done
+
+	fi
 
     albumquality="$(find /downloads/lidarr-extended/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | head -n 1 | egrep -i -E -o "\.{1}\w*$" | sed  's/\.//g')"
     downloadedAlbumFolder="$lidarrArtistNameSanitized-$downloadedAlbumTitleClean ($3)-${albumquality^^}-$2"
@@ -820,15 +881,29 @@ ProcessWithBeets () {
 		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: BEETS MATCH FOUND!"
 	fi
 
-	GetFile=$(find "$1" -type f -iname "*.flac" | head -n1)
-	matchedTags=$(ffprobe -hide_banner -loglevel fatal -show_error -show_format -show_streams -show_programs -show_chapters -show_private_data -print_format json "$GetFile" | jq -r ".format.tags")
-	matchedTagsAlbumReleaseGroupId="$(echo $matchedTags | jq -r ".MUSICBRAINZ_RELEASEGROUPID")"
-	matchedTagsAlbumTitle="$(echo $matchedTags | jq -r ".ALBUM")"
-	matchedTagsAlbumTitleClean="$(echo "$matchedTagsAlbumTitle" | sed -e "s%[^[:alpha:][:digit:]._' ]% %g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
-	matchedTagsAlbumArtist="$(echo $matchedTags | jq -r ".album_artist")"
-	matchedTagsAlbumYear="$(echo $matchedTags | jq -r ".YEAR")"
-	matchedTagsAlbumType="$(echo $matchedTags | jq -r ".RELEASETYPE")"
+	GetFile=$(find "$1" -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | head -n1)
+	if [ $albumquality = opus ]; then
+		matchedTags=$(ffprobe -hide_banner -loglevel fatal -show_error -show_format -show_streams -show_programs -show_chapters -show_private_data -print_format json "$GetFile" | jq -r ".streams[].tags")
+	else
+		matchedTags=$(ffprobe -hide_banner -loglevel fatal -show_error -show_format -show_streams -show_programs -show_chapters -show_private_data -print_format json "$GetFile" | jq -r ".format.tags")
+	fi
+	if [ $albumquality = flac ] || [ $albumquality = opus ]; then
+		matchedTagsAlbumReleaseGroupId="$(echo $matchedTags | jq -r ".MUSICBRAINZ_RELEASEGROUPID")"
+	elif [ $albumquality = mp3 ] || [ $albumquality = m4a ]; then
+		matchedTagsAlbumReleaseGroupId="$(echo $matchedTags | jq -r '."MusicBrainz Release Group Id"')"
+	fi
+	if [ $albumquality = m4a ]; then
+		if [ $audioFormat = alac ]; then
+			albumquality=alac
+		else	
+			albumquality=aac
+		fi
+	fi
 	matchedLidarrAlbumData=$(curl -s "$lidarrUrl/api/v1/search?term=lidarr%3A$matchedTagsAlbumReleaseGroupId" -H "X-Api-Key: $lidarrApiKey" | jq -r ".[].album")
+	matchedTagsAlbumTitle="$(echo $matchedLidarrAlbumData | jq -r ".title")"
+	matchedTagsAlbumTitleClean="$(echo "$matchedTagsAlbumTitle" | sed -e "s%[^[:alpha:][:digit:]._' ]% %g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
+	matchedTagsAlbumReleaseDate="$(echo $matchedLidarrAlbumData | jq -r ".releaseDate")"
+	matchedTagsAlbumYear="${matchedTagsAlbumReleaseDate:0:4}"
 	matchedLidarrAlbumArtistId="$(echo "$matchedLidarrAlbumData" | jq -r ".artist.foreignArtistId")"
 	matchedLidarrAlbumArtistName="$(echo "$matchedLidarrAlbumData" | jq -r ".artist.artistName")"
 	matchedLidarrAlbumArtistCleanName="$(echo "$matchedLidarrAlbumData" | jq -r ".artist.cleanName")"
@@ -838,7 +913,7 @@ ProcessWithBeets () {
 	fi
 
 	touch /config/extended/logs/downloaded/found/$matchedTagsAlbumReleaseGroupId
-
+	
 	CheckLidarrBeforeImport "$matchedTagsAlbumReleaseGroupId" "beets"
 	if [ $alreadyImported = true ]; then
 		rm -rf "$1"
@@ -877,7 +952,7 @@ ProcessWithBeets () {
 	matchedLidarrAlbumArtistCleanName="$(echo "$matchedLidarrAlbumArtistName" | sed -e "s%[^[:alpha:][:digit:]._()' -]% %g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
 
 
-	downloadedAlbumFolder="${matchedLidarrAlbumArtistCleanName}-${matchedTagsAlbumTitleClean} ($matchedTagsAlbumYear)-$2-$3"
+	downloadedAlbumFolder="${matchedLidarrAlbumArtistCleanName}-${matchedTagsAlbumTitleClean} ($matchedTagsAlbumYear)-${albumquality^^}-$3"
 	if [ "$1" != "/downloads/lidarr-extended/complete/$downloadedAlbumFolder" ];then
 		mv "$1" "/downloads/lidarr-extended/complete/$downloadedAlbumFolder"
 		chmod 777 "/downloads/lidarr-extended/complete/$downloadedAlbumFolder"
@@ -968,6 +1043,16 @@ fi
 
 LidarrRootFolderCheck
 
+if [ "$dlClientSource" = "deezer" ] || [ "$dlClientSource" = "both" ]; then
+	DeemixClientSetup
+fi
+
+if [ "$dlClientSource" = "tidal" ] || [ "$dlClientSource" = "both" ]; then
+	TidalClientSetup
+fi
+
+DownloadFormat
+
 if [ "$addDeezerTopArtists" = "true" ]; then
 	AddDeezerTopArtists "$topLimit"
 fi
@@ -982,14 +1067,6 @@ fi
 
 if [ "$addRelatedArtists" = "true" ]; then
 	AddRelatedArtists
-fi
-
-if [ "$dlClientSource" = "deezer" ] || [ "$dlClientSource" = "both" ]; then
-	DeemixClientSetup
-fi
-
-if [ "$dlClientSource" = "tidal" ] || [ "$dlClientSource" = "both" ]; then
-	TidalClientSetup
 fi
 
 if [ "$dlClientSource" = "deezer" ] || [ "$dlClientSource" = "tidal" ] || [ "$dlClientSource" = "both" ]; then
