@@ -38,7 +38,7 @@ Configuration () {
 	log ""
 	sleep 2
 	log "############# $dockerTitle"
-	log "############# SCRIPT VERSION 1.0.0033"
+	log "############# SCRIPT VERSION 1.0.0034"
 	log "############# DOCKER VERSION $dockerVersion"
 	
 	if [ -z $topLimit ]; then
@@ -93,13 +93,21 @@ DownloadFormat () {
 			tidal-dl -q Normal
 			deemixQuality=128
 		else
-			log ":: ERROR :: Invalid quality options set..."
+			log ":: ERROR :: Invalid audioFormat and audioBitrate options set..."
+			log ":: ERROR :: Change audioBitrate to a low, high, or lossless..."
 			log ":: ERROR :: Exiting..."
 			exit
 		fi
 	else
-		tidal-dl -q HiFi
-		deemixQuality=flac
+		if [ $audioBitrate = lossless ] || [ $audioBitrate = high ] || [ $audioBitrate = low ]; then
+			log ":: ERROR :: Invalid audioFormat and audioBitrate options set..."
+			log ":: ERROR :: Change audioBitrate to a desired bitrate number, example: 192..."
+			log ":: ERROR :: Exiting..."
+			exit
+		else
+			tidal-dl -q HiFi
+			deemixQuality=flac
+		fi
 	fi
 }
 
