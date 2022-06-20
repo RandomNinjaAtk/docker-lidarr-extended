@@ -38,10 +38,10 @@ RUN \
 		pyacoustid \
 		deemix && \
 	echo "************ install tidal-dl ************" && \
-	git clone --branch patch-1 https://github.com/RandomNinjaAtk/Tidal-Media-Downloader.git /Tidal-Media-Downloader && \
-	cd /Tidal-Media-Downloader/TIDALDL-PY && \
-	pip install -r requirements.txt --user && \
-	python3 setup.py install
+	mkdir -p /tidal-dl && \
+	git clone --branch patch-1 https://github.com/RandomNinjaAtk/Tidal-Media-Downloader.git /tidal-dl  && \
+	pip install -r /tidal-dl/TIDALDL-PY/requirements.txt && \
+	python3 /tidal-dl/TIDALDL-PY/setup.py install
 
 # copy local files
 COPY root/ /
