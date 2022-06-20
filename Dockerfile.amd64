@@ -2,7 +2,7 @@ FROM linuxserver/lidarr:amd64-nightly
 LABEL maintainer="RandomNinjaAtk"
 
 ENV dockerTitle="lidarr-extended"
-ENV dockerVersion="1.0.0005"
+ENV dockerVersion="1.0.0006"
 ENV LANG=en_US.UTF-8
 ENV autoStart=true
 ENV configureLidarrWithOptimalSettings=false
@@ -35,9 +35,13 @@ RUN \
 	pip install \
 		yq \
 		r128gain \
-		tidal-dl \
 		pyacoustid \
-		deemix
+		deemix && \
+	echo "************ install tidal-dl ************" && \
+	git clone --branch patch-1 https://github.com/RandomNinjaAtk/Tidal-Media-Downloader.git /Tidal-Media-Downloader && \
+	cd /Tidal-Media-Downloader/TIDALDL-PY && \
+	pip install -r requirements.txt --user && \
+	python3 setup.py install
 
 # copy local files
 COPY root/ /
