@@ -5,6 +5,7 @@ ENV dockerTitle="lidarr-extended"
 ENV dockerVersion="1.0.0002"
 ENV audioFormat=native
 ENV audioBitrate=lossless
+ENV audioLyricType=both
 
 RUN \
 	echo "************ install packages ************" && \
