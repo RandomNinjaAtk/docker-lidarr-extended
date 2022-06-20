@@ -38,7 +38,7 @@ Configuration () {
 	log ""
 	sleep 2
 	log "############# $dockerTitle"
-	log "############# SCRIPT VERSION 1.0.0036"
+	log "############# SCRIPT VERSION 1.0.0037"
 	log "############# DOCKER VERSION $dockerVersion"
 	
 	if [ -z $topLimit ]; then
@@ -412,7 +412,7 @@ DownloadProcess () {
             return
         fi
     elif [ "$2" = "TIDAL" ]; then
-        tidal-dl -l "https://tidal.com/browse/album/$1"
+        tidal-dl -o /downloads/lidarr-extended/incomplete -l "https://tidal.com/browse/album/$1"
         touch /config/extended/logs/downloaded/tidal/$1
         downloadCount=$(find /downloads/lidarr-extended/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
         if [ $downloadCount -le 0 ]; then
