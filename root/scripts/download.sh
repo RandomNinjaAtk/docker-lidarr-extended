@@ -38,7 +38,7 @@ Configuration () {
 	log ""
 	sleep 2
 	log "############# $dockerTitle"
-	log "############# SCRIPT VERSION 1.0.0035"
+	log "############# SCRIPT VERSION 1.0.0036"
 	log "############# DOCKER VERSION $dockerVersion"
 	
 	if [ -z $topLimit ]; then
@@ -79,6 +79,10 @@ Configuration () {
 
 	log ":: Output format = $audioFormat"
 	log ":: Output bitrate = $audioBitrate"
+
+	if [ $audioLyricType = both ] || [ $audioLyricType = explicit ] || [ $audioLyricType = explicit ]; then
+		log ":: Preferred audio lyric type: $audioLyricType"
+	fi
 }
 
 DownloadFormat () {
@@ -743,7 +747,7 @@ SearchProcess () {
 		fi
 		
 		# Search for explicit matches
-		if [ $audioLyricType = both ] ||  [ $audioLyricType = explicit ]; then
+		if [ $audioLyricType = both ] || [ $audioLyricType = explicit ]; then
 			# Deezer search
 			if [ "$skipDeezer" = "false" ]; then
 				for dId in ${!deezeArtistIds[@]}; do
@@ -823,7 +827,7 @@ SearchProcess () {
 		fi
 
 		# Search for clean matches
-		if [ $audioLyricType = both ] ||  [ $audioLyricType = clean ]; then
+		if [ $audioLyricType = both ] || [ $audioLyricType = clean ]; then
 			# Deezer search
 			if [ "$skipDeezer" = "false" ]; then
 				for dId in ${!deezeArtistIds[@]}; do
