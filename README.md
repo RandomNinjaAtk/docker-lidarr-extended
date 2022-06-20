@@ -36,7 +36,7 @@ Container images are configured using parameters passed at runtime (such as thos
 | `-v /downloads` | Path to your download folder location. (<strong>required path</strong>)|
 | `-v /music` | Path to your music folder location.|
 | `-v /music-videos` | Path to your music-videos folder location.|
-| `-e TZ=America/New_York` | Specify a timezone to use EG America/New_York. |
+| `-e TZ=America/New_York` | Specify a timezone to use EST, America/New_York. |
 | `-e PUID=1000` | for UserID - see below for explanation |
 | `-e PGID=1000` | for GroupID - see below for explanation |
 | `-e autoStart=true` | true = enabled :: Runs script automatically on startup |
