@@ -38,7 +38,7 @@ Configuration () {
 	log ""
 	sleep 2
 	log "############# $dockerTitle"
-	log "############# SCRIPT VERSION 1.0.0032"
+	log "############# SCRIPT VERSION 1.0.0033"
 	log "############# DOCKER VERSION $dockerVersion"
 	
 	if [ -z $topLimit ]; then
@@ -311,6 +311,34 @@ TidalClientSetup () {
 		log ":: TIDAL :: Purging album list cache..."
 		find /config/extended/cache/tidal -type f -name "*.json" -delete
 	fi
+
+	if [ ! -d "/downloads/lidarr-extended" ]; then
+		mkdir -p /downloads/lidarr-extended
+		chmod 777 /downloads/lidarr-extended
+		chown abc:abc /downloads/lidarr-extended
+	fi
+	
+	if [ ! -d "/downloads/lidarr-extended/incomplete" ]; then
+		mkdir -p /downloads/lidarr-extended/incomplete
+		chmod 777 /downloads/lidarr-extended/incomplete
+		chown abc:abc /downloads/lidarr-extended/incomplete
+	else
+		rm -rf /downloads/lidarr-extended/incomplete/*
+	fi
+
+	tidal-dl -l "https://tidal.com/browse/album/60261268"
+
+    downloadCount=$(find /downloads/lidarr-extended/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
+    if [ $downloadCount -le 0 ]; then
+		log ":: tidal-dl client setup verification :: ERROR :: Download failed"
+    	log ":: tidal-dl client setup verification :: ERROR :: Please review log for errors in client"
+		log ":: tidal-dl client setup verification :: ERROR :: Exiting..."
+		rm -rf /downloads/lidarr-extended/incomplete/*
+		exit
+    else
+		rm -rf /downloads/lidarr-extended/incomplete/*
+		log ":: tidal-dl client setup verification :: Download Verification Success"
+	fi
 }
 
 DownloadProcess () {
@@ -361,7 +389,7 @@ DownloadProcess () {
 	fi
     
     if [ "$2" = "DEEZER" ]; then
-        deemix -b $deemixQuality -p /downloads/lidarr-extended/incomplete "https://www.deezer.com/us/album/$1"
+        deemix -b $deemixQuality -p /downloads/lidarr-extended/incomplete "https://www.deezer.com/album/$1"
 		if [ -d "/tmp/deemix-imgs" ]; then
 			rm -rf /tmp/deemix-imgs
 		fi
@@ -476,6 +504,36 @@ DeemixClientSetup () {
 	if [ -d /config/extended/cache/deezer ]; then
 		log ":: DEEZER :: Purging album list cache..."
 		find /config/extended/cache/deezer -type f -name "*-albums.json" -delete
+	fi
+	
+	if [ ! -d "/downloads/lidarr-extended" ]; then
+		mkdir -p /downloads/lidarr-extended
+		chmod 777 /downloads/lidarr-extended
+		chown abc:abc /downloads/lidarr-extended
+	fi
+	
+	if [ ! -d "/downloads/lidarr-extended/incomplete" ]; then
+		mkdir -p /downloads/lidarr-extended/incomplete
+		chmod 777 /downloads/lidarr-extended/incomplete
+		chown abc:abc /downloads/lidarr-extended/incomplete
+	else
+		rm -rf /downloads/lidarr-extended/incomplete/*
+	fi
+
+	deemix -b $deemixQuality -p /downloads/lidarr-extended/incomplete "https://www.deezer.com/album/197472472"
+	if [ -d "/tmp/deemix-imgs" ]; then
+		rm -rf /tmp/deemix-imgs
+	fi
+    downloadCount=$(find /downloads/lidarr-extended/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
+    if [ $downloadCount -le 0 ]; then
+		log ":: deemix client setup verification :: ERROR :: Download failed"
+    	log ":: deemix client setup verification :: ERROR :: Please review log for errors in client"
+		log ":: deemix client setup verification :: ERROR :: Exiting..."
+		rm -rf /downloads/lidarr-extended/incomplete/*
+		exit
+    else
+		rm -rf /downloads/lidarr-extended/incomplete/*
+		log ":: deemix client setup verification :: Download Verification Success"
 	fi
 }
 
@@ -1043,6 +1101,8 @@ fi
 
 LidarrRootFolderCheck
 
+DownloadFormat
+
 if [ "$dlClientSource" = "deezer" ] || [ "$dlClientSource" = "both" ]; then
 	DeemixClientSetup
 fi
@@ -1050,8 +1110,6 @@ fi
 if [ "$dlClientSource" = "tidal" ] || [ "$dlClientSource" = "both" ]; then
 	TidalClientSetup
 fi
-
-DownloadFormat
 
 if [ "$addDeezerTopArtists" = "true" ]; then
 	AddDeezerTopArtists "$topLimit"
