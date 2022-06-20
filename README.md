@@ -36,6 +36,7 @@ Container images are configured using parameters passed at runtime (such as thos
 | `-v /downloads` | Path to your download folder location. (<strong>required path</strong>)|
 | `-v /music` | Path to your music folder location.|
 | `-v /music-videos` | Path to your music-videos folder location.|
+| `-e TZ=America/New_York` | Specify a timezone to use EG America/New_York. |
 | `-e PUID=1000` | for UserID - see below for explanation |
 | `-e PGID=1000` | for GroupID - see below for explanation |
 | `-e autoStart=true` | true = enabled :: Runs script automatically on startup |
@@ -61,25 +62,27 @@ Here are some example snippets to help you get started creating a container.
 ```
 docker create \
   --name=lidarr-extended \
-  -v /path/to/config/files:/config
-  -v /path/to/downloads:/downloads
-  -v /path/to/music:/music
-  -v /path/to/music-videos:/music-videos
-  -e PUID=1000
-  -e PGID=1000
-  -e autoStart=true
-  -e configureLidarrWithOptimalSettings=true
-  -e audioFormat=native
-  -e audioBitrate=lossless
-  -e dlClientSource=both
-  -e arlToken=Token_Goes_Here
-  -e addDeezerTopArtists=true
-  -e addDeezerTopAlbumArtists=true
-  -e addDeezerTopTrackArtists=true
-  -e topLimit=10
-  -e addRelatedArtists=true
-  -e plexUrl=http://x.x.x.x:32400
-  -e plexToken=Token_Goes_Here
+  -v /path/to/config/files:/config \
+  -v /path/to/downloads:/downloads \
+  -v /path/to/music:/music \
+  -v /path/to/music-videos:/music-videos \
+  -p 8686:8686 \
+  -e TZ=America/New_York \
+  -e PUID=1000 \
+  -e PGID=1000 \
+  -e autoStart=true \
+  -e configureLidarrWithOptimalSettings=true \
+  -e audioFormat=native \
+  -e audioBitrate=lossless \
+  -e dlClientSource=both \
+  -e arlToken=Token_Goes_Here \
+  -e addDeezerTopArtists=true \
+  -e addDeezerTopAlbumArtists=true \
+  -e addDeezerTopTrackArtists=true \
+  -e topLimit=10 \
+  -e addRelatedArtists=true \
+  -e plexUrl=http://x.x.x.x:32400 \
+  -e plexToken=Token_Goes_Here \
   --restart unless-stopped \
   randomninjaatk/lidarr-extended 
 ```
@@ -101,6 +104,7 @@ services:
       - /path/to/music:/music
       - /path/to/music-videos:/music-videos
     environment:
+      - TZ=America/New_York
       - PUID=1000
       - PGID=1000
       - autoStart=true
@@ -116,6 +120,8 @@ services:
       - addRelatedArtists=true
       - plexUrl=http://x.x.x.x:32400
       - plexToken=Token_Goes_Here
+    ports:
+      - 8686:8686
     restart: unless-stopped
 ```
 
