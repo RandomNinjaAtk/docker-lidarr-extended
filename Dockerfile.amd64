@@ -2,7 +2,9 @@ FROM linuxserver/lidarr:amd64-nightly
 LABEL maintainer="RandomNinjaAtk"
 
 ENV dockerTitle="lidarr-extended"
-ENV dockerVersion="1.0.0001"
+ENV dockerVersion="1.0.0002"
+ENV audioFormat=native
+ENV audioBitrate=lossless
 
 RUN \
 	echo "************ install packages ************" && \
