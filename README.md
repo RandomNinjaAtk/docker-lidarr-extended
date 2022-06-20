@@ -75,6 +75,7 @@ docker create \
   -e configureLidarrWithOptimalSettings=true \
   -e audioFormat=native \
   -e audioBitrate=lossless \
+  -e audioLyricType=both \
   -e dlClientSource=both \
   -e arlToken=Token_Goes_Here \
   -e addDeezerTopArtists=true \
@@ -112,6 +113,7 @@ services:
       - configureLidarrWithOptimalSettings=true
       - audioFormat=native
       - audioBitrate=lossless
+      - audioLyricType=both
       - dlClientSource=both
       - arlToken=Token_Goes_Here
       - addDeezerTopArtists=true
