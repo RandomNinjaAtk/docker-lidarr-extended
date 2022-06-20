@@ -38,7 +38,7 @@ Configuration () {
 	log ""
 	sleep 2
 	log "############# $dockerTitle"
-	log "############# SCRIPT VERSION 1.0.0031"
+	log "############# SCRIPT VERSION 1.0.0032"
 	log "############# DOCKER VERSION $dockerVersion"
 	
 	if [ -z $topLimit ]; then
@@ -383,7 +383,7 @@ DownloadProcess () {
         return
     fi
 
-	if [ audioFormat != native ]; then
+	if [ $audioFormat != native ]; then
 		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Converting Flac Audio to  ${audioFormat^^} ${audioBitrate}k"
 		if [ $audioFormat = opus ]; then
 			options="-acodec libopus -ab ${audioBitrate}k -application audio -vbr off"
