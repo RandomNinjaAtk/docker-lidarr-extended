@@ -22,7 +22,7 @@ lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
 else
-	lidarrUrlBase="/${lidarrUrlBase}"
+	lidarrUrlBase="/$(echo "$lidarrUrlBase" | sed "s/\///g")"
 fi
 lidarrApiKey="$(cat /config/config.xml | xq | jq -r .Config.ApiKey)"
 lidarrUrl="http://127.0.0.1:8686${lidarrUrlBase}"
