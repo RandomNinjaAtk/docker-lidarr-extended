@@ -1,9 +1,5 @@
 #!/usr/bin/with-contenv bash
 lidarrArtistId=$lidarr_artist_id
-if [ "$lidarr_eventtype" == "Test" ]; then
-	log "Tested"
-	exit 0	
-fi
 
 # auto-clean up log file to reduce space usage
 if [ -f "/config/logs/Plex_MusicVideos.txt" ]; then
@@ -16,6 +12,11 @@ log () {
     m_time=`date "+%F %T"`
     echo $m_time" :: "$1
 }
+
+if [ "$lidarr_eventtype" == "Test" ]; then
+	log "Tested Successfully"
+	exit 0	
+fi
 
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
