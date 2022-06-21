@@ -109,6 +109,8 @@ if [ "$skipTidal" = "false" ]; then
 						"$fileDirectory/$fileNameNoExt.mkv"
 					done
 					log "Downloaded Video to: $fileDirectory/$fileNameNoExt.mkv"
+					chmod 666 "$fileDirectory/$fileNameNoExt.mkv"
+					chown abc:abc "$fileDirectory/$fileNameNoExt.mkv"
 					rm -rf /downloads/lidarr-extended/music-videos/*
 				fi
 
