@@ -1,14 +1,10 @@
 #!/usr/bin/with-contenv bash
-lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
-if [ "$lidarrUrlBase" = "null" ]; then
-	lidarrUrlBase=""
-else
-	lidarrUrlBase="/${lidarrUrlBase}"
-fi
-lidarrApiKey="$(cat /config/config.xml | xq | jq -r .Config.ApiKey)"
-lidarrUrl="http://127.0.0.1:8686${lidarrUrlBase}"
-lidarrRootFolderPath="$(dirname "$lidarr_artist_path")"
 lidarrArtistId=$lidarr_artist_id
+if [ "$lidarr_eventtype" == "Test" ]; then
+	log "Tested"
+	exit 0	
+fi
+
 # auto-clean up log file to reduce space usage
 if [ -f "/config/logs/Plex_MusicVideos.txt" ]; then
 	find /config/logs -type f -name "Plex_MusicVideos.txt" -size +1024k -delete
@@ -21,11 +17,15 @@ log () {
     echo $m_time" :: "$1
 }
 
-if [ "$lidarr_eventtype" == "Test" ]; then
-	log "Tested"
-	exit 0	
+lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
+if [ "$lidarrUrlBase" = "null" ]; then
+	lidarrUrlBase=""
+else
+	lidarrUrlBase="/${lidarrUrlBase}"
 fi
-
+lidarrApiKey="$(cat /config/config.xml | xq | jq -r .Config.ApiKey)"
+lidarrUrl="http://127.0.0.1:8686${lidarrUrlBase}"
+lidarrRootFolderPath="$(dirname "$lidarr_artist_path")"
 lidarrArtistData="$(curl -s "$lidarrUrl/api/v1/artist/$lidarrArtistId?apikey=${lidarrApiKey}")"
 lidarrArtistPath="$(echo "${lidarrArtistData}" | jq -r " .path")"
 tidalArtistUrl=$(echo "${lidarrArtistData}" | jq -r ".links | .[] | select(.name==\"tidal\") | .url")
