@@ -1,4 +1,4 @@
-#!/usr/bin/with-contenv bash
+#!/usr/bin/env bash
 lidarrArtistId=$lidarr_artist_id
 
 # auto-clean up log file to reduce space usage
