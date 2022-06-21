@@ -37,7 +37,7 @@ Configuration () {
 	log ""
 	sleep 2
 	log "############# $dockerTitle"
-	log "############# SCRIPT VERSION 1.0.0040"
+	log "############# SCRIPT VERSION 1.0.0041"
 	log "############# DOCKER VERSION $dockerVersion"
 	
 	if [ -z $topLimit ]; then
@@ -82,6 +82,7 @@ Configuration () {
 	if [ $audioLyricType = both ] || [ $audioLyricType = explicit ] || [ $audioLyricType = explicit ]; then
 		log ":: Preferred audio lyric type: $audioLyricType"
 	fi
+	log ":: Tidal Country Code set to: $tidalCountryCode"
 }
 
 DownloadFormat () {
