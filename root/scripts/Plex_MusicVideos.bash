@@ -9,10 +9,9 @@ lidarrApiKey="$(cat /config/config.xml | xq | jq -r .Config.ApiKey)"
 lidarrUrl="http://127.0.0.1:8686${lidarrUrlBase}"
 lidarrRootFolderPath="$(dirname "$lidarr_artist_path")"
 lidarrArtistId=$lidarr_artist_id
-CountryCode=US
 # auto-clean up log file to reduce space usage
-if [ -f "/config/logs/PlexNotify.txt" ]; then
-	find /config/logs -type f -name "PlexNotify.txt" -size +1024k -delete
+if [ -f "/config/logs/Plex_MusicVideos.txt" ]; then
+	find /config/logs -type f -name "Plex_MusicVideos.txt" -size +1024k -delete
 fi
 exec &>> "/config/logs/Plex_MusicVideos.txt"
 chmod 777 "/config/logs/Plex_MusicVideos.txt"
@@ -60,7 +59,7 @@ if [ "$skipTidal" = "false" ]; then
 						
 	if [ ! -f /config/extended/cache/tidal/$tidalArtistId-videos.json ]; then
 		log "Caching Artist Videos List"
-		curl -s "https://api.tidal.com/v1/artists/${tidalArtistId}/videos?limit=10000&countryCode=$CountryCode&filter=ALL" -H 'x-tidal-token: CzET4vdadNUFQ5JU' > /config/extended/cache/tidal/$tidalArtistId-videos.json
+		curl -s "https://api.tidal.com/v1/artists/${tidalArtistId}/videos?limit=10000&countryCode=$tidalCountryCode&filter=ALL" -H 'x-tidal-token: CzET4vdadNUFQ5JU' > /config/extended/cache/tidal/$tidalArtistId-videos.json
 	fi
 
 fi
