@@ -37,7 +37,7 @@ Configuration () {
 	log ""
 	sleep 2
 	log "############# $dockerTitle"
-	log "############# SCRIPT VERSION 1.0.0041"
+	log "############# SCRIPT VERSION 1.0.0042"
 	log "############# DOCKER VERSION $dockerVersion"
 	
 	if [ -z $topLimit ]; then
@@ -479,10 +479,8 @@ DownloadProcess () {
         mv "$file" "/downloads/lidarr-extended/complete/$downloadedAlbumFolder"/
         
     done
-    chmod 777 "/downloads/lidarr-extended/complete/$downloadedAlbumFolder"
-    chown abc:abc "/downloads/lidarr-extended/complete/$downloadedAlbumFolder"
-    chmod 666 "/downloads/lidarr-extended/complete/$downloadedAlbumFolder"/*
-    chown abc:abc "/downloads/lidarr-extended/complete/$downloadedAlbumFolder"/*
+    chmod -R 777 /downloads/lidarr-extended/complete
+    chown -R abc:abc /downloads/lidarr-extended/complete
 
     ProcessWithBeets "/downloads/lidarr-extended/complete/$downloadedAlbumFolder" "${albumquality^^}" "$2"
 
@@ -1035,11 +1033,9 @@ ProcessWithBeets () {
 	downloadedAlbumFolder="${matchedLidarrAlbumArtistCleanName}-${matchedTagsAlbumTitleClean} ($matchedTagsAlbumYear)-${albumquality^^}-$3"
 	if [ "$1" != "/downloads/lidarr-extended/complete/$downloadedAlbumFolder" ];then
 		mv "$1" "/downloads/lidarr-extended/complete/$downloadedAlbumFolder"
-		chmod 777 "/downloads/lidarr-extended/complete/$downloadedAlbumFolder"
-		chown abc:abc "/downloads/lidarr-extended/complete/$downloadedAlbumFolder"
-		chmod 666 "/downloads/lidarr-extended/complete/$downloadedAlbumFolder"/*
-		chown abc:abc "/downloads/lidarr-extended/complete/$downloadedAlbumFolder"/*
 	fi
+	chmod -R 777 "/downloads/lidarr-extended/complete"
+	chown -R abc:abc "/downloads/lidarr-extended/complete"
 }
 
 CheckLidarrBeforeImport () {
