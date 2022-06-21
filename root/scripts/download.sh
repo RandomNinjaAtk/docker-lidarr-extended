@@ -9,7 +9,6 @@ lidarrApiKey="$(cat /config/config.xml | xq | jq -r .Config.ApiKey)"
 lidarrUrl="http://127.0.0.1:8686${lidarrUrlBase}"
 agent="lidarr-extended ( https://github.com/RandomNinjaAtk/docker-lidarr-extended )"
 musicbrainzMirror=https://musicbrainz.org
-CountryCode=US
 
 # Debugging settings
 #dlClientSource=deezer
@@ -38,7 +37,7 @@ Configuration () {
 	log ""
 	sleep 2
 	log "############# $dockerTitle"
-	log "############# SCRIPT VERSION 1.0.0038"
+	log "############# SCRIPT VERSION 1.0.0039"
 	log "############# DOCKER VERSION $dockerVersion"
 	
 	if [ -z $topLimit ]; then
@@ -728,11 +727,11 @@ SearchProcess () {
 			fi
 						
 			if [ ! -f /config/extended/cache/tidal/$tidalArtistId-videos.json ]; then
-				curl -s "https://api.tidal.com/v1/artists/${tidalArtistId}/videos?limit=10000&countryCode=$CountryCode&filter=ALL" -H 'x-tidal-token: CzET4vdadNUFQ5JU' > /config/extended/cache/tidal/$tidalArtistId-videos.json
+				curl -s "https://api.tidal.com/v1/artists/${tidalArtistId}/videos?limit=10000&countryCode=$tidalCountryCode&filter=ALL" -H 'x-tidal-token: CzET4vdadNUFQ5JU' > /config/extended/cache/tidal/$tidalArtistId-videos.json
 			fi
 
 			if [ ! -f /config/extended/cache/tidal/$tidalArtistId-albums.json ]; then
-				curl -s "https://api.tidal.com/v1/artists/${tidalArtistId}/albums?limit=10000&countryCode=$CountryCode&filter=ALL" -H 'x-tidal-token: CzET4vdadNUFQ5JU' > /config/extended/cache/tidal/$tidalArtistId-albums.json
+				curl -s "https://api.tidal.com/v1/artists/${tidalArtistId}/albums?limit=10000&countryCode=$tidalCountryCode&filter=ALL" -H 'x-tidal-token: CzET4vdadNUFQ5JU' > /config/extended/cache/tidal/$tidalArtistId-albums.json
 			fi
 
 			tidalArtistAlbumsData=$(cat "/config/extended/cache/tidal/$tidalArtistId-albums.json" | jq -r ".items | sort_by(.numberOfTracks) | sort_by(.explicit) | reverse |.[]")
