@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.0046"
+scriptVersion="1.0.0047"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -1112,7 +1112,7 @@ LidarrTaskStatusCheck () {
 	until false
 	do
 		taskCount=$(curl -s "$lidarrUrl/api/v1/command?apikey=${lidarrApiKey}" | jq -r .[].status | grep -v completed | grep -v failed | wc -l)
-		if [ "$taskCount" -gt "3" ]; then
+		if [ "$taskCount" -ge "1" ]; then
 			sleep 1
 		else
 			break
