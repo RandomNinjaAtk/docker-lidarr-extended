@@ -292,7 +292,7 @@ TidalClientSetup () {
 	fi
 
 	# check for backup token and use it if exists
-	if [ ! -f /root/.tidal-dl.token.json ]; then
+	if [ ! -f /config/xdg/.tidal-dl.token.json ]; then
 		if [ -f /config/backup/tidal-dl.token.json ]; then
 			cp -p /config/backup/tidal-dl.token.json /root/.tidal-dl.token.json
 			# remove backup token
@@ -300,7 +300,7 @@ TidalClientSetup () {
 		fi
 	fi
 
-	if [ -f /root/.tidal-dl.token.json ]; then
+	if [ -f /config/xdg/.tidal-dl.token.json ]; then
 		if [[ $(find "/config/xdg/.tidal-dl.token.json" -mtime +6 -print) ]]; then
 			log ":: TIDAL :: ERROR :: Token expired, removing..."
 			rm /config/xdg/.tidal-dl.token.json
