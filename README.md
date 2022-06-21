@@ -46,6 +46,7 @@ Container images are configured using parameters passed at runtime (such as thos
 | `-e audioLyricType=both` | both or explicit or clean :: both, is explicit perferred matching, explicit is explicit releases only matching and clean is clean releases only matching |
 | `-e dlClientSource=both` | deezer, tidal or both :: set to both, to use both clients, tidal requires extra steps, view logging output |
 | `-e arlToken=` | User ARL token for deemix client |
+| `-e tidalCountryCode=US` | Country Code required for tidal |
 | `-e addDeezerTopArtists=false` | true = enabled :: Enabling this will enable the extended script to automatically add artists that are on the Deezer Top Artist Chart to your existing Lidarr instance |
 | `-e addDeezerTopAlbumArtists=false` | true = enabled :: Enabling this will enable the extended script to automatically add artists that are on the Deezer Top Album Chart to your existing Lidarr instance |
 | `-e addDeezerTopTrackArtists=false` | true = enabled :: Enabling this will enable the extended script to automatically add artists that are on the Deezer Top Track Chart to your existing Lidarr instance |
@@ -78,6 +79,7 @@ docker create \
   -e audioLyricType=both \
   -e dlClientSource=both \
   -e arlToken=Token_Goes_Here \
+  -e tidalCountryCode=US \
   -e addDeezerTopArtists=true \
   -e addDeezerTopAlbumArtists=true \
   -e addDeezerTopTrackArtists=true \
@@ -116,6 +118,7 @@ services:
       - audioLyricType=both
       - dlClientSource=both
       - arlToken=Token_Goes_Here
+      - tidalCountryCode=US
       - addDeezerTopArtists=true
       - addDeezerTopAlbumArtists=true
       - addDeezerTopTrackArtists=true
