@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.0043"
+scriptVersion="1.0.0044"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -283,6 +283,9 @@ DArtistAlbumList () {
 TidalClientSetup () {
 	log ":: TIDAL :: Verifying tidal-dl configuration"
 	touch /config/xdg/.tidal-dl.log
+	if [ -f /config/xdg/.tidal-dl.json ]; then
+		rm /config/xdg/.tidal-dl.json
+	fi
 	if [ ! -f /config/xdg/.tidal-dl.json ]; then
 		log ":: TIDAL :: No default config found, importing default config \"tidal.json\""
 		if [ -f /config/extended/scripts/tidal-dl.json ]; then
