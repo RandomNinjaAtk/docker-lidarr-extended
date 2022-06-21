@@ -114,7 +114,8 @@ if [ "$skipTidal" = "false" ]; then
 					rm -rf /downloads/lidarr-extended/music-videos/*
 				fi
 
-
+			else
+				log "ERROR :: No vidoes found that match local tracks"
 			fi
 		done
 	else
