@@ -17,6 +17,19 @@ if [ "$lidarr_eventtype" == "Test" ]; then
 	exit 0	
 fi
 
+until false
+do
+	taskCount=$(ps aux | grep Plex_MusicVideos.bash | grep -v grep | wc -l)
+	if [ "$taskCount" -ge "1" ]; then
+		sleep 1
+	else
+		break
+	fi
+done
+
+ps aux | grep Lidarr | grep -v grep
+Plex_MusicVideos.bash
+
 plexLibraries="$(curl -s "$plexUrl/library/sections?X-Plex-Token=$plexToken" | xq .)"
 if echo "$plexLibraries" | grep "$lidarrRootFolderPath" | read; then
 	if echo "$plexLibraries" | jq -r ".MediaContainer.Directory[] | select(.Location.\"@path\"==\"$lidarrRootFolderPath\") | .\"@key\"" &>/dev/null; then
