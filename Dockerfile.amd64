@@ -14,7 +14,7 @@ ENV addDeezerTopAlbumArtists=false
 ENV addDeezerTopTrackArtists=false
 ENV topLimit=10
 ENV addRelatedArtists=false
-ENV CountryCode=US
+ENV tidalCountryCode=US
 
 RUN \
 	echo "************ install packages ************" && \
