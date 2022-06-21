@@ -33,6 +33,17 @@ tidalArtistId="$(echo "$tidalArtistUrl" | grep -o '[[:digit:]]*' | sort -u)"
 
 if [ "$dlClientSource" = "tidal" ] || [ "$dlClientSource" = "both" ]; then
 	skipTidal=false
+	if [ ! -f /config/xdg/.tidal-dl.token.json ]; then
+		log "TIDAL :: ERROR :: tidal-dl client not configured, please run the main script \"/config/extended/scripts/download.sh\" to configure the client"
+		log "Exiting..."
+		exit 0
+	fi
+	
+	if [ -d /config/extended/cache/tidal ]; then
+		log "TIDAL :: Purging video list cache..."
+		find /config/extended/cache/tidal -type f -name "*-videos.json" -delete
+	fi
+	
 else
 	skipTidal=true
 fi
