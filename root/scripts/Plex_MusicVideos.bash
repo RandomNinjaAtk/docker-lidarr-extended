@@ -74,11 +74,10 @@ if [ "$skipTidal" = "false" ]; then
 	tidalArtistVideoCount=$(cat /config/extended/cache/tidal/$tidalArtistId-videos.json | jq -r '.items | sort_by(.duration) | .[].id' | wc -l)
 	if [ $tidalArtistVideoCount -ge 1 ]; then
 		for i in $(cat /config/extended/cache/tidal/$tidalArtistId-videos.json | jq -r '.items | sort_by(.duration) | .[].id'); do
-			tidalVideoTitle=$(cat /config/extended/cache/tidal/$tidalArtistId-videos.json | jq -r ".items[] | select(.id==$i) | .title")
-			if find "$lidarrArtistPath" -type f -iname "* - $tidalVideoTitle.*" | read; then
-				echo "$i :: $tidalVideoTitle :: Match"
-				matchedFile="$(find "$lidarrArtistPath" -type f -iname "* - $tidalVideoTitle.*")"
-				echo "$matchedFile"
+			tidalVideoTitle=$(cat /config/extended/cache/tidal/$tidalArtistId-videos.json | jq -r ".items[] | select(.id==$i) | .title" | sed "s/ (official video)//gi")
+			if find "$lidarrArtistPath" -type f -regex ".*- $tidalVideoTitle\.\(flac\|opus\|m4a\|mp3\)" | read; then
+				matchedFile="$(find "$lidarrArtistPath" -type f -regex ".*- $tidalVideoTitle\.\(flac\|opus\|m4a\|mp3\)" | head -n1)"
+				log "Video :: $i :: $tidalVideoTitle :: Matched :: $matchedFile"
 				fileDirectory="$(dirname "$matchedFile")"
 				fileName="$(basename "$matchedFile")"
 				fileNameNoExt="${fileName%.*}"
@@ -91,7 +90,7 @@ if [ "$skipTidal" = "false" ]; then
 					else
 						rm -rf /downloads/lidarr-extended/music-videos/*
 					fi
-					
+
 					tidal-dl -r P1080
 					tidal-dl -o /downloads/lidarr-extended/music-videos -l "https://tidal.com/browse/video/$i"
 
@@ -106,6 +105,8 @@ if [ "$skipTidal" = "false" ]; then
 					chmod 666 "$fileDirectory/$fileNameNoExt.mkv"
 					chown abc:abc "$fileDirectory/$fileNameNoExt.mkv"
 					rm -rf /downloads/lidarr-extended/music-videos/*
+				else
+					log "ERROR :: Previously Downloaded $fileDirectory/$fileNameNoExt.mkv ($i)"
 				fi
 
 			else
