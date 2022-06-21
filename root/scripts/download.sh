@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.0045"
+scriptVersion="1.0.0046"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -218,11 +218,15 @@ DArtistAlbumList () {
 	
 	albumcount="$(python3 /config/extended/scripts/discography.py "$1" | sort -u | wc -l)"
 	
-	log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Searching for All Albums...."
-	log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle ::  $albumcount Albums found!"
+	log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Searching for \"$1\" All Albums...."
+	if [ $albumcount -gt 0 ]; then
+		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle ::  $albumcount Albums found!"
+	else
+		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: ERROR :: $albumcount Albums found, skipping..."
+		return
+	fi
 	albumids=($(python3 /config/extended/scripts/discography.py "$1" | sort -u))
-	
-	
+		
 	for id in ${!albumids[@]}; do
 		currentprocess=$(( $id + 1 ))
 		albumid="${albumids[$id]}"
@@ -278,6 +282,7 @@ DArtistAlbumList () {
 		echo "]" >> /config/extended/cache/deezer/$1-albums.json
 		rm /config/extended/cache/deezer/$1-albums-temp.json
 	fi
+	
 }
 
 TidalClientSetup () {
@@ -763,6 +768,9 @@ SearchProcess () {
 			if [ "$skipDeezer" = "false" ]; then
 				for dId in ${!deezeArtistIds[@]}; do
 					deezeArtistId="${deezeArtistIds[$dId]}"
+					if [ ! -f "/config/extended/cache/deezer/$deezeArtistId-albums.json" ]; then
+						continue
+					fi
 					deezerArtistAlbumsData=$(cat "/config/extended/cache/deezer/$deezeArtistId-albums.json" | jq -r "sort_by(.nb_tracks) | sort_by(.explicit_lyrics) | reverse | .[]")
 					
 					deezerArtistAlbumsIds=($(echo "${deezerArtistAlbumsData}" | jq -r "select(.explicit_lyrics=="true") | select(.title | test(\"^$lidarrAlbumTitleFirstWord\";\"i\")) | .id"))
@@ -843,6 +851,9 @@ SearchProcess () {
 			if [ "$skipDeezer" = "false" ]; then
 				for dId in ${!deezeArtistIds[@]}; do
 					deezeArtistId="${deezeArtistIds[$dId]}"
+					if [ ! -f "/config/extended/cache/deezer/$deezeArtistId-albums.json" ]; then
+						continue
+					fi
 					deezerArtistAlbumsData=$(cat "/config/extended/cache/deezer/$deezeArtistId-albums.json" | jq -r "sort_by(.release_date) | sort_by(.explicit_lyrics) | reverse | .[]")
 					deezerArtistAlbumsIds=($(echo "${deezerArtistAlbumsData}" | jq -r "select(.explicit_lyrics=="false") | select(.title | test(\"^$lidarrAlbumTitleFirstWord\";\"i\")) | .id"))
 
