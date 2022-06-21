@@ -38,13 +38,7 @@ if [ "$dlClientSource" = "tidal" ] || [ "$dlClientSource" = "both" ]; then
 		log "TIDAL :: ERROR :: tidal-dl client not configured, please run the main script \"/config/extended/scripts/download.sh\" to configure the client"
 		log "Exiting..."
 		exit 0
-	fi
-	
-	if [ -d /config/extended/cache/tidal ]; then
-		log "TIDAL :: Purging video list cache..."
-		find /config/extended/cache/tidal -type f -name "*-videos.json" -delete
-	fi
-	
+	fi	
 else
 	skipTidal=true
 fi
@@ -80,7 +74,7 @@ if [ "$skipTidal" = "false" ]; then
 	tidalArtistVideoCount=$(cat /config/extended/cache/tidal/$tidalArtistId-videos.json | jq -r '.items | sort_by(.duration) | .[].id' | wc -l)
 	if [ $tidalArtistVideoCount -ge 1 ]; then
 		for i in $(cat /config/extended/cache/tidal/$tidalArtistId-videos.json | jq -r '.items | sort_by(.duration) | .[].id'); do
-			tidalVideoTitle=$(cat e/config/xtended/cache/tidal/$tidalArtistId-videos.json | jq -r ".items[] | select(.id==$i) | .title")
+			tidalVideoTitle=$(cat /config/extended/cache/tidal/$tidalArtistId-videos.json | jq -r ".items[] | select(.id==$i) | .title")
 			if find "$lidarrArtistPath" -type f -iname "* - $tidalVideoTitle.*" | read; then
 				echo "$i :: $tidalVideoTitle :: Match"
 				matchedFile="$(find "$lidarrArtistPath" -type f -iname "* - $tidalVideoTitle.*")"
