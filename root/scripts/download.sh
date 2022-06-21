@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.0044"
+scriptVersion="1.0.0045"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -763,7 +763,7 @@ SearchProcess () {
 			if [ "$skipDeezer" = "false" ]; then
 				for dId in ${!deezeArtistIds[@]}; do
 					deezeArtistId="${deezeArtistIds[$dId]}"
-					deezerArtistAlbumsData=$(cat "/config/extended/cache/deezer/$deezeArtistId-albums.json" | jq -r "sort_by(.release_date) | sort_by(.explicit_lyrics) | reverse | .[]")
+					deezerArtistAlbumsData=$(cat "/config/extended/cache/deezer/$deezeArtistId-albums.json" | jq -r "sort_by(.nb_tracks) | sort_by(.explicit_lyrics) | reverse | .[]")
 					
 					deezerArtistAlbumsIds=($(echo "${deezerArtistAlbumsData}" | jq -r "select(.explicit_lyrics=="true") | select(.title | test(\"^$lidarrAlbumTitleFirstWord\";\"i\")) | .id"))
 
