@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.0050"
+scriptVersion="1.0.0051"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -299,7 +299,7 @@ TidalClientSetup () {
 		fi
 
 	fi
-
+	tidal-dl -o /downloads/lidarr-extended/incomplete
 	DownloadFormat
 
 	# check for backup token and use it if exists
