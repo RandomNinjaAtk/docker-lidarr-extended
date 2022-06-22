@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.0049"
+scriptVersion="1.0.0050"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -297,9 +297,10 @@ TidalClientSetup () {
 			cp /config/extended/scripts/tidal-dl.json /config/xdg/.tidal-dl.json
 			chmod 777 -R /config/xdg/
 		fi
-		tidal-dl -o /downloads/lidarr-extended/incomplete
-		tidal-dl -r P1080
+
 	fi
+
+	DownloadFormat
 
 	# check for backup token and use it if exists
 	if [ ! -f /config/xdg/.tidal-dl.token.json ]; then
@@ -346,17 +347,17 @@ TidalClientSetup () {
 	else
 		rm -rf /downloads/lidarr-extended/incomplete/*
 	fi
-
+	
 	tidal-dl -o /downloads/lidarr-extended/incomplete -l "60261268"
-
-    downloadCount=$(find /downloads/lidarr-extended/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
-    if [ $downloadCount -le 0 ]; then
+	
+	downloadCount=$(find /downloads/lidarr-extended/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
+	if [ $downloadCount -le 0 ]; then
 		log ":: tidal-dl client setup verification :: ERROR :: Download failed"
-    	log ":: tidal-dl client setup verification :: ERROR :: Please review log for errors in client"
+		log ":: tidal-dl client setup verification :: ERROR :: Please review log for errors in client"
 		log ":: tidal-dl client setup verification :: ERROR :: Exiting..."
 		rm -rf /downloads/lidarr-extended/incomplete/*
 		exit
-    else
+	else
 		rm -rf /downloads/lidarr-extended/incomplete/*
 		log ":: tidal-dl client setup verification :: Download Verification Success"
 	fi
