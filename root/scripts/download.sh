@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.0048"
+scriptVersion="1.0.0049"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -650,6 +650,8 @@ SearchProcess () {
 		lidarrAlbumTitleFirstWord=${lidarrAlbumTitleCleanSpaces%% *}
 		lidarrAlbumForeignAlbumId=$(echo "$lidarrAlbumData" | jq -r ".foreignAlbumId")
         lidarrAlbumReleases=$(echo "$lidarrAlbumData" | jq -r ".releases")
+		lidarrAlbumReleasesMinTrackCount=$(echo "$lidarrAlbumData" | jq -r ".releases[].trackCount" | sort | head -n1)
+		lidarrAlbumReleasesMaxTrackCount=$(echo "$lidarrAlbumData" | jq -r ".releases[].trackCount" | sort -r | head -n1)
         #echo $lidarrAlbumData | jq -r 
         lidarrAlbumWordCount=$(echo $lidarrAlbumTitle | wc -w)
         #echo $lidarrAlbumReleases | jq -r 
@@ -669,6 +671,7 @@ SearchProcess () {
 		lidarrAlbumReleaseDateClean="$(echo $lidarrAlbumReleaseDate | sed -e "s%[^[:digit:]]%%g")"
 		currentDate="$(date "+%F")"
 		currentDateClean="$(echo "$currentDate" | sed -e "s%[^[:digit:]]%%g")"
+
 		if [[ ${currentDateClean} -gt ${lidarrAlbumReleaseDateClean} ]]; then
 			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: Starting Search..."
 		else
@@ -751,7 +754,7 @@ SearchProcess () {
 				curl -s "https://api.tidal.com/v1/artists/${tidalArtistId}/albums?limit=10000&countryCode=$tidalCountryCode&filter=ALL" -H 'x-tidal-token: CzET4vdadNUFQ5JU' > /config/extended/cache/tidal/$tidalArtistId-albums.json
 			fi
 
-			tidalArtistAlbumsData=$(cat "/config/extended/cache/tidal/$tidalArtistId-albums.json" | jq -r ".items | sort_by(.numberOfTracks) | sort_by(.explicit) | reverse |.[]")
+			tidalArtistAlbumsData=$(cat "/config/extended/cache/tidal/$tidalArtistId-albums.json" | jq -r ".items | sort_by(.numberOfTracks) | sort_by(.explicit) | reverse |.[] | select((.numberOfTracks <= $lidarrAlbumReleasesMaxTrackCount) and .numberOfTracks >= $lidarrAlbumReleasesMinTrackCount)")
 			tidalArtistAlbumsIds=($(echo "${tidalArtistAlbumsData}" | jq -r "select(.explicit=="true") | .id"))
 		fi	
 	
@@ -771,8 +774,9 @@ SearchProcess () {
 					if [ ! -f "/config/extended/cache/deezer/$deezeArtistId-albums.json" ]; then
 						continue
 					fi
-					deezerArtistAlbumsData=$(cat "/config/extended/cache/deezer/$deezeArtistId-albums.json" | jq -r "sort_by(.nb_tracks) | sort_by(.explicit_lyrics) | reverse | .[]")
-					
+
+					deezerArtistAlbumsData=$(cat "/config/extended/cache/deezer/$deezeArtistId-albums.json" | jq -r "sort_by(.nb_tracks) | sort_by(.explicit_lyrics) | reverse | .[] | select((.nb_tracks <= $lidarrAlbumReleasesMaxTrackCount) and .nb_tracks >= $lidarrAlbumReleasesMinTrackCount)")
+				
 					deezerArtistAlbumsIds=($(echo "${deezerArtistAlbumsData}" | jq -r "select(.explicit_lyrics=="true") | select(.title | test(\"^$lidarrAlbumTitleFirstWord\";\"i\")) | .id"))
 
 					if echo "${deezerArtistAlbumsData}" | jq -r .title | grep -i "^$lidarrAlbumTitle" | read; then
@@ -854,7 +858,7 @@ SearchProcess () {
 					if [ ! -f "/config/extended/cache/deezer/$deezeArtistId-albums.json" ]; then
 						continue
 					fi
-					deezerArtistAlbumsData=$(cat "/config/extended/cache/deezer/$deezeArtistId-albums.json" | jq -r "sort_by(.release_date) | sort_by(.explicit_lyrics) | reverse | .[]")
+					deezerArtistAlbumsData=$(cat "/config/extended/cache/deezer/$deezeArtistId-albums.json" | jq -r "sort_by(.nb_tracks) | sort_by(.explicit_lyrics) | reverse | .[] | select((.nb_tracks <= $lidarrAlbumReleasesMaxTrackCount) and .nb_tracks >= $lidarrAlbumReleasesMinTrackCount)")
 					deezerArtistAlbumsIds=($(echo "${deezerArtistAlbumsData}" | jq -r "select(.explicit_lyrics=="false") | select(.title | test(\"^$lidarrAlbumTitleFirstWord\";\"i\")) | .id"))
 
 					if echo "${deezerArtistAlbumsData}" | jq -r .title | grep -i "^$lidarrAlbumTitle" | read; then
