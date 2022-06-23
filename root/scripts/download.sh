@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.0052"
+scriptVersion="1.0.0053"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -634,12 +634,13 @@ GetMissingCutOffList () {
     missingAlbumIdsTotal=$(echo "$missingAlbumIds" | sed -r '/^\s*$/d' | wc -l)
     log ":: FINDING MISSING ALBUMS: ${missingAlbumIdsTotal} Found"
 
-    log ":: Downloading cutoff list..."
-    cutoffAlbumIds=$(curl -s "$lidarrUrl/api/v1/wanted/cutoff?page=1&pagesize=1000000000&sortKey=releaseDate&sortDirection=desc&apikey=${lidarrApiKey}" | jq -r '.records | .[] | .id')
-    cutoffAlbumIdsTotal=$(echo "$cutoffAlbumIds" | sed -r '/^\s*$/d'| wc -l)
-    log ":: FINDING CUTOFF ALBUMS: ${cutoffAlbumIdsTotal} Found"
+    #log ":: Downloading cutoff list..."
+    #cutoffAlbumIds=$(curl -s "$lidarrUrl/api/v1/wanted/cutoff?page=1&pagesize=1000000000&sortKey=releaseDate&sortDirection=desc&apikey=${lidarrApiKey}" | jq -r '.records | .[] | .id')
+    #cutoffAlbumIdsTotal=$(echo "$cutoffAlbumIds" | sed -r '/^\s*$/d'| wc -l)
+    #log ":: FINDING CUTOFF ALBUMS: ${cutoffAlbumIdsTotal} Found"
 
-    wantedListAlbumIds="$(echo "${missingAlbumIds}" && echo "${cutoffAlbumIds}")"
+    #wantedListAlbumIds="$(echo "${missingAlbumIds}" && echo "${cutoffAlbumIds}")"
+    wantedListAlbumIds="$(echo "${missingAlbumIds}")"
     wantedListAlbumTotal=$(echo "$wantedListAlbumIds" | sed -r '/^\s*$/d' | wc -l)
     log ":: Searching for $wantedListAlbumTotal items"
 
