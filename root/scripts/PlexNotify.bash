@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 lidarrRootFolderPath="$(dirname "$lidarr_artist_path")"
+
 # auto-clean up log file to reduce space usage
 if [ -f "/config/logs/PlexNotify.txt" ]; then
 	find /config/logs -type f -name "PlexNotify.txt" -size +1024k -delete
@@ -28,11 +29,38 @@ do
 done
 
 plexLibraries="$(curl -s "$plexUrl/library/sections?X-Plex-Token=$plexToken" | xq .)"
+if echo "$plexLibraries" | jq -r ".MediaContainer.Directory[] | .\"@key\"" &>/dev/null; then
+	if echo "$plexLibraries" | jq -r ".MediaContainer.Directory[].Location.\"@path\"" &>/dev/null; then
+		plexPaths=$(echo "$plexLibraries" | jq -r ".MediaContainer.Directory[].Location.\"@path\"")
+	else
+		plexPaths=$(echo "$plexLibraries" | jq -r ".MediaContainer.Directory[].Location[].\"@path\"")
+	fi
+else
+	if echo "$plexLibraries" | jq -r ".MediaContainer.Directory.Location.\"@path\"" &>/dev/null; then
+		plexPaths=$(echo "$plexLibraries" | jq -r ".MediaContainer.Directory.Location.\"@path\"")
+	else
+		plexPaths=$(echo "$plexLibraries" | jq -r ".MediaContainer.Directory.Location[].\"@path\"")
+	fi
+fi
 if echo "$plexLibraries" | grep "$lidarrRootFolderPath" | read; then
 	if echo "$plexLibraries" | jq -r ".MediaContainer.Directory[] | select(.Location.\"@path\"==\"$lidarrRootFolderPath\") | .\"@key\"" &>/dev/null; then
-		plexlibrarykey="$(echo "$plexLibraries" | jq -r ".MediaContainer.Directory[] | select(.Location.\"@path\"==\"$lidarrRootFolderPath\") | .\"@key\"" | head -n 1)"
+		if echo "$plexLibraries" | jq -r ".MediaContainer.Directory[].Location.\"@path\"" &>/dev/null; then
+			plexlibrarykey="$(echo "$plexLibraries" | jq -r ".MediaContainer.Directory[] | select(.Location.\"@path\"==\"$lidarrRootFolderPath\") | .\"@key\"" | head -n 1)"
+		else
+			plexlibrarykey="$(echo "$plexLibraries" | jq -r ".MediaContainer.Directory[] | select(.Location[].\"@path\"==\"$lidarrRootFolderPath\") | .\"@key\"" | head -n 1)"
+		fi
+	elif echo "$plexLibraries" | jq -r ".MediaContainer.Directory[] | select(.Location[].\"@path\"==\"$lidarrRootFolderPath\") | .\"@key\"" &>/dev/null; then
+		if echo "$plexLibraries" | jq -r ".MediaContainer.Directory[].Location.\"@path\"" &>/dev/null; then
+			plexlibrarykey="$(echo "$plexLibraries" | jq -r ".MediaContainer.Directory[] | select(.Location.\"@path\"==\"$lidarrRootFolderPath\") | .\"@key\"" | head -n 1)"
+		else
+			plexlibrarykey="$(echo "$plexLibraries" | jq -r ".MediaContainer.Directory[] | select(.Location[].\"@path\"==\"$lidarrRootFolderPath\") | .\"@key\"" | head -n 1)"
+		fi
 	else
-		plexlibrarykey="$(echo "$plexLibraries" | jq -r ".MediaContainer.Directory | select(.Location.\"@path\"==\"$lidarrRootFolderPath\") | .\"@key\"" | head -n 1)"
+		if echo "$plexLibraries" | jq -r ".MediaContainer.Directory.Location.\"@path\"" &>/dev/null; then
+			plexlibrarykey="$(echo "$plexLibraries" | jq -r ".MediaContainer.Directory | select(.Location.\"@path\"==\"$lidarrRootFolderPath\") | .\"@key\"" | head -n 1)"
+		else
+			plexlibrarykey="$(echo "$plexLibraries" | jq -r ".MediaContainer.Directory | select(.Location[].\"@path\"==\"$lidarrRootFolderPath\") | .\"@key\"" | head -n 1)"
+		fi
 	fi
 	if [ -z "$plexlibrarykey" ]; then
 		log "ERROR: No Plex Library key found for \"$lidarrRootFolderPath\""
@@ -46,6 +74,7 @@ else
 		log "ERROR :: plexToken is currently set to \"$plexToken\""
 		exit 1
 	else
+		log "ERROR: Found Plex Paths: $plexPaths"
 		log "ERROR: No Plex Library found containing path \"$lidarrRootFolderPath\""
 		log "ERROR: Add \"$lidarrRootFolderPath\" as a folder to a Plex Music Library"
 		exit 1
