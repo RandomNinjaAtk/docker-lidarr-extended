@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.0051"
+scriptVersion="1.0.0052"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -519,6 +519,16 @@ DeemixClientSetup () {
 		log ":: DEEZER :: ARL Token: Configured"
 	else
 		log ":: DEEZER :: ERROR :: arlToken setting invalid, currently set to: $arlToken"
+	fi
+	
+	if [ -f "/config/xdg/deemix/config.json" ]; then
+		rm /config/xdg/deemix/config.json
+	fi
+	
+	if [ -f "/config/extended/scripts/deemix_config.json" ]; then
+		log ":: DEEZER :: Configuring deemix client"
+		cp /config/extended/scripts/deemix_config.json /config/xdg/deemix/config.json
+		chmod 777 /config/xdg/deemix/config.json
 	fi
 	
 	if [ -d /config/extended/cache/deezer ]; then
