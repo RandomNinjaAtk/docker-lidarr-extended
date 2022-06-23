@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.0053"
+scriptVersion="1.0.0054"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -21,6 +21,25 @@ musicbrainzMirror=https://musicbrainz.org
 #audioFormat=opus
 #audioBitrate=160
 
+echo "-----------------------------------------------------------------"
+echo "           |~) _ ._  _| _ ._ _ |\ |o._  o _ |~|_|_|"
+echo "           |~\(_|| |(_|(_)| | || \||| |_|(_||~| | |<"
+echo "            Presenets: lidarr-extended ($scriptVersion)"
+echo "                 May the beats be with you!"
+echo "-----------------------------------------------------------------"
+echo "Donate: https://github.com/sponsors/RandomNinjaAtk"
+echo "Project: https://github.com/RandomNinjaAtk/docker-lidarr-extended"
+echo "Support: https://discord.gg/JumQXDc"
+echo "-----------------------------------------------------------------"
+sleep 5
+echo ""
+echo "Lift off in..."; sleep 0.5
+echo "5"; sleep 1
+echo "4"; sleep 1
+echo "3"; sleep 1
+echo "2"; sleep 1
+echo "1"; sleep 1
+
 log () {
 	m_time=`date "+%F %T"`
 	echo $m_time" "$1
@@ -34,12 +53,7 @@ Configuration () {
 	log "To kill script, use the following command:"
 	log "kill -9 $processstartid"
 	log "kill -9 $processdownloadid"
-	log ""
-	log ""
 	sleep 2
-	log "############# $dockerTitle"
-	log "############# SCRIPT VERSION $scriptVersion"
-	log "############# DOCKER VERSION $dockerVersion"
 	
 	if [ -z $topLimit ]; then
 		topLimit=10
