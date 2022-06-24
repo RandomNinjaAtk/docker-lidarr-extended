@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.0057"
+scriptVersion="1.0.0058"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -47,7 +47,9 @@ log () {
 	echo $m_time" "$1
 }
 
-mkdir -p /config/xdg
+if [ ! -d /config/xdg ]; then
+	mkdir -p /config/xdg
+fi
 
 Configuration () {
 	processstartid="$(ps -A -o pid,cmd|grep "start.sh" | grep -v grep | head -n 1 | awk '{print $1}')"
@@ -317,28 +319,18 @@ TidalClientSetup () {
 		fi
 
 	fi
+	if [ -d /config/backup ]; then 
+		rm -rf /config/backup
+	fi
+	
 	tidal-dl -o /downloads/lidarr-extended/incomplete
 	DownloadFormat
 
-	# check for backup token and use it if exists
-	if [ ! -f /config/xdg/.tidal-dl.token.json ]; then
-		if [ -f /config/backup/tidal-dl.token.json ]; then
-			cp -p /config/backup/tidal-dl.token.json /root/.tidal-dl.token.json
-			# remove backup token
-			rm /config/backup/tidal-dl.token.json
-		fi
-	fi
-
+	
 	if [ -f /config/xdg/.tidal-dl.token.json ]; then
 		if [[ $(find "/config/xdg/.tidal-dl.token.json" -mtime +6 -print) ]]; then
 			log ":: TIDAL :: ERROR :: Token expired, removing..."
 			rm /config/xdg/.tidal-dl.token.json
-		else
-			# create backup of token to allow for container updates
-			if [ ! -d /config/backup ]; then
-				mkdir -p /config/backup
-			fi
-			cp -p /config/xdg/.tidal-dl.token.json /config/backup/tidal-dl.token.json
 		fi
 	fi
 
@@ -572,14 +564,15 @@ DeemixClientSetup () {
 	if [ -d "/tmp/deemix-imgs" ]; then
 		rm -rf /tmp/deemix-imgs
 	fi
-    downloadCount=$(find /downloads/lidarr-extended/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
-    if [ $downloadCount -le 0 ]; then
+	downloadCount=$(find /downloads/lidarr-extended/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
+	if [ $downloadCount -le 0 ]; then
 		log ":: deemix client setup verification :: ERROR :: Download failed"
-    	log ":: deemix client setup verification :: ERROR :: Please review log for errors in client"
+		log ":: deemix client setup verification :: ERROR :: Please review log for errors in client"
+		log ":: deemix client setup verification :: ERROR :: Try updating your ARL Token to possibly resolve the issue..."
 		log ":: deemix client setup verification :: ERROR :: Exiting..."
 		rm -rf /downloads/lidarr-extended/incomplete/*
 		exit
-    else
+	else
 		rm -rf /downloads/lidarr-extended/incomplete/*
 		log ":: deemix client setup verification :: Download Verification Success"
 	fi
