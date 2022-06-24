@@ -16,6 +16,7 @@ ENV topLimit=10
 ENV addRelatedArtists=false
 ENV tidalCountryCode=US
 ENV numberOfRelatedArtistsToAddPerArtist=5
+ENV beetsMatchPercentage=90
 
 RUN \
 	echo "************ install packages ************" && \
