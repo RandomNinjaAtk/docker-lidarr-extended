@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.0058"
+scriptVersion="1.0.0059"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -518,6 +518,7 @@ NotifyLidarrForImport () {
 DeemixClientSetup () {
 	log ":: DEEZER :: Verifying deemix configuration"
 	if [ ! -z "$arlToken" ]; then
+		arlToken="$(echo $arlToken | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
 		# Create directories
 		mkdir -p /config/xdg/deemix
 		if [ -f "/config/xdg/deemix/.arl" ]; then
