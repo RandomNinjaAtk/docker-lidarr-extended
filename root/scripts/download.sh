@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.0054"
+scriptVersion="1.0.0056"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -20,6 +20,8 @@ musicbrainzMirror=https://musicbrainz.org
 #configureLidarrWithOptimalSettings=false
 #audioFormat=opus
 #audioBitrate=160
+#addRelatedArtists=true
+#numberOfRelatedArtistsToAddPerArtist=1
 
 echo "-----------------------------------------------------------------"
 echo "           |~) _ ._  _| _ ._ _ |\ |o._  o _ |~|_|_|"
@@ -79,7 +81,7 @@ Configuration () {
 
 	if [ "$addRelatedArtists" = "true" ]; then
 		log ":: Add Deezer Related Artists is enabled"
-		
+		log ":: Add $numberOfRelatedArtistsToAddPerArtist Deezer related Artist for each Lidarr Artist"
 	else
 		log ":: Add Deezer Related Artists is disabled (enable by setting addRelatedArtists=true)"
 	fi
@@ -212,7 +214,8 @@ AddDeezerArtistToLidarr () {
 				\"metadataProfileId\": $metadataProfileId,
 				\"monitored\":true,
 				\"monitor\":\"all\",
-				\"rootFolderPath\": \"$path\"
+				\"rootFolderPath\": \"$path\",
+				\"addOptions\":{\"searchForMissingAlbums\":false}
 				}"
 
 			if echo "$lidarrArtistIds" | grep "^${musicbrainz_main_artist_id}$" | read; then
@@ -225,6 +228,7 @@ AddDeezerArtistToLidarr () {
 		else
 			log ":: $currentprocess of $getDeezerArtistsIdsCount :: $deezerArtistName :: Artist not found in Musicbrainz, please add \"https://deezer.com/artist/${deezerArtistId}\" to the correct artist on Musicbrainz"
 		fi
+		LidarrTaskStatusCheck
 	done
 }
 
@@ -1064,11 +1068,12 @@ ProcessWithBeets () {
 				\"foreignArtistId\": \"$foreignId\",
 				\"qualityProfileId\": $qualityProfileId,
 				\"metadataProfileId\": $metadataProfileId,
-				\"rootFolderPath\": \"$path\"
+				\"rootFolderPath\": \"$path\",
+				\"addOptions\":{\"searchForMissingAlbums\":false}
 				}"
 			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Adding Missing Artist to Lidarr :: $matchedLidarrAlbumArtistName ($matchedLidarrAlbumArtistId)..."
 			lidarrAddArtist=$(curl -s "$lidarrUrl/api/v1/artist" -X POST -H 'Content-Type: application/json' -H "X-Api-Key: $lidarrApiKey" --data-raw "$data")
-			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Allowing Lidarr Artist Update, pause for 2 min..."
+			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Allowing Lidarr Artist Update..."
 			LidarrTaskStatusCheck
 		fi
 	fi
@@ -1126,12 +1131,19 @@ AddRelatedArtists () {
 		lidarrArtistName="$(echo "${lidarrArtistData}" | jq -r " .artistName")"
 		deezerArtistUrl=$(echo "${lidarrArtistData}" | jq -r ".links | .[] | select(.name==\"deezer\") | .url")
 		deezerArtistIds=($(echo "$deezerArtistUrl" | grep -o '[[:digit:]]*' | sort -u))
+		lidarrArtistMonitored=$(echo "${lidarrArtistData}" | jq -r ".monitored")
+		log ":: Adding Related Artists for $lidarrArtistName"
+		if [ $lidarrArtistMonitored = false ]; then
+			log ":: Artist is not monitored :: skipping..."
+			continue
+		fi
+
 
 		for dId in ${!deezerArtistIds[@]}; do
 			deezerArtistId="${deezerArtistIds[$dId]}"
-			deezerRelatedArtistData=$(curl -sL --fail "https://api.deezer.com/artist/$deezerArtistId/related")
-			getDeezerArtistsIds=($(echo $deezerRelatedArtistData | jq -r .data[].id))
-			getDeezerArtistsIdsCount=$(echo $deezerRelatedArtistData | jq -r .data[].id | wc -l)
+			deezerRelatedArtistData=$(curl -sL --fail "https://api.deezer.com/artist/$deezerArtistId/related?limit=$numberOfRelatedArtistsToAddPerArtist"| jq -r ".data | sort_by(.nb_fan) | reverse | .[]")
+			getDeezerArtistsIds=($(echo $deezerRelatedArtistData | jq -r .id))
+			getDeezerArtistsIdsCount=$(echo $deezerRelatedArtistData | jq -r .id | wc -l)
 			description="$lidarrArtistName Related Artists"
 			AddDeezerArtistToLidarr			
 		done
