@@ -2,7 +2,7 @@ FROM linuxserver/lidarr:amd64-nightly
 LABEL maintainer="RandomNinjaAtk"
 
 ENV dockerTitle="lidarr-extended"
-ENV dockerVersion="1.0.0013"
+ENV dockerVersion="1.0.0014"
 ENV LANG=en_US.UTF-8
 ENV autoStart=true
 ENV configureLidarrWithOptimalSettings=false
@@ -30,23 +30,15 @@ RUN \
 		ffmpeg \
 		python3-dev \
 		libc-dev \
-		gpgme-dev \
 		py3-pip \
 		yt-dlp && \
 	echo "************ install python packages ************" && \
-	pip install \
+	pip install --upgrade \
 		yq \
 		r128gain \
 		pyacoustid \
-		deemix && \
-	echo "************ install tidal-dl ************" && \
-	mkdir -p /Tidal-Media-Downloader && \
-	mkdir -p /config/xdg && \
-	git clone https://github.com/yaronzz/Tidal-Media-Downloader.git /Tidal-Media-Downloader && \
-	cd /Tidal-Media-Downloader/TIDALDL-PY && \
-	pip install -r requirements.txt && \
-	python3 setup.py install && \
-	rm -rf /config/xdg
+		tidal-dl \
+		deemix
 
 # copy local files
 COPY root/ /
