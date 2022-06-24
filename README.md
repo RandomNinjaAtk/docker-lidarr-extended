@@ -52,6 +52,7 @@ Container images are configured using parameters passed at runtime (such as thos
 | `-e addDeezerTopTrackArtists=false` | true = enabled :: Enabling this will enable the extended script to automatically add artists that are on the Deezer Top Track Chart to your existing Lidarr instance |
 | `-e topLimit=10` | This setting controls the amount of Top Artist (Albums/Tracks/Artists) to add to Lidarr from Deezer |
 | `-e addRelatedArtists=false` | true = enabled :: WARNING !!! WARNING !!! Enabling this can cause an endless loop of additional artists.... Enabling this will enable the extended script to automatically add artists that are related to your existing Lidarr artists from Deezer |
+| `-e numberOfRelatedArtistsToAddPerArtist=5` | 1-20 :: This will limit the number of related artists to add per artist in your library :: Minimum is 1, Maximum is 20 |
 | `-e plexUrl=http://x.x.x.x:32400` | ONLY used if PlexNotify.bash is used...|
 | `-e plexToken=` | ONLY used if PlexNotify.bash is used... |
 
@@ -84,7 +85,8 @@ docker create \
   -e addDeezerTopAlbumArtists=true \
   -e addDeezerTopTrackArtists=true \
   -e topLimit=10 \
-  -e addRelatedArtists=true \
+  -e addRelatedArtists=false \
+  -e numberOfRelatedArtistsToAddPerArtist=5 \
   -e plexUrl=http://x.x.x.x:32400 \
   -e plexToken=Token_Goes_Here \
   --restart unless-stopped \
@@ -123,7 +125,8 @@ services:
       - addDeezerTopAlbumArtists=true
       - addDeezerTopTrackArtists=true
       - topLimit=10
-      - addRelatedArtists=true
+      - addRelatedArtists=false
+      - numberOfRelatedArtistsToAddPerArtist=5
       - plexUrl=http://x.x.x.x:32400
       - plexToken=Token_Goes_Here
     ports:
