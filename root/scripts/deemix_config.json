@@ -64,7 +64,7 @@
     "barcode": true,
     "bpm": true,
     "replayGain": false,
-    "label": true,
+    "label": false,
     "lyrics": false,
     "syncedLyrics": false,
     "copyright": false,
