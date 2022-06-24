@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.0059"
+scriptVersion="1.0.0060"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -22,12 +22,13 @@ musicbrainzMirror=https://musicbrainz.org
 #audioBitrate=160
 #addRelatedArtists=true
 #numberOfRelatedArtistsToAddPerArtist=1
+#beetsMatchPercentage=85
 
 echo "-----------------------------------------------------------------"
 echo "           |~) _ ._  _| _ ._ _ |\ |o._  o _ |~|_|_|"
 echo "           |~\(_|| |(_|(_)| | || \||| |_|(_||~| | |<"
 echo "              Presents: lidarr-extended ($scriptVersion)"
-echo "                 May the beats be with you!"
+echo "                  May the beats be with you!"
 echo "-----------------------------------------------------------------"
 echo "Donate: https://github.com/sponsors/RandomNinjaAtk"
 echo "Project: https://github.com/RandomNinjaAtk/docker-lidarr-extended"
@@ -102,6 +103,13 @@ Configuration () {
 		log ":: Preferred audio lyric type: $audioLyricType"
 	fi
 	log ":: Tidal Country Code set to: $tidalCountryCode"
+
+	log ":: Beets Matching Threshold ${beetsMatchPercentage}%"
+	beetsMatchPercentage=$(expr 100 - $beetsMatchPercentage )
+	if cat /config/extended/scripts/beets-config.yaml | grep "strong_rec_thresh: 0.04" | read; then
+		log ":: Configuring Beets Matching Threshold"
+		sed -i "s/strong_rec_thresh: 0.04/strong_rec_thresh: 0.${beetsMatchPercentage}/g" /config/extended/scripts/beets-config.yaml
+	fi
 }
 
 DownloadFormat () {
