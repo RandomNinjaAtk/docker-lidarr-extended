@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.0056"
+scriptVersion="1.0.0057"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -26,7 +26,7 @@ musicbrainzMirror=https://musicbrainz.org
 echo "-----------------------------------------------------------------"
 echo "           |~) _ ._  _| _ ._ _ |\ |o._  o _ |~|_|_|"
 echo "           |~\(_|| |(_|(_)| | || \||| |_|(_||~| | |<"
-echo "            Presenets: lidarr-extended ($scriptVersion)"
+echo "              Presents: lidarr-extended ($scriptVersion)"
 echo "                 May the beats be with you!"
 echo "-----------------------------------------------------------------"
 echo "Donate: https://github.com/sponsors/RandomNinjaAtk"
