@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.0060"
+scriptVersion="1.0.61"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -366,7 +366,7 @@ TidalClientSetup () {
 		rm -rf /downloads/lidarr-extended/incomplete/*
 	fi
 	
-	tidal-dl -o /downloads/lidarr-extended/incomplete -l "60261268"
+	tidal-dl -o /downloads/lidarr-extended/incomplete -l "166356219"
 	
 	downloadCount=$(find /downloads/lidarr-extended/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
 	if [ $downloadCount -le 0 ]; then
