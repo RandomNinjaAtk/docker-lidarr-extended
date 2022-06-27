@@ -13,7 +13,9 @@ The architectures supported by this image are:
 
 | Architecture | Available | Tag |
 | :----: | :----: | ---- |
-| x86-64 | ✅ | amd64-latest |
+| multi | ✅ | latest |
+| x86-64 | ✅ | amd64 |
+| arm64v8 | ✅ | arm64v8 |
 
 ## Version Tags
 
