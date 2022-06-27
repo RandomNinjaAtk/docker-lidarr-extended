@@ -19,19 +19,18 @@ ENV numberOfRelatedArtistsToAddPerArtist=5
 ENV beetsMatchPercentage=90
 
 RUN \
-	echo "************ install packages ************" && \
+	echo "*** install packages ***" && \
 	apk add -U --upgrade --no-cache \
 		flac \
 		beets \
 		jq \
 		ffmpeg \
-		python3-dev \
+		python3 \
 		py3-pip \
 		yt-dlp && \
-	echo "************ install python packages ************" && \
-	pip install \
+	echo "*** install python packages ***" && \
+	pip3 install --upgrade \
 		yq \
-		r128gain \
 		pyacoustid \
 		deemix
 
