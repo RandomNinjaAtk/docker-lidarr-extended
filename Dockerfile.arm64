@@ -20,9 +20,7 @@ ENV beetsMatchPercentage=90
 
 RUN \
 	echo "************ install packages ************" && \
-	apk add  -U --update --no-cache \
-		musl-locales \
-		musl-locales-lang \
+	apk add -U --upgrade --no-cache \
 		flac \
 		beets \
 		jq \
