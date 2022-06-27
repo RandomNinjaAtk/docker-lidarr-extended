@@ -33,6 +33,8 @@ RUN \
 		ffmpeg \
 		python3 \
 		py3-pip \
+		gcc \
+		libc-dev \
 		yt-dlp && \
 	echo "*** install python packages ***" && \
 	pip3 install --upgrade \
