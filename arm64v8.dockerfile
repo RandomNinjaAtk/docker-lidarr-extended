@@ -4,12 +4,12 @@ FROM alpine AS builder
 ENV QEMU_URL https://github.com/balena-io/qemu/releases/download/v3.0.0%2Bresin/qemu-3.0.0+resin-aarch64.tar.gz
 RUN apk add curl && curl -L ${QEMU_URL} | tar zxvf - -C . --strip-components 1
 
+FROM linuxserver/lidarr:arm64v8-nightly
+
 # Add QEMU
 COPY --from=builder qemu-aarch64-static /usr/bin
 
-FROM linuxserver/lidarr:arm64v8-nightly
 LABEL maintainer="RandomNinjaAtk"
-
 ENV dockerTitle="lidarr-extended"
 ENV dockerVersion="1.0.141"
 ENV LANG=en_US.UTF-8
