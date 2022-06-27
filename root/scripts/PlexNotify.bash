@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 lidarrRootFolderPath="$(dirname "$lidarr_artist_path")"
+version=1.0.0
 
 # auto-clean up log file to reduce space usage
 if [ -f "/config/logs/PlexNotify.txt" ]; then
 	find /config/logs -type f -name "PlexNotify.txt" -size +1024k -delete
 fi
+
 exec &>> "/config/logs/PlexNotify.txt"
 chmod 777 "/config/logs/PlexNotify.txt"
 
@@ -18,15 +20,18 @@ if [ "$lidarr_eventtype" == "Test" ]; then
 	exit 0	
 fi
 
-until false
-do
-	taskCount=$(ps aux | grep Plex_MusicVideos.bash | grep -v grep | wc -l)
-	if [ "$taskCount" -ge "1" ]; then
-		sleep 1
-	else
-		break
-	fi
-done
+# Validate connection
+plexVersion=$(curl -s "$plexUrl/?X-Plex-Token=$plexToken" | xq . | jq -r '.MediaContainer."@version"')
+if [ $plexVersion = null ]; then
+	log "ERROR :: Cannot communicate with Plex"
+	log "ERROR :: Please check your plexUrl and plexToken"
+	log "ERROR :: Configured plexUrl \"$plexUrl\""
+	log "ERROR :: Configured plexToken \"$plexToken\""
+	log "ERROR :: Exiting..."
+	exit
+else
+	log "Plex Connection Established, version: $plexVersion"
+fi
 
 plexLibraries="$(curl -s "$plexUrl/library/sections?X-Plex-Token=$plexToken" | xq .)"
 if echo "$plexLibraries" | jq -r ".MediaContainer.Directory[] | .\"@key\"" &>/dev/null; then
