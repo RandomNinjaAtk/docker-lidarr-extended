@@ -2,7 +2,7 @@ FROM linuxserver/lidarr:amd64-nightly
 LABEL maintainer="RandomNinjaAtk"
 
 ENV dockerTitle="lidarr-extended"
-ENV dockerVersion="1.0.14"
+ENV dockerVersion="1.0.15"
 ENV LANG=en_US.UTF-8
 ENV autoStart=true
 ENV configureLidarrWithOptimalSettings=false
@@ -20,7 +20,7 @@ ENV beetsMatchPercentage=90
 
 RUN \
 	echo "************ install packages ************" && \
-	apk add  -U --update --no-cache \
+	apk add -U --upgrade --no-cache \
 		musl-locales \
 		musl-locales-lang \
 		flac \
