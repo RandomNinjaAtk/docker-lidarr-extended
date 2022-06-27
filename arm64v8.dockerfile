@@ -11,10 +11,11 @@ COPY --from=builder qemu-aarch64-static /usr/bin
 
 LABEL maintainer="RandomNinjaAtk"
 ENV dockerTitle="lidarr-extended"
-ENV dockerVersion="1.0.141"
+ENV dockerVersion="1.0.142"
 ENV LANG=en_US.UTF-8
 ENV autoStart=true
 ENV configureLidarrWithOptimalSettings=false
+ENV dlClientSource=deezer
 ENV audioFormat=native
 ENV audioBitrate=lossless
 ENV audioLyricType=both
