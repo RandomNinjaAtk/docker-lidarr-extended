@@ -43,6 +43,7 @@ RUN \
 	mkdir -p /config/xdg && \
 	git clone https://github.com/yaronzz/Tidal-Media-Downloader.git /Tidal-Media-Downloader && \
 	cd /Tidal-Media-Downloader/TIDALDL-PY && \
+        git reset --hard 2484a8d && \
 	pip install -r requirements.txt && \
 	python3 setup.py install && \
 	rm -rf /config/xdg
