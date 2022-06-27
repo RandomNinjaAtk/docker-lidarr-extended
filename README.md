@@ -95,7 +95,7 @@ docker create \
   -e plexUrl=http://x.x.x.x:32400 \
   -e plexToken=Token_Goes_Here \
   --restart unless-stopped \
-  randomninjaatk/lidarr-extended 
+  randomninjaatk/lidarr-extended:latest
 ```
 
 
@@ -107,8 +107,8 @@ Compatible with docker-compose v2 schemas.
 version: "2.1"
 services:
   lidarr-extended:
-    image: randomninjaatk/lidarr-extended 
-    container_name: lidarr-extended 
+    image: randomninjaatk/lidarr-extended:latest
+    container_name: lidarr-extended
     volumes:
       - /path/to/config/files:/config
       - /path/to/downloads:/downloads
