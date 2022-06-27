@@ -1,0 +1,11 @@
+image: randomninjaatk/lidarr-extended:latest
+manifests:
+  - image: randomninjaatk/lidarr-extended:amd64
+    platform:
+      architecture: amd64
+      os: linux
+  - image: randomninjaatk/lidarr-extended:arm64v8
+    platform:
+      architecture: arm64
+      os: linux
+      variant: v8
