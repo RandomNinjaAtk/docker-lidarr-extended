@@ -145,3 +145,4 @@ services:
 - [Musicbrainz](https://musicbrainz.org/)
 - [Lidarr](https://lidarr.audio/)
 - [Tidal-Media-Downloader client](https://github.com/yaronzz/Tidal-Media-Downloader)
+- [Docker multi-arch example](https://github.com/ckulka/docker-multi-arch-example)
