@@ -2,7 +2,7 @@ FROM linuxserver/lidarr:amd64-nightly
 LABEL maintainer="RandomNinjaAtk"
 
 ENV dockerTitle="lidarr-extended"
-ENV dockerVersion="1.0.15"
+ENV dockerVersion="amd64-1.0.16"
 ENV LANG=en_US.UTF-8
 ENV autoStart=true
 ENV configureLidarrWithOptimalSettings=false
@@ -19,7 +19,7 @@ ENV numberOfRelatedArtistsToAddPerArtist=5
 ENV beetsMatchPercentage=90
 
 RUN \
-	echo "************ install packages ************" && \
+	echo "*** install packages ***" && \
 	apk add -U --upgrade --no-cache \
 		musl-locales \
 		musl-locales-lang \
@@ -31,15 +31,23 @@ RUN \
 		ffmpeg \
 		python3-dev \
 		libc-dev \
+		gpgme-dev \
 		py3-pip \
 		yt-dlp && \
-	echo "************ install python packages ************" && \
+	echo "*** install python packages ****" && \
 	pip install --upgrade \
 		yq \
-		r128gain \
 		pyacoustid \
-		tidal-dl \
-		deemix
+		deemix && \
+	echo "*** install tidal-dl ***" && \
+	mkdir -p /Tidal-Media-Downloader && \
+	mkdir -p /config/xdg && \
+	git clone https://github.com/yaronzz/Tidal-Media-Downloader.git /Tidal-Media-Downloader && \
+	cd /Tidal-Media-Downloader/TIDALDL-PY && \
+	pip install -r requirements.txt && \
+	python3 setup.py install && \
+	rm -rf /config/xdg
+
 
 # copy local files
 COPY root/ /
