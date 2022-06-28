@@ -11,7 +11,7 @@ COPY --from=builder qemu-arm-static /usr/bin
 
 LABEL maintainer="RandomNinjaAtk"
 ENV dockerTitle="lidarr-extended"
-ENV dockerVersion="1.0.143"
+ENV dockerVersion="arm32v7-1.0.15"
 ENV LANG=en_US.UTF-8
 ENV autoStart=true
 ENV configureLidarrWithOptimalSettings=false
