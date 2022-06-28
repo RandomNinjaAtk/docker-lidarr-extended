@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.65"
+scriptVersion="1.0.66"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -48,6 +48,7 @@ echo "-----------------------------------------------------------------"
 echo "           |~) _ ._  _| _ ._ _ |\ |o._  o _ |~|_|_|"
 echo "           |~\(_|| |(_|(_)| | || \||| |_|(_||~| | |<"
 echo "              Presents: lidarr-extended ($scriptVersion)"
+echo "                Docker Version: $dockerVersion"
 echo "                  May the beats be with you!"
 echo "-----------------------------------------------------------------"
 echo "Donate: https://github.com/sponsors/RandomNinjaAtk"
