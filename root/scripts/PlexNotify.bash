@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 lidarrRootFolderPath="$(dirname "$lidarr_artist_path")"
-version=1.0.2
+version=1.0.3
 
 # auto-clean up log file to reduce space usage
 if [ -f "/config/logs/PlexNotify.txt" ]; then
@@ -58,7 +58,7 @@ for key in ${!plexKeys[@]}; do
 	plexKey="${plexKeys[$key]}"
 	if echo "$plexLibraryData" | grep "\"@path\": \"$lidarrRootFolderPath" | read; then
 		plexFolderEncoded="$(jq -R -r @uri <<<"$lidarr_artist_path")"
-		curl -s "$plexUrl/library/sections/$plexlibrarykey/refresh?path=$plexFolderEncoded&X-Plex-Token=$plexToken"
+		curl -s "$plexUrl/library/sections/$plexKey/refresh?path=$plexFolderEncoded&X-Plex-Token=$plexToken"
 		log  "Plex Scan notification sent! ($lidarr_artist_path)"
 	fi
 done
