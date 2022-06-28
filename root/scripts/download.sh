@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.63"
+scriptVersion="1.0.64"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -327,16 +327,13 @@ TidalClientSetup () {
 		fi
 
 	fi
-	if [ -d /config/backup ]; then 
-		rm -rf /config/backup
-	fi
 	
 	tidal-dl -o /downloads/lidarr-extended/incomplete
 	DownloadFormat
 
 	
 	if [ -f /config/xdg/.tidal-dl.token.json ]; then
-		if [[ $(find "/config/xdg/.tidal-dl.token.json" -mtime +6 -print) ]]; then
+		if [[ $(find "/config/xdg/.tidal-dl.token.json" -mtime +5 -print) ]]; then
 			log ":: TIDAL :: ERROR :: Token expired, removing..."
 			rm /config/xdg/.tidal-dl.token.json
 		fi
@@ -370,8 +367,11 @@ TidalClientSetup () {
 	
 	downloadCount=$(find /downloads/lidarr-extended/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
 	if [ $downloadCount -le 0 ]; then
+		if [ -f /config/xdg/.tidal-dl.token.json ]; then
+			rm /config/xdg/.tidal-dl.token.json
+		fi
 		log ":: tidal-dl client setup verification :: ERROR :: Download failed"
-		log ":: tidal-dl client setup verification :: ERROR :: Please review log for errors in client"
+		log ":: tidal-dl client setup verification :: ERROR :: You will need to re-authenticate on next script run..."
 		log ":: tidal-dl client setup verification :: ERROR :: Exiting..."
 		rm -rf /downloads/lidarr-extended/incomplete/*
 		exit
