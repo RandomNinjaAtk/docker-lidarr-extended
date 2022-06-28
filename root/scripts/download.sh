@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.66"
+scriptVersion="1.0.67"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -23,6 +23,7 @@ musicbrainzMirror=https://musicbrainz.org
 #addRelatedArtists=true
 #numberOfRelatedArtistsToAddPerArtist=1
 #beetsMatchPercentage=85
+
 
 log () {
 	m_time=`date "+%F %T"`
@@ -670,19 +671,12 @@ LidarrRootFolderCheck () {
 
 GetMissingCutOffList () {
     log ":: Downloading missing list..."
-    missingAlbumIds=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/wanted/missing?page=1&pagesize=1000000000&sortKey=releaseDate&sortDirection=desc&apikey=${lidarrApiKey}" | jq -r '.records | .[] | .id')
-    missingAlbumIdsTotal=$(echo "$missingAlbumIds" | sed -r '/^\s*$/d' | wc -l)
-    log ":: FINDING MISSING ALBUMS: ${missingAlbumIdsTotal} Found"
+    lidarrMissingTotalRecords=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/wanted/missing?page=1&pagesize=1&sortKey=releaseDate&sortDirection=desc&apikey=${lidarrApiKey}" | jq -r .totalRecords)
 
-    #log ":: Downloading cutoff list..."
-    #cutoffAlbumIds=$(curl -s "$lidarrUrl/api/v1/wanted/cutoff?page=1&pagesize=1000000000&sortKey=releaseDate&sortDirection=desc&apikey=${lidarrApiKey}" | jq -r '.records | .[] | .id')
-    #cutoffAlbumIdsTotal=$(echo "$cutoffAlbumIds" | sed -r '/^\s*$/d'| wc -l)
-    #log ":: FINDING CUTOFF ALBUMS: ${cutoffAlbumIdsTotal} Found"
+	wantedListAlbumTotal=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/wanted/missing?page=1&pagesize=1&sortKey=releaseDate&sortDirection=desc&apikey=${lidarrApiKey}" | jq -r .totalRecords)
 
-    #wantedListAlbumIds="$(echo "${missingAlbumIds}" && echo "${cutoffAlbumIds}")"
-    wantedListAlbumIds="$(echo "${missingAlbumIds}")"
-    wantedListAlbumTotal=$(echo "$wantedListAlbumIds" | sed -r '/^\s*$/d' | wc -l)
-    log ":: Searching for $wantedListAlbumTotal items"
+	log ":: FINDING MISSING ALBUMS: ${lidarrMissingTotalRecords} Found"
+	log ":: Searching for $wantedListAlbumTotal items"
 
     if [ $wantedListAlbumTotal = 0 ]; then
         log ":: No items to find, end"
@@ -691,10 +685,13 @@ GetMissingCutOffList () {
 }
 
 SearchProcess () {
-    wantedListAlbumIds=($(echo "${missingAlbumIds}" && echo "${cutoffAlbumIds}"))
-    for id in ${!wantedListAlbumIds[@]}; do
-		processNumber=$(( $id + 1 ))
-        wantedAlbumId="${wantedListAlbumIds[$id]}"
+
+    lidarrRecord=1
+	until [ $lidarrRecord -gt $lidarrMissingTotalRecords ]; do
+		processNumber=$(( $lidarrRecord ))
+		lidarrRecordId=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/wanted/missing?page=$lidarrRecord&pagesize=1&sortKey=releaseDate&sortDirection=desc&apikey=${lidarrApiKey}" | jq -r '.records[].id')
+		((lidarrRecord++))
+        wantedAlbumId="$lidarrRecordId"
         lidarrAlbumData="$(curl -s "$lidarrUrl/api/v1/album/$wantedAlbumId?apikey=${lidarrApiKey}")"
         lidarrAlbumTitle=$(echo "$lidarrAlbumData" | jq -r ".title")
         lidarrAlbumTitleClean=$(echo "$lidarrAlbumTitle" | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
