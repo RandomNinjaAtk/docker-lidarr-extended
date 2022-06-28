@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.68"
+scriptVersion="1.0.69"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -1192,6 +1192,37 @@ LidarrTaskStatusCheck () {
 	done
 }
 
+LidarrMissingAlbumSearch () {
+
+	log ":: Begin searching for missing artist albums via Lidarr Indexers..."
+	lidarrArtistsData=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/artist?apikey=$lidarrApiKey" | jq -r .[])
+	lidarrArtistIds=$(echo $lidarrArtistsData | jq -r .id)
+	lidarrArtistIdsCount=$(echo $lidarrArtistIds | wc -l)
+	processCount=0
+	for lidarrArtistId in $(echo $lidarrArtistIds); do
+		processCount=$(( $processCount + 1))
+		lidarrArtistData=$(echo $lidarrArtistsData | jq -r "select(.id==$lidarrArtistId)")
+		lidarrArtistName=$(echo $lidarrArtistData | jq -r .artistName)
+		lidarrArtistMusicbrainzId=$(echo $lidarrArtistData | jq -r .foreignArtistId)
+		if [ -d /config/extended/logs/searched/lidarr/artist ]; then
+			if [ -f /config/extended/logs/searched/lidarr/artist/$lidarrArtistMusicbrainzId ]; then
+				log ":: $processCount of $lidarrArtistIdsCount :: Previously Notified Lidarr to search for \"$lidarrArtistName\" :: Skipping..."
+				continue
+			fi
+		fi
+		log ":: $processCount of $lidarrArtistIdsCount :: Notified Lidarr to search for \"$lidarrArtistName\""
+		startLidarrArtistSearch=$(curl -s "$lidarrUrl/api/v1/command" -X POST -H "Content-Type: application/json" -H "X-Api-Key: $lidarrApiKey"  --data-raw "{\"name\":\"ArtistSearch\",\"artistId\":$lidarrArtistId}")
+		if [ ! -d /config/extended/logs/searched/lidarr/artist ]; then
+			mkdir -p /config/extended/logs/searched/lidarr/artist
+			chmod -R 777 /config/extended/logs/searched/lidarr/artist
+			chown -R abc:abc /config/extended/logs/searched/lidarr/artist
+		fi
+		touch /config/extended/logs/searched/lidarr/artist/$lidarrArtistMusicbrainzId
+		chmod 666 /config/extended/logs/searched/lidarr/artist/$lidarrArtistMusicbrainzId
+		chown abc:abc /config/extended/logs/searched/lidarr/artist/$lidarrArtistMusicbrainzId
+	done
+}
+
 Configuration
 
 if [ "$configureLidarrWithOptimalSettings" = "true" ]; then
@@ -1235,6 +1266,7 @@ fi
 if [ "$dlClientSource" = "deezer" ] || [ "$dlClientSource" = "tidal" ] || [ "$dlClientSource" = "both" ]; then
 	GetMissingCutOffList
 	SearchProcess
+	LidarrMissingAlbumSearch
 else
 	log ":: ERROR :: No valid dlClientSource set"
 	log ":: ERROR :: Expected configuration :: deezer or tidal or both"
