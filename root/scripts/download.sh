@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.69"
+scriptVersion="1.0.70"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -671,38 +671,52 @@ LidarrRootFolderCheck () {
 
 GetMissingCutOffList () {
     log ":: Downloading missing list..."
-    lidarrMissingTotalRecords=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/wanted/missing?page=1&pagesize=1&sortKey=releaseDate&sortDirection=desc&apikey=${lidarrApiKey}" | jq -r .totalRecords)
-
-	wantedListAlbumTotal=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/wanted/missing?page=1&pagesize=1&sortKey=releaseDate&sortDirection=desc&apikey=${lidarrApiKey}" | jq -r .totalRecords)
-
-	log ":: FINDING MISSING ALBUMS: ${lidarrMissingTotalRecords} Found"
-	log ":: Searching for $wantedListAlbumTotal items"
-
+    
 	if [ -d /config/extended/cache/missing ]; then
-		rm -rf /config/extended/cache/missing/*
-	else
-		mkdir -p /config/extended/cache/missing
+		rm -rf /config/extended/cache/missing
 	fi
 
+	if [ -d /config/extended/cache/lidarr/list ]; then
+		rm /config/extended/cache/lidarr/list/*
+	else
+		mkdir -p /config/extended/cache/lidarr/list
+	fi
+
+	lidarrMissingTotalRecords=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/wanted/missing?page=1&pagesize=1&sortKey=releaseDate&sortDirection=desc&apikey=${lidarrApiKey}" | jq -r .totalRecords)
+	log ":: FINDING MISSING ALBUMS: ${lidarrMissingTotalRecords} Found"
 	lidarrRecord=1
 	until [ $lidarrRecord -gt $lidarrMissingTotalRecords ]; do
 		lidarrRecordId=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/wanted/missing?page=$lidarrRecord&pagesize=1&sortKey=releaseDate&sortDirection=desc&apikey=${lidarrApiKey}" | jq -r '.records[].id')
 		((lidarrRecord++))
-		touch /config/extended/cache/missing/$lidarrRecordId
+		touch /config/extended/cache/lidarr/list/${lidarrRecordId}-missing
 	done
 
-    if [ $wantedListAlbumTotal = 0 ]; then
+	lidarrCutoffTotalRecords=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/wanted/cutoff?page=1&pagesize=1&sortKey=releaseDate&sortDirection=desc&apikey=${lidarrApiKey}" | jq -r .totalRecords)
+	log ":: FINDING CUTOFF ALBUMS: ${lidarrCutoffTotalRecords} Found"
+	lidarrRecord=1
+	until [ $lidarrRecord -gt $lidarrMissingTotalRecords ]; do
+		lidarrRecordId=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/wanted/cutoff?page=$lidarrRecord&pagesize=1&sortKey=releaseDate&sortDirection=desc&apikey=${lidarrApiKey}" | jq -r '.records[].id')
+		((lidarrRecord++))
+		touch /config/extended/cache/lidarr/list/${lidarrRecordId}-cutoff
+	done
+
+	lidarrTotalRecords=$(( $lidarrMissingTotalRecords + $lidarrCutoffTotalRecords ))
+
+    if [ $lidarrTotalRecords = 0 ]; then
         log ":: No items to find, end"
         exit
     fi
+
+	log ":: Searching for $lidarrTotalRecords items"
 }
 
 SearchProcess () {
 
     processNumber=0
-	for lidarrMissingId in $(ls /config/extended/cache/missing); do
+	for lidarrMissingId in $(ls -tr /config/extended/cache/lidarr/list); do
 		processNumber=$(( $processNumber + 1 ))
-        wantedAlbumId="$lidarrMissingId"
+        wantedAlbumId=$(echo $lidarrMissingId | sed -e "s%[^[:digit:]]%%g")
+		wantedAlbumListSource=$(echo $lidarrMissingId | sed -e "s%[^[:alpha:]]%%g")
         lidarrAlbumData="$(curl -s "$lidarrUrl/api/v1/album/$wantedAlbumId?apikey=${lidarrApiKey}")"
         lidarrAlbumTitle=$(echo "$lidarrAlbumData" | jq -r ".title")
         lidarrAlbumTitleClean=$(echo "$lidarrAlbumTitle" | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
