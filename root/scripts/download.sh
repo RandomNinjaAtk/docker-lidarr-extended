@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.64"
+scriptVersion="1.0.65"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -24,6 +24,26 @@ musicbrainzMirror=https://musicbrainz.org
 #numberOfRelatedArtistsToAddPerArtist=1
 #beetsMatchPercentage=85
 
+log () {
+	m_time=`date "+%F %T"`
+	echo $m_time" "$1
+}
+
+verifyApiAccess () {
+	until false
+	do
+		lidarrTest=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/system/status?apikey=${lidarrApiKey}" | jq -r .branch)
+		if [ $lidarrTest = nightly ]; then
+			lidarrVersion=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/system/status?apikey=${lidarrApiKey}" | jq -r .version)
+			log ":: Lidarr Version: $lidarrVersion"
+			break
+		else
+			log ":: Lidarr is not ready, sleeping until valid response..."
+			sleep 1
+		fi
+	done
+}
+
 echo "-----------------------------------------------------------------"
 echo "           |~) _ ._  _| _ ._ _ |\ |o._  o _ |~|_|_|"
 echo "           |~\(_|| |(_|(_)| | || \||| |_|(_||~| | |<"
@@ -43,10 +63,7 @@ echo "3"; sleep 1
 echo "2"; sleep 1
 echo "1"; sleep 1
 
-log () {
-	m_time=`date "+%F %T"`
-	echo $m_time" "$1
-}
+
 
 if [ ! -d /config/xdg ]; then
 	mkdir -p /config/xdg
@@ -63,6 +80,8 @@ Configuration () {
 	if [ -z $topLimit ]; then
 		topLimit=10
 	fi
+
+	verifyApiAccess
 
 	if [ "$addDeezerTopArtists" = "true" ]; then
 		log ":: Add Deezer Top $topLimit Artists is enabled"
