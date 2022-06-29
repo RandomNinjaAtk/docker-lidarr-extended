@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.71"
+scriptVersion="1.0.72"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -670,8 +670,7 @@ LidarrRootFolderCheck () {
 }
 
 GetMissingCutOffList () {
-    log ":: Downloading missing list..."
-    
+        
 	if [ -d /config/extended/cache/missing ]; then
 		rm -rf /config/extended/cache/missing
 	fi
@@ -1164,6 +1163,7 @@ CheckLidarrBeforeImport () {
 }
 
 AddRelatedArtists () {
+	log ":: Begin adding Lidarr related Artists from Deezer..."
 	lidarrArtistsData="$(curl -s "$lidarrUrl/api/v1/artist?apikey=${lidarrApiKey}")"
 	lidarrArtistTotal=$(echo "${lidarrArtistsData}"| jq -r '.[].sortName' | wc -l)
 	lidarrArtistList=($(echo "${lidarrArtistsData}" | jq -r ".[].foreignArtistId"))
@@ -1181,12 +1181,11 @@ AddRelatedArtists () {
 		deezerArtistUrl=$(echo "${lidarrArtistData}" | jq -r ".links | .[] | select(.name==\"deezer\") | .url")
 		deezerArtistIds=($(echo "$deezerArtistUrl" | grep -o '[[:digit:]]*' | sort -u))
 		lidarrArtistMonitored=$(echo "${lidarrArtistData}" | jq -r ".monitored")
-		log ":: Adding Related Artists for $lidarrArtistName"
+		log ":: $artistNumber of $lidarrArtistTotal :: $lidarrArtistName :: Adding Related Artists..."
 		if [ $lidarrArtistMonitored = false ]; then
-			log ":: Artist is not monitored :: skipping..."
+			log ":: $artistNumber of $lidarrArtistTotal :: $lidarrArtistName :: Artist is not monitored :: skipping..."
 			continue
 		fi
-
 
 		for dId in ${!deezerArtistIds[@]}; do
 			deezerArtistId="${deezerArtistIds[$dId]}"
