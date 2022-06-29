@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.75"
+scriptVersion="1.0.76"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -743,7 +743,6 @@ SearchProcess () {
         tidalArtistUrl=$(echo "${lidarrArtistData}" | jq -r ".links | .[] | select(.name==\"tidal\") | .url")
         tidalArtistId="$(echo "$tidalArtistUrl" | grep -o '[[:digit:]]*' | sort -u)"
         deezerArtistUrl=$(echo "${lidarrArtistData}" | jq -r ".links | .[] | select(.name==\"deezer\") | .url")
-        deezeArtistIds=($(echo "$deezerArtistUrl" | grep -o '[[:digit:]]*' | sort -u))
 		lidarrAlbumReleaseDate=$(echo "$lidarrAlbumData" | jq -r .releaseDate)
 		lidarrAlbumReleaseDate=${lidarrAlbumReleaseDate:0:10}
 		lidarrAlbumReleaseDateClean="$(echo $lidarrAlbumReleaseDate | sed -e "s%[^[:digit:]]%%g")"
@@ -778,6 +777,14 @@ SearchProcess () {
         fi
 		
 		if [ "$skipDeezer" = "false" ]; then
+
+			# fallback to musicbrainz db for link
+			if [ -z "$deezerArtistUrl" ]; then
+				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: DEEZER :: Fallback to musicbrainz for Deezer ID"
+				musicbrainzArtistData=$(curl -s -A "$agent" "https://musicbrainz.org/ws/2/artist/${lidarrArtistForeignArtistId}?inc=url-rels&fmt=json")
+				deezerArtistUrl=$(echo "$musicbrainzArtistData" | jq -r '.relations | .[] | .url | select(.resource | contains("deezer")) | .resource')
+			fi
+
 			if [ -z "$deezerArtistUrl" ]; then 
 				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: DEEZER :: ERROR :: musicbrainz id: $lidarrArtistForeignArtistId is missing Tidal link, see: \"/config/logs/deezer-artist-id-not-found.txt\" for more detail..."
 				touch "/config/logs/deezer-artist-id-not-found.txt"
@@ -793,6 +800,7 @@ SearchProcess () {
 		fi
 
 		if [ "$skipDeezer" = "false" ]; then
+			deezeArtistIds=($(echo "$deezerArtistUrl" | grep -o '[[:digit:]]*' | sort -u))
 			for dId in ${!deezeArtistIds[@]}; do
 				deezeArtistId="${deezeArtistIds[$dId]}"
 				if [ ! -d /config/extended/cache/deezer ]; then
