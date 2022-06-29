@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.73"
+scriptVersion="1.0.74"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -1116,6 +1116,8 @@ ProcessWithBeets () {
 				\"foreignArtistId\": \"$foreignId\",
 				\"qualityProfileId\": $qualityProfileId,
 				\"metadataProfileId\": $metadataProfileId,
+				\"monitored\":true,
+				\"monitor\":\"all\",
 				\"rootFolderPath\": \"$path\",
 				\"addOptions\":{\"searchForMissingAlbums\":false}
 				}"
