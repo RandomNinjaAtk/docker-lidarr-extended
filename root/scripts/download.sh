@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.72"
+scriptVersion="1.0.73"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -705,16 +705,16 @@ GetMissingCutOffList () {
 	done
 	log ":: FINDING CUTOFF ALBUMS :: ${lidarrCutoffTotalRecords} Found"
 	wantedListAlbumTotal=$(( $lidarrMissingTotalRecords + $lidarrCutoffTotalRecords ))
-
-    if [ $lidarrTotalRecords = 0 ]; then
-        log ":: No items to find, end"
-        exit
-    fi
-
+    
 	log ":: Searching for $wantedListAlbumTotal items"
 }
 
 SearchProcess () {
+
+	if [ $wantedListAlbumTotal = 0 ]; then
+        log ":: No items to find, end"
+        return
+    fi
 
     processNumber=0
 	for lidarrMissingId in $(ls -tr /config/extended/cache/lidarr/list); do
@@ -1283,12 +1283,15 @@ fi
 
 if [ "$dlClientSource" = "deezer" ] || [ "$dlClientSource" = "tidal" ] || [ "$dlClientSource" = "both" ]; then
 	GetMissingCutOffList
-	SearchProcess
-	LidarrMissingAlbumSearch
+	SearchProcess	
 else
 	log ":: ERROR :: No valid dlClientSource set"
 	log ":: ERROR :: Expected configuration :: deezer or tidal or both"
 	log ":: ERROR :: dlClientSource set as: \"$dlClientSource\""
+fi
+
+if [ "$addDeezerTopArtists" = "true" ] || [ "$addDeezerTopAlbumArtists" = "true" ] || [ "$addDeezerTopTrackArtists" = "true" ] || [ "$addRelatedArtists" = "true" ]; then
+	LidarrMissingAlbumSearch
 fi
 
 exit
