@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.74"
+scriptVersion="1.0.75"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -1217,7 +1217,7 @@ LidarrMissingAlbumSearch () {
 	log ":: Begin searching for missing artist albums via Lidarr Indexers..."
 	lidarrArtistsData=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/artist?apikey=$lidarrApiKey" | jq -r .[])
 	lidarrArtistIds=$(echo $lidarrArtistsData | jq -r .id)
-	lidarrArtistIdsCount=$(echo $lidarrArtistIds | wc -l)
+	lidarrArtistIdsCount=$(echo "$lidarrArtistIds" | wc -l)
 	processCount=0
 	for lidarrArtistId in $(echo $lidarrArtistIds); do
 		processCount=$(( $processCount + 1))
@@ -1242,6 +1242,7 @@ LidarrMissingAlbumSearch () {
 		chown abc:abc /config/extended/logs/searched/lidarr/artist/$lidarrArtistMusicbrainzId
 	done
 }
+
 
 Configuration
 
