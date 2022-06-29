@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.70"
+scriptVersion="1.0.71"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -682,32 +682,37 @@ GetMissingCutOffList () {
 		mkdir -p /config/extended/cache/lidarr/list
 	fi
 
+	# Get missing album list
 	lidarrMissingTotalRecords=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/wanted/missing?page=1&pagesize=1&sortKey=releaseDate&sortDirection=desc&apikey=${lidarrApiKey}" | jq -r .totalRecords)
-	log ":: FINDING MISSING ALBUMS: ${lidarrMissingTotalRecords} Found"
+	log ":: FINDING MISSING ALBUMS"
 	lidarrRecord=1
 	until [ $lidarrRecord -gt $lidarrMissingTotalRecords ]; do
 		lidarrRecordId=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/wanted/missing?page=$lidarrRecord&pagesize=1&sortKey=releaseDate&sortDirection=desc&apikey=${lidarrApiKey}" | jq -r '.records[].id')
 		((lidarrRecord++))
 		touch /config/extended/cache/lidarr/list/${lidarrRecordId}-missing
 	done
+	log ":: FINDING MISSING ALBUMS :: ${lidarrMissingTotalRecords} Found"
 
+
+	# Get cutoff album list
 	lidarrCutoffTotalRecords=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/wanted/cutoff?page=1&pagesize=1&sortKey=releaseDate&sortDirection=desc&apikey=${lidarrApiKey}" | jq -r .totalRecords)
-	log ":: FINDING CUTOFF ALBUMS: ${lidarrCutoffTotalRecords} Found"
+
+	log ":: FINDING CUTOFF ALBUMS"
 	lidarrRecord=1
-	until [ $lidarrRecord -gt $lidarrMissingTotalRecords ]; do
+	until [ $lidarrRecord -gt $lidarrCutoffTotalRecords ]; do
 		lidarrRecordId=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/wanted/cutoff?page=$lidarrRecord&pagesize=1&sortKey=releaseDate&sortDirection=desc&apikey=${lidarrApiKey}" | jq -r '.records[].id')
 		((lidarrRecord++))
 		touch /config/extended/cache/lidarr/list/${lidarrRecordId}-cutoff
 	done
-
-	lidarrTotalRecords=$(( $lidarrMissingTotalRecords + $lidarrCutoffTotalRecords ))
+	log ":: FINDING CUTOFF ALBUMS :: ${lidarrCutoffTotalRecords} Found"
+	wantedListAlbumTotal=$(( $lidarrMissingTotalRecords + $lidarrCutoffTotalRecords ))
 
     if [ $lidarrTotalRecords = 0 ]; then
         log ":: No items to find, end"
         exit
     fi
 
-	log ":: Searching for $lidarrTotalRecords items"
+	log ":: Searching for $wantedListAlbumTotal items"
 }
 
 SearchProcess () {
