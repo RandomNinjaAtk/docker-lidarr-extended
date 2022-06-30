@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.76"
+scriptVersion="1.0.77"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -684,26 +684,53 @@ GetMissingCutOffList () {
 	# Get missing album list
 	lidarrMissingTotalRecords=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/wanted/missing?page=1&pagesize=1&sortKey=releaseDate&sortDirection=desc&apikey=${lidarrApiKey}" | jq -r .totalRecords)
 	log ":: FINDING MISSING ALBUMS"
-	lidarrRecord=1
-	until [ $lidarrRecord -gt $lidarrMissingTotalRecords ]; do
-		lidarrRecordId=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/wanted/missing?page=$lidarrRecord&pagesize=1&sortKey=releaseDate&sortDirection=desc&apikey=${lidarrApiKey}" | jq -r '.records[].id')
-		((lidarrRecord++))
-		touch /config/extended/cache/lidarr/list/${lidarrRecordId}-missing
-	done
-	log ":: FINDING MISSING ALBUMS :: ${lidarrMissingTotalRecords} Found"
+
+	if [ $lidarrMissingTotalRecords -ge 1 ]; then
+		amountPerPull=500
+		offsetcount=$(( $lidarrMissingTotalRecords / $amountPerPull ))
+		for ((i=0;i<=$offsetcount;i++)); do
+			page=$(( $i + 1 ))
+			offset=$(( $i * $amountPerPull ))
+			dlnumber=$(( $offset + $amountPerPull ))
+			if [ $dlnumber -gt $lidarrMissingTotalRecords ]; then
+				dlnumber=$lidarrMissingTotalRecords
+			fi
+			log ":: Downloading page $page... ($offset - $dlnumber of $lidarrMissingTotalRecords Results)"
+			lidarrRecords=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/wanted/missing?page=$page&pagesize=$amountPerPull&sortKey=releaseDate&sortDirection=desc&apikey=${lidarrApiKey}" | jq -r '.records[].id')
+			for lidarrRecordId in $(echo $lidarrRecords); do
+				touch /config/extended/cache/lidarr/list/${lidarrRecordId}-missing
+			done
+		done
+	fi
+
+	log ":: ${lidarrMissingTotalRecords} MISSING ALBUMS FOUND"
 
 
 	# Get cutoff album list
 	lidarrCutoffTotalRecords=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/wanted/cutoff?page=1&pagesize=1&sortKey=releaseDate&sortDirection=desc&apikey=${lidarrApiKey}" | jq -r .totalRecords)
 
 	log ":: FINDING CUTOFF ALBUMS"
-	lidarrRecord=1
-	until [ $lidarrRecord -gt $lidarrCutoffTotalRecords ]; do
-		lidarrRecordId=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/wanted/cutoff?page=$lidarrRecord&pagesize=1&sortKey=releaseDate&sortDirection=desc&apikey=${lidarrApiKey}" | jq -r '.records[].id')
-		((lidarrRecord++))
-		touch /config/extended/cache/lidarr/list/${lidarrRecordId}-cutoff
-	done
-	log ":: FINDING CUTOFF ALBUMS :: ${lidarrCutoffTotalRecords} Found"
+
+	if [ $lidarrCutoffTotalRecords -ge 1 ]; then
+		amountPerPull=500
+		offsetcount=$(( $lidarrCutoffTotalRecords / $amountPerPull ))
+		for ((i=0;i<=$offsetcount;i++)); do
+			page=$(( $i + 1 ))
+			offset=$(( $i * $amountPerPull ))
+			dlnumber=$(( $offset + $amountPerPull ))
+			if [ $dlnumber -gt $lidarrCutoffTotalRecords ]; then
+				dlnumber=$lidarrCutoffTotalRecords
+			fi
+			log ":: Downloading page $page... ($offset - $dlnumber of $lidarrCutoffTotalRecords Results)"
+			lidarrRecords=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/wanted/cutoff?page=$page&pagesize=$amountPerPull&sortKey=releaseDate&sortDirection=desc&apikey=${lidarrApiKey}" | jq -r '.records[].id')
+			for lidarrRecordId in $(echo $lidarrRecords); do
+				touch /config/extended/cache/lidarr/list/${lidarrRecordId}-cutoff
+			done
+		done
+	fi
+
+	log ":: ${lidarrCutoffTotalRecords} CUTOFF ALBUMS FOUND"
+	
 	wantedListAlbumTotal=$(( $lidarrMissingTotalRecords + $lidarrCutoffTotalRecords ))
     
 	log ":: Searching for $wantedListAlbumTotal items"
