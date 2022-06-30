@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.78"
+scriptVersion="1.0.79"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -1257,13 +1257,12 @@ LidarrTaskStatusCheck () {
 LidarrMissingAlbumSearch () {
 
 	log ":: Begin searching for missing artist albums via Lidarr Indexers..."
-	lidarrArtistsData=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/artist?apikey=$lidarrApiKey" | jq -r .[])
-	lidarrArtistIds=$(echo $lidarrArtistsData | jq -r .id)
+	lidarrArtistIds=$(echo $lidarrMissingAlbumArtistsData | jq -r .id)
 	lidarrArtistIdsCount=$(echo "$lidarrArtistIds" | wc -l)
 	processCount=0
 	for lidarrArtistId in $(echo $lidarrArtistIds); do
 		processCount=$(( $processCount + 1))
-		lidarrArtistData=$(echo $lidarrArtistsData | jq -r "select(.id==$lidarrArtistId)")
+		lidarrArtistData=$(echo $lidarrMissingAlbumArtistsData | jq -r "select(.id==$lidarrArtistId)")
 		lidarrArtistName=$(echo $lidarrArtistData | jq -r .artistName)
 		lidarrArtistMusicbrainzId=$(echo $lidarrArtistData | jq -r .foreignArtistId)
 		if [ -d /config/extended/logs/searched/lidarr/artist ]; then
@@ -1325,6 +1324,9 @@ fi
 if [ "$addRelatedArtists" = "true" ]; then
 	AddRelatedArtists
 fi
+
+# Get artist list for LidarrMissingAlbumSearch process, to prevent searching for artists that will not be processed by the script
+lidarrMissingAlbumArtistsData=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/artist?apikey=$lidarrApiKey" | jq -r .[])
 
 if [ "$dlClientSource" = "deezer" ] || [ "$dlClientSource" = "tidal" ] || [ "$dlClientSource" = "both" ]; then
 	GetMissingCutOffList
