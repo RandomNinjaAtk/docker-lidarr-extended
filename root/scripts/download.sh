@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.77"
+scriptVersion="1.0.78"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -1177,16 +1177,23 @@ CheckLidarrBeforeImport () {
 
 	alreadyImported=false
 	if [ "$2" = "beets" ]; then
-		lidarrAlbumData=$(curl -s --header "X-Api-Key:"${lidarrApiKey} --request GET  "$lidarrUrl/api/v1/album/" | jq -r ".[]")
+		lidarrAlbumData=$(curl -s --header "X-Api-Key:"${lidarrApiKey} --request GET  "$lidarrUrl/api/v1/album/" | jq -r ".[] | select(.foreignAlbumId==\"$1\")")
+		lidarrCheckAlbumId=$(echo "$lidarrAlbumData" | jq -r ".id")
+		lidarrPercentOfTracks=$(echo "$lidarrAlbumData" | jq -r ".statistics.percentOfTracks")
 
-		lidarrPercentOfTracks=$(echo "$lidarrAlbumData" | jq -r "select(.foreignAlbumId==\"$1\") | .statistics.percentOfTracks")
 		if [ "$lidarrPercentOfTracks" = "null" ]; then
 			lidarrPercentOfTracks=0
+			return
 		fi
 		if [ $lidarrPercentOfTracks -gt 0 ]; then
-			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: ERROR :: Already Imported"
-			alreadyImported=true
-			return
+			if [ $wantedAlbumListSource = missing ]; then
+				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: ERROR :: Already Imported Album (Missing)"
+				alreadyImported=true
+				return
+			else
+				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Importing Album (Cutoff)"
+				return
+			fi
 		fi
 	fi
 
