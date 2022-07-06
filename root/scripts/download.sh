@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.84"
+scriptVersion="1.0.85"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -710,7 +710,7 @@ GetMissingCutOffList () {
 		amountPerPull=8000
 	elif [ $lidarrMissingTotalRecords -le 90000 ]; then
 		amountPerPull=9000
-	elif [ $lidarrMissingTotalRecords -le 100000 ]; then
+	else
 		amountPerPull=10000
 	fi
 
