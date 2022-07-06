@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.81"
+scriptVersion="1.0.82"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -24,6 +24,7 @@ musicbrainzMirror=https://musicbrainz.org
 #numberOfRelatedArtistsToAddPerArtist=1
 #beetsMatchPercentage=85
 
+sleepTimer=0.5
 
 log () {
 	m_time=`date "+%F %T"`
@@ -166,6 +167,7 @@ DownloadFormat () {
 AddDeezerTopArtists () {
 	getDeezerArtistsIds=($(curl -s "https://api.deezer.com/chart/0/artists?limit=$1" | jq -r ".data[].id"))
 	getDeezerArtistsIdsCount=$(curl -s "https://api.deezer.com/chart/0/artists?limit=$1" | jq -r ".data[].id" | wc -l)
+	sleep $sleepTimer
 	description="Top Artists"
 	AddDeezerArtistToLidarr
 }
@@ -173,6 +175,7 @@ AddDeezerTopArtists () {
 AddDeezerTopAlbumArtists () {
 	getDeezerArtistsIds=($(curl -s "https://api.deezer.com/chart/0/albums?limit=$1" | jq -r ".data[].artist.id"))
 	getDeezerArtistsIdsCount=$(curl -s "https://api.deezer.com/chart/0/albums?limit=$1" | jq -r ".data[].artist.id" | wc -l)
+	sleep $sleepTimer
 	description="Top Album Artists"
 	AddDeezerArtistToLidarr
 }
@@ -180,6 +183,7 @@ AddDeezerTopAlbumArtists () {
 AddDeezerTopTrackArtists () {
 	getDeezerArtistsIds=($(curl -s "https://api.deezer.com/chart/0/tracks?limit=$1" | jq -r ".data[].artist.id"))
 	getDeezerArtistsIdsCount=$(curl -s "https://api.deezer.com/chart/0/tracks?limit=$1" | jq -r ".data[].artist.id" | wc -l)
+	sleep $sleepTimer
 	description="Top Track Artists"
 	AddDeezerArtistToLidarr
 }
@@ -195,6 +199,7 @@ AddDeezerArtistToLidarr () {
 		currentprocess=$(( $id + 1 ))
 		deezerArtistId="${getDeezerArtistsIds[$id]}"
 		deezerArtistName="$(curl -s https://api.deezer.com/artist/$deezerArtistId | jq -r .name)"
+		sleep $sleepTimer
 		log ":: $currentprocess of $getDeezerArtistsIdsCount :: $deezerArtistName :: Searching Musicbrainz for Deezer artist id ($deezerArtistId)"
 
 		if echo "$deezeArtistIds" | grep "^${deezerArtistId}$" | read; then
@@ -287,6 +292,7 @@ DArtistAlbumList () {
 
 		if [ ! -f /config/extended/cache/deezer/${albumid}.json ]; then
 			if wget "https://api.deezer.com/album/${albumid}" -O "/config/extended/cache/deezer/${albumid}.json" -q; then
+				sleep $sleepTimer
 				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $currentprocess of $albumcount :: Downloading Album info..."
 				chmod 666 /config/extended/cache/deezer/${albumid}.json
 				chown abc:abc /config/extended/cache/deezer/${albumid}.json			
@@ -861,10 +867,12 @@ SearchProcess () {
 						
 			if [ ! -f /config/extended/cache/tidal/$tidalArtistId-videos.json ]; then
 				curl -s "https://api.tidal.com/v1/artists/${tidalArtistId}/videos?limit=10000&countryCode=$tidalCountryCode&filter=ALL" -H 'x-tidal-token: CzET4vdadNUFQ5JU' > /config/extended/cache/tidal/$tidalArtistId-videos.json
+				sleep $sleepTimer
 			fi
 
 			if [ ! -f /config/extended/cache/tidal/$tidalArtistId-albums.json ]; then
 				curl -s "https://api.tidal.com/v1/artists/${tidalArtistId}/albums?limit=10000&countryCode=$tidalCountryCode&filter=ALL" -H 'x-tidal-token: CzET4vdadNUFQ5JU' > /config/extended/cache/tidal/$tidalArtistId-albums.json
+				sleep $sleepTimer
 			fi
 
 			
@@ -1243,6 +1251,7 @@ AddRelatedArtists () {
 		for dId in ${!deezerArtistIds[@]}; do
 			deezerArtistId="${deezerArtistIds[$dId]}"
 			deezerRelatedArtistData=$(curl -sL --fail "https://api.deezer.com/artist/$deezerArtistId/related?limit=$numberOfRelatedArtistsToAddPerArtist"| jq -r ".data | sort_by(.nb_fan) | reverse | .[]")
+			sleep $sleepTimer
 			getDeezerArtistsIds=($(echo $deezerRelatedArtistData | jq -r .id))
 			getDeezerArtistsIdsCount=$(echo $deezerRelatedArtistData | jq -r .id | wc -l)
 			description="$lidarrArtistName Related Artists"
