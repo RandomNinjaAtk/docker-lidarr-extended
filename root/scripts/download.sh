@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.80"
+scriptVersion="1.0.81"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -531,7 +531,7 @@ DownloadProcess () {
     chmod -R 777 /downloads/lidarr-extended/complete
     chown -R abc:abc /downloads/lidarr-extended/complete
 
-    ProcessWithBeets "/downloads/lidarr-extended/complete/$downloadedAlbumFolder" "${albumquality^^}" "$2"
+    # ProcessWithBeets "/downloads/lidarr-extended/complete/$downloadedAlbumFolder" "${albumquality^^}" "$2"
 
     if [ -d "/downloads/lidarr-extended/complete/$downloadedAlbumFolder" ]; then
         NotifyLidarrForImport "/downloads/lidarr-extended/complete/$downloadedAlbumFolder"
