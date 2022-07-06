@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.83"
+scriptVersion="1.0.84"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -674,7 +674,6 @@ LidarrRootFolderCheck () {
 		exit
 	fi
 }
-
 GetMissingCutOffList () {
         
 	if [ -d /config/extended/cache/missing ]; then
@@ -691,8 +690,31 @@ GetMissingCutOffList () {
 	lidarrMissingTotalRecords=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/wanted/missing?page=1&pagesize=1&sortKey=releaseDate&sortDirection=desc&apikey=${lidarrApiKey}" | jq -r .totalRecords)
 	log ":: FINDING MISSING ALBUMS"
 
-	if [ $lidarrMissingTotalRecords -ge 1 ]; then
+	if [ $lidarrMissingTotalRecords -le 1000 ]; then
 		amountPerPull=500
+	elif [ $lidarrMissingTotalRecords -le 10000 ]; then
+		amountPerPull=1000
+	elif [ $lidarrMissingTotalRecords -le 20000 ]; then
+		amountPerPull=2000
+	elif [ $lidarrMissingTotalRecords -le 30000 ]; then
+		amountPerPull=3000
+	elif [ $lidarrMissingTotalRecords -le 40000 ]; then
+		amountPerPull=4000
+	elif [ $lidarrMissingTotalRecords -le 50000 ]; then
+		amountPerPull=5000
+	elif [ $lidarrMissingTotalRecords -le 60000 ]; then
+		amountPerPull=6000
+	elif [ $lidarrMissingTotalRecords -le 70000 ]; then
+		amountPerPull=7000
+	elif [ $lidarrMissingTotalRecords -le 80000 ]; then
+		amountPerPull=8000
+	elif [ $lidarrMissingTotalRecords -le 90000 ]; then
+		amountPerPull=9000
+	elif [ $lidarrMissingTotalRecords -le 100000 ]; then
+		amountPerPull=10000
+	fi
+
+	if [ $lidarrMissingTotalRecords -ge 1 ]; then
 		offsetcount=$(( $lidarrMissingTotalRecords / $amountPerPull ))
 		for ((i=0;i<=$offsetcount;i++)); do
 			page=$(( $i + 1 ))
@@ -711,14 +733,12 @@ GetMissingCutOffList () {
 
 	log ":: ${lidarrMissingTotalRecords} MISSING ALBUMS FOUND"
 
-
 	# Get cutoff album list
 	lidarrCutoffTotalRecords=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/wanted/cutoff?page=1&pagesize=1&sortKey=releaseDate&sortDirection=desc&apikey=${lidarrApiKey}" | jq -r .totalRecords)
 
 	log ":: FINDING CUTOFF ALBUMS"
 
 	if [ $lidarrCutoffTotalRecords -ge 1 ]; then
-		amountPerPull=500
 		offsetcount=$(( $lidarrCutoffTotalRecords / $amountPerPull ))
 		for ((i=0;i<=$offsetcount;i++)); do
 			page=$(( $i + 1 ))
