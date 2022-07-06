@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.85"
+scriptVersion="1.0.86"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -676,15 +676,12 @@ LidarrRootFolderCheck () {
 }
 GetMissingCutOffList () {
         
-	if [ -d /config/extended/cache/missing ]; then
-		rm -rf /config/extended/cache/missing
+	if [ -d  /config/extended/cache/lidarr/list ]; then
+		rm -rf  /config/extended/cache/lidarr/list
+		sleep 0.1
 	fi
 
-	if [ -d /config/extended/cache/lidarr/list ]; then
-		rm /config/extended/cache/lidarr/list/*
-	else
-		mkdir -p /config/extended/cache/lidarr/list
-	fi
+	mkdir -p /config/extended/cache/lidarr/list
 
 	# Get missing album list
 	lidarrMissingTotalRecords=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/wanted/missing?page=1&pagesize=1&sortKey=releaseDate&sortDirection=desc&apikey=${lidarrApiKey}" | jq -r .totalRecords)
