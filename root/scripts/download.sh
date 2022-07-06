@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.82"
+scriptVersion="1.0.83"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -1219,6 +1219,22 @@ CheckLidarrBeforeImport () {
 			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: ERROR :: Previously Found, skipping..."
 			alreadyImported=true
 			return
+		fi
+		
+		lidarrAlbumData=$(curl -s --header "X-Api-Key:"${lidarrApiKey} --request GET  "$lidarrUrl/api/v1/album/" | jq -r ".[] | select(.foreignAlbumId==\"$1\")")
+		lidarrCheckAlbumId=$(echo "$lidarrAlbumData" | jq -r ".id")
+		lidarrPercentOfTracks=$(echo "$lidarrAlbumData" | jq -r ".statistics.percentOfTracks")
+
+		if [ "$lidarrPercentOfTracks" = "null" ]; then
+			lidarrPercentOfTracks=0
+			return
+		fi
+		if [ $lidarrPercentOfTracks -gt 0 ]; then
+			if [ $wantedAlbumListSource = missing ]; then
+				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: ERROR :: Already Imported Album (Missing), skipping..."
+				alreadyImported=true
+				return
+			fi
 		fi
 	fi
 }
