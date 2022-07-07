@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.90"
+scriptVersion="1.0.91"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -160,6 +160,18 @@ DownloadFormat () {
 		else
 			tidal-dl -q HiFi
 			deemixQuality=flac
+		fi
+	fi
+}
+
+DownloadFolderCleaner () {
+	log ":: Removing prevously completed downloads that failed to import..."
+	# check for completed download folder
+	if [ -d "/downloads/lidarr-extended/complete" ]; then
+		# check for completed downloads older than 1 day
+		if find /downloads/lidarr-extended/complete -mindepth 1 -type d -mtime +1 | read; then
+			# delete completed downloads older than 1 day, these most likely failed to import due to Lidarr failing to match
+			find /downloads/lidarr-extended/complete -mindepth 1 -type d -mtime +1 -exec rm -rf "{}" \; &>/dev/null
 		fi
 	fi
 }
@@ -412,6 +424,7 @@ TidalClientSetup () {
 }
 
 DownloadProcess () {
+
 	downloadedAlbumTitleClean="$(echo "$downloadedAlbumTitle" | sed -e "s%[^[:alpha:][:digit:]._' ]% %g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
 
 	if [ ! -d "/downloads/lidarr-extended" ]; then
@@ -1383,6 +1396,9 @@ if [ "$configureLidarrWithOptimalSettings" = "true" ]; then
 		log ":: /config/extended/logs/autoconfig" 
 	fi
 fi
+
+# Perform Completed Download Folder Cleanup process
+DownloadFolderCleaner
 
 LidarrRootFolderCheck
 
