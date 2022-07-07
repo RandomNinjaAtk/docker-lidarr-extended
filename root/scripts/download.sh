@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.89"
+scriptVersion="1.0.90"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -677,6 +677,7 @@ LidarrRootFolderCheck () {
 		exit
 	fi
 }
+
 GetMissingCutOffList () {
         
 	if [ -d  /config/extended/cache/lidarr/list ]; then
@@ -829,12 +830,22 @@ SearchProcess () {
             skipTidal=false
         fi
 
+		# Search Musicbrainz for Album ID,
 		if [ $audioLyricType = both ]; then
 			if [ "$skipDeezer" = "false" ]; then
+				# Verify it's not already imported into Lidarr
 				LidarrTaskStatusCheck
 				CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId" "notbeets"
+				if [ $alreadyImported = true ]; then
+					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Already Imported, skipping..."
+					continue
+				fi
+
+				# Search Musicbrainz
 				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: Musicbrainz Deezer Album ID :: Searching for Album ID..."
 				msuicbrainzDeezerDownloadAlbumID=$(curl -s "https://musicbrainz.org/ws/2/release?release-group=$lidarrAlbumForeignAlbumId&inc=url-rels&fmt=json" | jq -r | grep "deezer.com" | grep "album" | head -n 1 | sed -e "s%[^[:digit:]]%%g")
+				
+				# Process Album ID if found
 				if [ ! -z $msuicbrainzDeezerDownloadAlbumID ]; then
 					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: Musicbrainz Deezer Album ID :: FOUND!"
 					if [ -f "/config/extended/cache/deezer/${msuicbrainzDeezerDownloadAlbumID}.json" ]; then
