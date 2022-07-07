@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.94"
+scriptVersion="1.0.95"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -1046,10 +1046,15 @@ SearchProcess () {
 									continue
 								fi
 								DownloadProcess "$deezerArtistAlbumId" "DEEZER" "$downloadedReleaseYear"
+								LidarrTaskStatusCheck
+								CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId" "notbeets"
+								if [ $alreadyImported = true ]; then
+									log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Already Imported, skipping..."
+									break 3
+								fi
 							else
 								log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumReleaseTitleClean vs $deezerArtistAlbumTitleClean :: Explicit Deezer MATCH Not Found"
-							fi
-							LidarrTaskStatusCheck
+							fi				
 						done						
 					done
 				fi
@@ -1082,10 +1087,16 @@ SearchProcess () {
 								continue
 							fi
 							DownloadProcess "$tidalArtistAlbumId" "TIDAL" "$downloadedReleaseYear"
+
+							LidarrTaskStatusCheck
+							CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId" "notbeets"
+							if [ $alreadyImported = true ]; then
+								log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Already Imported, skipping..."
+								break 2
+							fi
 						else
 							log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumReleaseTitleClean vs $tidalArtistAlbumTitleClean :: Explicit Tidal Match NOT Found"
 						fi
-						LidarrTaskStatusCheck
 					done
 				fi
 
@@ -1126,6 +1137,14 @@ SearchProcess () {
 									continue
 								fi
 								DownloadProcess "$deezerArtistAlbumId" "DEEZER" "$downloadedReleaseYear"
+
+								LidarrTaskStatusCheck
+								CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId" "notbeets"
+								if [ $alreadyImported = true ]; then
+									log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Already Imported, skipping..."
+									break 3
+								fi
+
 							else
 								log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumReleaseTitleClean vs $deezerArtistAlbumTitleClean :: CLEAN Deezer MATCH NOT Found"
 							fi
@@ -1136,12 +1155,11 @@ SearchProcess () {
 				fi
 
 				LidarrTaskStatusCheck
-
 				CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId" "notbeets"
 				if [ $alreadyImported = true ]; then
 					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Already Imported, skipping..."
 					continue
-				fi
+				fi				
 
 				# Tidal search
 				if [ "$skipTidal" = "false" ]; then
@@ -1164,10 +1182,16 @@ SearchProcess () {
 								continue
 							fi
 							DownloadProcess "$tidalArtistAlbumId" "TIDAL" "$downloadedReleaseYear"
+
+							LidarrTaskStatusCheck
+							CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId" "notbeets"
+							if [ $alreadyImported = true ]; then
+								log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Already Imported, skipping..."
+								break 2
+							fi
 						else
 							log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumReleaseTitleClean vs $tidalArtistAlbumTitleClean :: CLEAN Tidal MATCH NOT Found"
 						fi
-						LidarrTaskStatusCheck
 					done
 				fi
 			fi
@@ -1344,7 +1368,7 @@ CheckLidarrBeforeImport () {
 			lidarrPercentOfTracks=0
 			return
 		fi
-		if [ $lidarrPercentOfTracks -gt 0 ]; then
+		if [ ${lidarrPercentOfTracks%%.*} -ge 100 ]; then
 			if [ $wantedAlbumListSource = missing ]; then
 				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: ERROR :: Already Imported Album (Missing), skipping..."
 				alreadyImported=true
