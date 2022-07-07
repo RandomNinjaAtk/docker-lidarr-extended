@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.92"
+scriptVersion="1.0.93"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -12,7 +12,7 @@ agent="lidarr-extended ( https://github.com/RandomNinjaAtk/docker-lidarr-extende
 musicbrainzMirror=https://musicbrainz.org
 
 # Debugging settings
-#dlClientSource=deezer
+#dlClientSource=tidal
 #topLimit=3
 #addDeezerTopArtists=true
 #addDeezerTopAlbumArtists=true
@@ -382,6 +382,8 @@ TidalClientSetup () {
 	fi
 
 	if [ ! -f /config/xdg/.tidal-dl.token.json ]; then
+		log ":: TIDAL :: ERROR :: Downgrade tidal-dl for workaround..."
+		pip3 install tidal-dl==2022.3.4.2
 		log ":: TIDAL :: ERROR :: Loading client for required authentication, please authenticate, then exit the client..."
 		tidal-dl
 	fi
@@ -405,6 +407,8 @@ TidalClientSetup () {
 		rm -rf /downloads/lidarr-extended/incomplete/*
 	fi
 	
+	log ":: TIDAL :: Upgrade tidal-dl to the latest..."
+	pip3 install tidal-dl --upgrade
 	tidal-dl -o /downloads/lidarr-extended/incomplete -l "166356219"
 	
 	downloadCount=$(find /downloads/lidarr-extended/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
@@ -483,7 +487,7 @@ DownloadProcess () {
             return
         fi
     elif [ "$2" = "TIDAL" ]; then
-        tidal-dl -o /downloads/lidarr-extended/incomplete -l "https://tidal.com/browse/album/$1"
+        tidal-dl -o /downloads/lidarr-extended/incomplete -l "$1"
         touch /config/extended/logs/downloaded/tidal/$1
         downloadCount=$(find /downloads/lidarr-extended/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
         if [ $downloadCount -le 0 ]; then
