@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.86"
+scriptVersion="1.0.87"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -272,7 +272,7 @@ DArtistAlbumList () {
 	
 	albumcount="$(python3 /config/extended/scripts/discography.py "$1" | sort -u | wc -l)"
 	
-	log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Searching for \"$1\" All Albums...."
+	log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Searching Arist ID \"$1\" for All Albums...."
 	if [ $albumcount -gt 0 ]; then
 		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle ::  $albumcount Albums found!"
 	else
@@ -825,6 +825,28 @@ SearchProcess () {
             skipDeezer=false
             skipTidal=false
         fi
+
+		if [ $audioLyricType = both ]; then
+			if [ "$skipDeezer" = "false" ]; then
+				LidarrTaskStatusCheck
+				CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId" "notbeets"
+				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: Musicbrainz Deezer Album ID :: Searching for Album ID..."
+				msuicbrainzDeezerDownloadAlbumID=$(curl -s "https://musicbrainz.org/ws/2/release?release-group=$lidarrAlbumForeignAlbumId&inc=url-rels&fmt=json" | jq -r | grep "deezer.com" | grep "album" | head -n 1 | sed -e "s%[^[:digit:]]%%g")
+				if [ ! -z $msuicbrainzDeezerDownloadAlbumID ]; then
+					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: Musicbrainz Deezer Album ID :: FOUND!"
+					if [ - f "/config/extended/cache/deezer/${msuicbrainzDeezerDownloadAlbumID}.json" ]; then
+						downloadedReleaseDate="$(cat "/config/extended/cache/deezer/${msuicbrainzDeezerDownloadAlbumID}.json" | jq -r .release_date)"
+						downloadedReleaseYear="${downloadedReleaseDate:0:4}"
+					else
+						downloadedReleaseDate="$(curl -s "https://api.deezer.com/album/${msuicbrainzDeezerDownloadAlbumID}" | jq -r .release_date)"
+						downloadedReleaseYear="${downloadedReleaseDate:0:4}"
+					fi
+					DownloadProcess "$msuicbrainzDeezerDownloadAlbumID" "DEEZER" "$downloadedReleaseYear"
+				else
+					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: Musicbrainz Deezer Album ID :: NOT FOUND!"
+				fi
+			fi
+		fi
 		
 		if [ "$skipDeezer" = "false" ]; then
 
