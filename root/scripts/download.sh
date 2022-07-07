@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.91"
+scriptVersion="1.0.92"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -869,6 +869,14 @@ SearchProcess () {
 						downloadedReleaseYear="${downloadedReleaseDate:0:4}"
 					fi
 					DownloadProcess "$msuicbrainzDeezerDownloadAlbumID" "DEEZER" "$downloadedReleaseYear"
+
+					# Verify it was successfully imported into Lidarr
+					LidarrTaskStatusCheck
+					CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId" "notbeets"
+					if [ $alreadyImported = true ]; then
+						log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Already Imported, skipping..."
+						continue
+					fi
 				else
 					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: Musicbrainz Deezer Album ID :: NOT FOUND!"
 				fi
