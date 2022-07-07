@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.88"
+scriptVersion="1.0.89"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -13,10 +13,10 @@ musicbrainzMirror=https://musicbrainz.org
 
 # Debugging settings
 #dlClientSource=deezer
-#topLimit=25
-#addDeezerTopArtists=false
-#addDeezerTopAlbumArtists=false
-#addDeezerTopTrackArtists=false
+#topLimit=3
+#addDeezerTopArtists=true
+#addDeezerTopAlbumArtists=true
+#addDeezerTopTrackArtists=true
 #configureLidarrWithOptimalSettings=false
 #audioFormat=opus
 #audioBitrate=160
@@ -165,24 +165,27 @@ DownloadFormat () {
 }
 
 AddDeezerTopArtists () {
-	getDeezerArtistsIds=($(curl -s "https://api.deezer.com/chart/0/artists?limit=$1" | jq -r ".data[].id"))
-	getDeezerArtistsIdsCount=$(curl -s "https://api.deezer.com/chart/0/artists?limit=$1" | jq -r ".data[].id" | wc -l)
+	getDeezerArtistsIds=$(curl -s "https://api.deezer.com/chart/0/artists?limit=$1" | jq -r ".data[].id")
+	getDeezerArtistsIdsCount=$(echo "$getDeezerArtistsIds" | wc -l)
+	getDeezerArtistsIds=($(echo "$getDeezerArtistsIds"))
 	sleep $sleepTimer
 	description="Top Artists"
 	AddDeezerArtistToLidarr
 }
 
 AddDeezerTopAlbumArtists () {
-	getDeezerArtistsIds=($(curl -s "https://api.deezer.com/chart/0/albums?limit=$1" | jq -r ".data[].artist.id"))
-	getDeezerArtistsIdsCount=$(curl -s "https://api.deezer.com/chart/0/albums?limit=$1" | jq -r ".data[].artist.id" | wc -l)
+	getDeezerArtistsIds=$(curl -s "https://api.deezer.com/chart/0/albums?limit=$1" | jq -r ".data[].artist.id")
+	getDeezerArtistsIdsCount=$(echo "$getDeezerArtistsIds" | wc -l)
+	getDeezerArtistsIds=($(echo "$getDeezerArtistsIds"))
 	sleep $sleepTimer
 	description="Top Album Artists"
 	AddDeezerArtistToLidarr
 }
 
 AddDeezerTopTrackArtists () {
-	getDeezerArtistsIds=($(curl -s "https://api.deezer.com/chart/0/tracks?limit=$1" | jq -r ".data[].artist.id"))
-	getDeezerArtistsIdsCount=$(curl -s "https://api.deezer.com/chart/0/tracks?limit=$1" | jq -r ".data[].artist.id" | wc -l)
+	getDeezerArtistsIds=$(curl -s "https://api.deezer.com/chart/0/tracks?limit=$1" | jq -r ".data[].artist.id")
+	getDeezerArtistsIdsCount=$(echo "$getDeezerArtistsIds" | wc -l)
+	getDeezerArtistsIds=($(echo "$getDeezerArtistsIds"))
 	sleep $sleepTimer
 	description="Top Track Artists"
 	AddDeezerArtistToLidarr
