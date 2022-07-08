@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.96"
+scriptVersion="1.0.97"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -429,7 +429,11 @@ TidalClientSetup () {
 
 DownloadProcess () {
 
-	downloadedAlbumTitleClean="$(echo "$downloadedAlbumTitle" | sed -e "s%[^[:alpha:][:digit:]._' ]% %g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
+	# Required Input Data
+	# $1 = Album ID to download from online Service
+	# $2 = Download Client Type (DEEZER or TIDAL)
+	# $3 = Album Year that matches Album ID Metadata
+	# $4 = Album Title that matches Album ID Metadata
 
 	if [ ! -d "/downloads/lidarr-extended" ]; then
 		mkdir -p /downloads/lidarr-extended
@@ -537,6 +541,7 @@ DownloadProcess () {
 	fi
 
     albumquality="$(find /downloads/lidarr-extended/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | head -n 1 | egrep -i -E -o "\.{1}\w*$" | sed  's/\.//g')"
+	downloadedAlbumTitleClean="$(echo "$4" | sed -e "s%[^[:alpha:][:digit:]._' ]% %g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
     downloadedAlbumFolder="$lidarrArtistNameSanitized-$downloadedAlbumTitleClean ($3)-${albumquality^^}-$2"
 
     find "/downloads/lidarr-extended/incomplete" -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" -print0 | while IFS= read -r -d '' audio; do
@@ -878,13 +883,15 @@ SearchProcess () {
 				if [ ! -z $msuicbrainzDeezerDownloadAlbumID ]; then
 					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: Musicbrainz Deezer Album ID :: FOUND!"
 					if [ -f "/config/extended/cache/deezer/${msuicbrainzDeezerDownloadAlbumID}.json" ]; then
-						downloadedReleaseDate="$(cat "/config/extended/cache/deezer/${msuicbrainzDeezerDownloadAlbumID}.json" | jq -r .release_date)"
-						downloadedReleaseYear="${downloadedReleaseDate:0:4}"
+						deezerArtistAlbumData="$(cat "/config/extended/cache/deezer/${msuicbrainzDeezerDownloadAlbumID}.json")"
 					else
-						downloadedReleaseDate="$(curl -s "https://api.deezer.com/album/${msuicbrainzDeezerDownloadAlbumID}" | jq -r .release_date)"
-						downloadedReleaseYear="${downloadedReleaseDate:0:4}"
+						downloadedReleaseDate="$(curl -s "https://api.deezer.com/album/${msuicbrainzDeezerDownloadAlbumID}")"
 					fi
-					DownloadProcess "$msuicbrainzDeezerDownloadAlbumID" "DEEZER" "$downloadedReleaseYear"
+					downloadedAlbumTitle="$(echo ${deezerArtistAlbumData} | jq -r .title)"
+					downloadedReleaseDate="$(echo ${deezerArtistAlbumData} | jq -r .release_date)"
+					downloadedReleaseYear="${downloadedReleaseDate:0:4}"
+					downloadedReleaseYear="${downloadedReleaseDate:0:4}"
+					DownloadProcess "$msuicbrainzDeezerDownloadAlbumID" "DEEZER" "$downloadedReleaseYear" "$downloadedAlbumTitle"
 
 					# Verify it was successfully imported into Lidarr
 					LidarrTaskStatusCheck
@@ -918,12 +925,13 @@ SearchProcess () {
 				if [ ! -z $msuicbrainzTidalDownloadAlbumID ]; then
 					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: Musicbrainz Tidal Album ID :: FOUND!"
 					tidalArtistAlbumData="$(curl -s "https://api.tidal.com/v1/albums/${msuicbrainzTidalDownloadAlbumID}?countryCode=$tidalCountryCode" -H 'x-tidal-token: CzET4vdadNUFQ5JU')"
+					downloadedAlbumTitle="$(echo ${tidalArtistAlbumData} | jq -r .title)"
 					downloadedReleaseDate="$(echo ${tidalArtistAlbumData} | jq -r .releaseDate)"
 					if [ "$downloadedReleaseDate" = "null" ]; then
 						downloadedReleaseDate=$(echo $tidalArtistAlbumData | jq -r '.streamStartDate')
 					fi
 					downloadedReleaseYear="${downloadedReleaseDate:0:4}"
-					DownloadProcess "$msuicbrainzDeezerDownloadAlbumID" "TIDAL" "$downloadedReleaseYear"
+					DownloadProcess "$msuicbrainzDeezerDownloadAlbumID" "TIDAL" "$downloadedReleaseYear" "$downloadedAlbumTitle"
 
 					# Verify it was successfully imported into Lidarr
 					LidarrTaskStatusCheck
@@ -1057,7 +1065,7 @@ SearchProcess () {
 									log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Previously Downloaded, skipping..."
 									continue
 								fi
-								DownloadProcess "$deezerArtistAlbumId" "DEEZER" "$downloadedReleaseYear"
+								DownloadProcess "$deezerArtistAlbumId" "DEEZER" "$downloadedReleaseYear"  "$downloadedAlbumTitle"
 								LidarrTaskStatusCheck
 								CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId" "notbeets"
 								if [ $alreadyImported = true ]; then
@@ -1098,7 +1106,7 @@ SearchProcess () {
 								log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Previously Downloaded, skipping..."
 								continue
 							fi
-							DownloadProcess "$tidalArtistAlbumId" "TIDAL" "$downloadedReleaseYear"
+							DownloadProcess "$tidalArtistAlbumId" "TIDAL" "$downloadedReleaseYear" "$downloadedAlbumTitle"
 
 							LidarrTaskStatusCheck
 							CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId" "notbeets"
@@ -1148,7 +1156,7 @@ SearchProcess () {
 								log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Previously Downloaded, skipping..."
 									continue
 								fi
-								DownloadProcess "$deezerArtistAlbumId" "DEEZER" "$downloadedReleaseYear"
+								DownloadProcess "$deezerArtistAlbumId" "DEEZER" "$downloadedReleaseYear" "$downloadedAlbumTitle"
 
 								LidarrTaskStatusCheck
 								CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId" "notbeets"
@@ -1193,7 +1201,7 @@ SearchProcess () {
 								log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Previously Downloaded, skipping..."
 								continue
 							fi
-							DownloadProcess "$tidalArtistAlbumId" "TIDAL" "$downloadedReleaseYear"
+							DownloadProcess "$tidalArtistAlbumId" "TIDAL" "$downloadedReleaseYear" "$downloadedAlbumTitle"
 
 							LidarrTaskStatusCheck
 							CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId" "notbeets"
