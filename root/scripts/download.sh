@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.98"
+scriptVersion="1.0.99"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -165,13 +165,25 @@ DownloadFormat () {
 }
 
 DownloadFolderCleaner () {
-	log ":: Removing prevously completed downloads that failed to import..."
 	# check for completed download folder
 	if [ -d "/downloads/lidarr-extended/complete" ]; then
+		log ":: Removing prevously completed downloads that failed to import..."
 		# check for completed downloads older than 1 day
 		if find /downloads/lidarr-extended/complete -mindepth 1 -type d -mtime +1 | read; then
 			# delete completed downloads older than 1 day, these most likely failed to import due to Lidarr failing to match
 			find /downloads/lidarr-extended/complete -mindepth 1 -type d -mtime +1 -exec rm -rf "{}" \; &>/dev/null
+		fi
+	fi
+}
+
+NotFoundFolderCleaner () {
+	# check for completed download folder
+	if [ -d /config/extended/logs/downloaded/notfound ]; then
+		log ":: Removing prevously notfound lidarr album ids older than 7 days to give them a retry..."
+		# check for notfound entries older than 7 days
+		if find /config/extended/logs/downloaded/notfound -mindepth 1 -type f -mtime +7 | read; then
+			# delete ntofound entries older than 7 days
+			find /config/extended/logs/downloaded/notfound -mindepth 1 -type f -mtime +7 -delete
 		fi
 	fi
 }
@@ -1493,6 +1505,9 @@ fi
 
 # Perform Completed Download Folder Cleanup process
 DownloadFolderCleaner
+
+# Perform NotFound Folder Cleanup process
+NotFoundFolderCleaner
 
 LidarrRootFolderCheck
 
