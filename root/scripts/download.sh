@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.97"
+scriptVersion="1.0.98"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -285,7 +285,8 @@ AddDeezerArtistToLidarr () {
 
 DArtistAlbumList () {
 	
-	albumcount="$(python3 /config/extended/scripts/discography.py "$1" | sort -u | wc -l)"
+	albumids=$(python3 /config/extended/scripts/discography.py "$1" | sort -u)
+	albumcount="$(echo "$albumids" | wc -l)"
 	
 	log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Searching Artist ID \"$1\" for All Albums...."
 	if [ $albumcount -gt 0 ]; then
@@ -294,7 +295,7 @@ DArtistAlbumList () {
 		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: ERROR :: $albumcount Albums found, skipping..."
 		return
 	fi
-	albumids=($(python3 /config/extended/scripts/discography.py "$1" | sort -u))
+	albumids=($(echo "$albumids"))
 		
 	for id in ${!albumids[@]}; do
 		currentprocess=$(( $id + 1 ))
