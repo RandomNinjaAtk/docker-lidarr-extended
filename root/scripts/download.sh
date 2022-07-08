@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.102"
+scriptVersion="1.0.103"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -330,10 +330,10 @@ DArtistAlbumList () {
 			curl -s "https://api.deezer.com/album/${albumid}" -o "/config/extended/cache/deezer/${albumid}.json"
 			sleep $sleepTimer
 			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $currentprocess of $albumcount :: Downloading Album info..."
-			chmod 666 /config/extended/cache/deezer/${albumid}.json
-			chown abc:abc /config/extended/cache/deezer/${albumid}.json	
 			if jq -e . >/dev/null 2>&1 <<<"$(cat /config/extended/cache/deezer/${albumid}.json)"; then
-				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $currentprocess of $albumcount :: Album info already downloaded and verified..."
+				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $currentprocess of $albumcount :: Album info downloaded and verified..."
+				chmod 666 /config/extended/cache/deezer/${albumid}.json
+				chown abc:abc /config/extended/cache/deezer/${albumid}.json	
 				albumInfoVerified=true
 				break
 			else
