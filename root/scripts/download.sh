@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.108"
+scriptVersion="1.0.109"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -974,7 +974,7 @@ SearchProcess () {
 
 		# Skip Varoius Artists album search that is not supported...
 		if [ "$lidarrArtistForeignArtistId" = "89ad4ac3-39f7-470e-963a-56509c546377" ]; then
-			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: ERROR :: Varoius Artists is not supported by normal search, skipping..."
+			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: ERROR :: Various Artists is not supported by normal search, skipping..."
 			continue
 		fi
 		
