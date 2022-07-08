@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.105"
+scriptVersion="1.0.106"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -1243,8 +1243,19 @@ SearchProcess () {
 			fi
 		done
 
-		mkdir -p /config/extended/logs/downloaded/notfound
-		touch /config/extended/logs/downloaded/notfound/$lidarrAlbumForeignAlbumId
+        log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Album Not found"
+		if [ ! -d /config/extended/logs/downloaded/notfound ]; then
+			mkdir -p /config/extended/logs/downloaded/notfound
+			chmod 777 /config/extended/logs/downloaded/notfound
+			chown abc:abc /config/extended/logs/downloaded/notfound
+		fi
+		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Marking Album as notfound"
+		if [ ! -f touch /config/extended/logs/downloaded/notfound/$lidarrAlbumForeignAlbumId ]; then
+			touch /config/extended/logs/downloaded/notfound/$lidarrAlbumForeignAlbumId
+			chmod 666 /config/extended/logs/downloaded/notfound/$lidarrAlbumForeignAlbumId
+			chown abc:abc /config/extended/logs/downloaded/notfound/$lidarrAlbumForeignAlbumId
+		fi
+		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Search Complete..." 
 	done
 }
 
