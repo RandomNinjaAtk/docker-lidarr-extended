@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.101"
+scriptVersion="1.0.102"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -951,7 +951,7 @@ SearchProcess () {
 						downloadedReleaseDate=$(echo $tidalArtistAlbumData | jq -r '.streamStartDate')
 					fi
 					downloadedReleaseYear="${downloadedReleaseDate:0:4}"
-					DownloadProcess "$msuicbrainzDeezerDownloadAlbumID" "TIDAL" "$downloadedReleaseYear" "$downloadedAlbumTitle"
+					DownloadProcess "$msuicbrainzTidalDownloadAlbumID" "TIDAL" "$downloadedReleaseYear" "$downloadedAlbumTitle"
 
 					# Verify it was successfully imported into Lidarr
 					LidarrTaskStatusCheck
