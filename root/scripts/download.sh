@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.104"
+scriptVersion="1.0.105"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -322,26 +322,32 @@ DArtistAlbumList () {
 			if jq -e . >/dev/null 2>&1 <<<"$(cat /config/extended/cache/deezer/${albumid}.json)"; then
 				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $currentprocess of $albumcount :: Album info already downloaded and verified..."
 				continue
+			else
+				rm "/config/extended/cache/deezer/${albumid}.json"
 			fi
 		fi
 
 		until false
 		do
+			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $currentprocess of $albumcount :: Downloading Album info..."
 			curl -s "https://api.deezer.com/album/${albumid}" -o "/config/extended/cache/deezer/${albumid}.json"
 			sleep $sleepTimer
-			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $currentprocess of $albumcount :: Downloading Album info..."
-			if jq -e . >/dev/null 2>&1 <<<"$(cat /config/extended/cache/deezer/${albumid}.json)"; then
-				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $currentprocess of $albumcount :: Album info downloaded and verified..."
-				chmod 666 /config/extended/cache/deezer/${albumid}.json
-				chown abc:abc /config/extended/cache/deezer/${albumid}.json	
-				albumInfoVerified=true
-				break
-			else
-				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $currentprocess of $albumcount :: Error getting album information"
-				if [ -f "/config/extended/cache/deezer/${albumid}.json" ]; then
-					rm "/config/extended/cache/deezer/${albumid}.json"
+			if [ -f "/config/extended/cache/deezer/${albumid}.json" ]; then
+				if jq -e . >/dev/null 2>&1 <<<"$(cat /config/extended/cache/deezer/${albumid}.json)"; then
+					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $currentprocess of $albumcount :: Album info downloaded and verified..."
+					chmod 666 /config/extended/cache/deezer/${albumid}.json
+					chown abc:abc /config/extended/cache/deezer/${albumid}.json	
+					albumInfoVerified=true
+					break
+				else
+					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $currentprocess of $albumcount :: Error getting album information"
+					if [ -f "/config/extended/cache/deezer/${albumid}.json" ]; then
+						rm "/config/extended/cache/deezer/${albumid}.json"
+					fi
+					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $currentprocess of $albumcount :: Retrying..."
 				fi
-				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $currentprocess of $albumcount :: Retrying..."
+			else
+				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $currentprocess of $albumcount :: ERROR :: Download Failed"
 			fi
 		done
 
