@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.99"
+scriptVersion="1.0.100"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -319,7 +319,7 @@ DArtistAlbumList () {
 		fi
 
 		if [ ! -f /config/extended/cache/deezer/${albumid}.json ]; then
-			if wget "https://api.deezer.com/album/${albumid}" -O "/config/extended/cache/deezer/${albumid}.json" -q; then
+			if curl -s "https://api.deezer.com/album/${albumid}" -o "/config/extended/cache/deezer/${albumid}.json"; then
 				sleep $sleepTimer
 				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $currentprocess of $albumcount :: Downloading Album info..."
 				chmod 666 /config/extended/cache/deezer/${albumid}.json
