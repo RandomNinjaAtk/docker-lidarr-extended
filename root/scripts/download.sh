@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.109"
+scriptVersion="1.0.110"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -972,7 +972,7 @@ SearchProcess () {
 			fi
 		fi
 
-		# Skip Varoius Artists album search that is not supported...
+		# Skip Various Artists album search that is not supported...
 		if [ "$lidarrArtistForeignArtistId" = "89ad4ac3-39f7-470e-963a-56509c546377" ]; then
 			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: ERROR :: Various Artists is not supported by normal search, skipping..."
 			continue
@@ -1158,6 +1158,8 @@ SearchProcess () {
 					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Already Imported, skipping..."
 					continue
 				fi
+			else
+				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Explicit Albums Disabled, skipping explicit search..."
 			fi
 
 			# Search for clean matches
@@ -1246,6 +1248,8 @@ SearchProcess () {
 						fi
 					done
 				fi
+			else
+				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Clean Albums Disabled, skipping clean search..."
 			fi
 		done
 
