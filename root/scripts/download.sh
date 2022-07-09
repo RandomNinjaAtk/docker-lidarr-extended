@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.117"
+scriptVersion="1.0.118"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -664,6 +664,9 @@ DeemixClientSetup () {
 	else
 		rm -rf /downloads/lidarr-extended/incomplete/*
 	fi
+
+	log ":: DEEZER :: Upgrade deemix to the latest..."
+	pip3 install deemix --upgrade
 
 	deemix -b $deemixQuality -p /downloads/lidarr-extended/incomplete "https://www.deezer.com/album/197472472"
 	if [ -d "/tmp/deemix-imgs" ]; then
