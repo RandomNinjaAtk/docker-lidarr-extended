@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.115"
+scriptVersion="1.0.116"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -28,7 +28,7 @@ sleepTimer=0.5
 
 log () {
 	m_time=`date "+%F %T"`
-	echo $m_time" Extended Script :: "$1
+	echo $m_time" :: Extended Script "$1
 }
 
 verifyApiAccess () {
