@@ -19,7 +19,7 @@
   "maxBitrate": "3",
   "feelingLucky": false,
   "fallbackBitrate": true,
-  "fallbackSearch": true,
+  "fallbackSearch": false,
   "fallbackISRC": true,
   "logErrors": false,
   "logSearched": false,
