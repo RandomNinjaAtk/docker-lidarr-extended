@@ -146,3 +146,5 @@ services:
 - [Lidarr](https://lidarr.audio/)
 - [Tidal-Media-Downloader client](https://github.com/yaronzz/Tidal-Media-Downloader)
 - [Docker multi-arch example](https://github.com/ckulka/docker-multi-arch-example)
+- [r128gain](https://github.com/desbma/r128gain)
+- [Algorithm Implementation/Strings/Levenshtein distance](https://en.wikibooks.org/wiki/Algorithm_Implementation/Strings/Levenshtein_distance)
