@@ -20,7 +20,7 @@
   "feelingLucky": false,
   "fallbackBitrate": true,
   "fallbackSearch": false,
-  "fallbackISRC": false,
+  "fallbackISRC": true,
   "logErrors": true,
   "logSearched": false,
   "overwriteFile": "n",
