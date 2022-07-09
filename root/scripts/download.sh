@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.111"
+scriptVersion="1.0.112"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -1479,6 +1479,7 @@ LidarrTaskStatusCheck () {
 	do
 		taskCount=$(curl -s "$lidarrUrl/api/v1/command?apikey=${lidarrApiKey}" | jq -r .[].status | grep -v completed | grep -v failed | wc -l)
 		if [ "$taskCount" -ge "1" ]; then
+			log ":: $artistNumber of $lidarrArtistTotal :: $lidarrArtistName :: ERROR :: Lidarr Busy :: Waiting for Lidarr tasks to end..."
 			sleep 1
 		else
 			break
