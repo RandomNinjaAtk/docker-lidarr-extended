@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.110"
+scriptVersion="1.0.111"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -833,33 +833,34 @@ SearchProcess () {
     processNumber=0
 	for lidarrMissingId in $(ls -tr /config/extended/cache/lidarr/list); do
 		processNumber=$(( $processNumber + 1 ))
-        wantedAlbumId=$(echo $lidarrMissingId | sed -e "s%[^[:digit:]]%%g")
+        	wantedAlbumId=$(echo $lidarrMissingId | sed -e "s%[^[:digit:]]%%g")
 		wantedAlbumListSource=$(echo $lidarrMissingId | sed -e "s%[^[:alpha:]]%%g")
-        lidarrAlbumData="$(curl -s "$lidarrUrl/api/v1/album/$wantedAlbumId?apikey=${lidarrApiKey}")"
-        lidarrAlbumTitle=$(echo "$lidarrAlbumData" | jq -r ".title")
-        lidarrAlbumTitleClean=$(echo "$lidarrAlbumTitle" | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
+        	lidarrAlbumData="$(curl -s "$lidarrUrl/api/v1/album/$wantedAlbumId?apikey=${lidarrApiKey}")"
+        	lidarrAlbumTitle=$(echo "$lidarrAlbumData" | jq -r ".title")
+        	lidarrAlbumTitleClean=$(echo "$lidarrAlbumTitle" | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
 		lidarrAlbumTitleCleanSpaces=$(echo "$lidarrAlbumTitle" | sed -e "s%[^[:alpha:][:digit:]]% %g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
 		lidarrAlbumTitleFirstWord=${lidarrAlbumTitleCleanSpaces%% *}
 		lidarrAlbumForeignAlbumId=$(echo "$lidarrAlbumData" | jq -r ".foreignAlbumId")
-        lidarrAlbumReleases=$(echo "$lidarrAlbumData" | jq -r ".releases")
+        	lidarrAlbumReleases=$(echo "$lidarrAlbumData" | jq -r ".releases")
 		lidarrAlbumReleasesMinTrackCount=$(echo "$lidarrAlbumData" | jq -r ".releases[].trackCount" | sort | head -n1)
 		lidarrAlbumReleasesMaxTrackCount=$(echo "$lidarrAlbumData" | jq -r ".releases[].trackCount" | sort -r | head -n1)
-        #echo $lidarrAlbumData | jq -r 
-        lidarrAlbumWordCount=$(echo $lidarrAlbumTitle | wc -w)
-        #echo $lidarrAlbumReleases | jq -r 
-        lidarrArtistData=$(echo "${lidarrAlbumData}" | jq -r ".artist")
-        lidarrArtistId=$(echo "${lidarrArtistData}" | jq -r ".artistMetadataId")
-        lidarrArtistPath="$(echo "${lidarrArtistData}" | jq -r " .path")"
-        lidarrArtistFolder="$(basename "${lidarrArtistPath}")"
-        lidarrArtistNameSanitized="$(basename "${lidarrArtistPath}" | sed 's% (.*)$%%g')"
+        	#echo $lidarrAlbumData | jq -r 
+        	lidarrAlbumWordCount=$(echo $lidarrAlbumTitle | wc -w)
+        	#echo $lidarrAlbumReleases | jq -r 
+        	lidarrArtistData=$(echo "${lidarrAlbumData}" | jq -r ".artist")
+		lidarrArtistId=$(echo "${lidarrArtistData}" | jq -r ".artistMetadataId")
+		lidarrArtistPath="$(echo "${lidarrArtistData}" | jq -r " .path")"
+		lidarrArtistFolder="$(basename "${lidarrArtistPath}")"
+		lidarrArtistNameSanitized="$(basename "${lidarrArtistPath}" | sed 's% (.*)$%%g')"
 		lidarrArtistName=$(echo "${lidarrArtistData}" | jq -r ".artistName")
 		lidarrArtistForeignArtistId=$(echo "${lidarrArtistData}" | jq -r ".foreignArtistId")
-        tidalArtistUrl=$(echo "${lidarrArtistData}" | jq -r ".links | .[] | select(.name==\"tidal\") | .url")
-        tidalArtistId="$(echo "$tidalArtistUrl" | grep -o '[[:digit:]]*' | sort -u)"
-        deezerArtistUrl=$(echo "${lidarrArtistData}" | jq -r ".links | .[] | select(.name==\"deezer\") | .url")
+		tidalArtistUrl=$(echo "${lidarrArtistData}" | jq -r ".links | .[] | select(.name==\"tidal\") | .url")
+		tidalArtistId="$(echo "$tidalArtistUrl" | grep -o '[[:digit:]]*' | sort -u)"
+		deezerArtistUrl=$(echo "${lidarrArtistData}" | jq -r ".links | .[] | select(.name==\"deezer\") | .url")
 		lidarrAlbumReleaseDate=$(echo "$lidarrAlbumData" | jq -r .releaseDate)
 		lidarrAlbumReleaseDate=${lidarrAlbumReleaseDate:0:10}
 		lidarrAlbumReleaseDateClean="$(echo $lidarrAlbumReleaseDate | sed -e "s%[^[:digit:]]%%g")"
+		lidarrAlbumReleaseYear="${lidarrAlbumReleaseDate:0:4}"
 		currentDate="$(date "+%F")"
 		currentDateClean="$(echo "$currentDate" | sed -e "s%[^[:digit:]]%%g")"
 
@@ -913,11 +914,8 @@ SearchProcess () {
 					else
 						deezerArtistAlbumData="$(curl -s "https://api.deezer.com/album/${msuicbrainzDeezerDownloadAlbumID}")"
 					fi
-					downloadedAlbumTitle="$(echo ${deezerArtistAlbumData} | jq -r .title)"
-					downloadedReleaseDate="$(echo ${deezerArtistAlbumData} | jq -r .release_date)"
-					downloadedReleaseYear="${downloadedReleaseDate:0:4}"
-					downloadedReleaseYear="${downloadedReleaseDate:0:4}"
-					DownloadProcess "$msuicbrainzDeezerDownloadAlbumID" "DEEZER" "$downloadedReleaseYear" "$downloadedAlbumTitle"
+		
+					DownloadProcess "$msuicbrainzDeezerDownloadAlbumID" "DEEZER" "$lidarrAlbumReleaseYear" "$lidarrAlbumTitle"
 
 					# Verify it was successfully imported into Lidarr
 					LidarrTaskStatusCheck
@@ -951,13 +949,7 @@ SearchProcess () {
 				if [ ! -z $msuicbrainzTidalDownloadAlbumID ]; then
 					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: Musicbrainz Tidal Album ID :: FOUND!"
 					tidalArtistAlbumData="$(curl -s "https://api.tidal.com/v1/albums/${msuicbrainzTidalDownloadAlbumID}?countryCode=$tidalCountryCode" -H 'x-tidal-token: CzET4vdadNUFQ5JU')"
-					downloadedAlbumTitle="$(echo ${tidalArtistAlbumData} | jq -r .title)"
-					downloadedReleaseDate="$(echo ${tidalArtistAlbumData} | jq -r .releaseDate)"
-					if [ "$downloadedReleaseDate" = "null" ]; then
-						downloadedReleaseDate=$(echo $tidalArtistAlbumData | jq -r '.streamStartDate')
-					fi
-					downloadedReleaseYear="${downloadedReleaseDate:0:4}"
-					DownloadProcess "$msuicbrainzTidalDownloadAlbumID" "TIDAL" "$downloadedReleaseYear" "$downloadedAlbumTitle"
+					DownloadProcess "$msuicbrainzTidalDownloadAlbumID" "TIDAL" "$lidarrAlbumReleaseYear" "$lidarrAlbumTitle"
 
 					# Verify it was successfully imported into Lidarr
 					LidarrTaskStatusCheck
