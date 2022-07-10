@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.126"
+scriptVersion="1.0.127"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -1250,6 +1250,8 @@ ArtistDeezerSearch () {
 				if [ $alreadyImported = true ]; then
 					break 2
 				fi
+			else
+				log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumReleaseTitleClean vs $deezerAlbumTitleClean :: Deezer Match Not Found :: Calculated Difference ($diff) greater than 5"
 			fi
 		done
 	done
@@ -1312,6 +1314,8 @@ FuzzyDeezerSearch () {
 					if [ $alreadyImported = true ]; then
 						break 2
 					fi
+				else
+					log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumReleaseTitleClean vs $deezerAlbumTitleClean :: Deezer Match Not Found :: Calculated Difference ($diff) greater than 5"
 				fi
 			done
 		else
@@ -1373,6 +1377,8 @@ ArtistTidalSearch () {
 				if [ $alreadyImported = true ]; then
 					break 2
 				fi
+			else
+				log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumReleaseTitleClean vs $tidalAlbumTitleClean :: Tidal Match Not Found :: Calculated Difference ($diff) greater than 5"
 			fi
 		done
 	done
