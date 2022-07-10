@@ -11,7 +11,7 @@ COPY --from=builder qemu-aarch64-static /usr/bin
 
 LABEL maintainer="RandomNinjaAtk"
 ENV dockerTitle="lidarr-extended"
-ENV dockerVersion="arm64v8-1.0.15"
+ENV dockerVersion="arm64v8-1.0.16"
 ENV LANG=en_US.UTF-8
 ENV autoStart=true
 ENV configureLidarrWithOptimalSettings=false
@@ -27,6 +27,7 @@ ENV addRelatedArtists=false
 ENV tidalCountryCode=US
 ENV numberOfRelatedArtistsToAddPerArtist=5
 ENV beetsMatchPercentage=90
+ENV requireQuality=true
 
 RUN \
 	echo "*** install packages ***" && \
