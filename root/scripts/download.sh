@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.118"
+scriptVersion="1.0.119"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -987,46 +987,12 @@ SearchProcess () {
 						log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Already Imported, skipping..."
 						continue
 					fi
-					albumFound=false
-					for lidarrAlbumReleaseId in $(echo "$lidarrAlbumReleaseIds"); do
-						log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: Searching Deezer for Album..."
-						lidarrAlbumReleaseData=$(echo "$lidarrAlbumData" | jq -r ".releases[] | select(.id==$lidarrAlbumReleaseId)")
-						lidarrAlbumReleaseTitle=$(echo "$lidarrAlbumReleaseData" | jq -r .title)
-						lidarrAlbumReleaseTitleClean="$(echo "$lidarrAlbumReleaseTitle" | sed -e "s%[^[:alpha:][:digit:]]% %g" -e "s/  */ /g")"
-						albumTitleSearch="$(jq -R -r @uri <<<"${lidarrAlbumReleaseTitleClean}")"
-						deezerSearch=""
-						deezerSearch=$(curl -s "https://api.deezer.com/search?q=album:%22${albumTitleSearch}%22&strict=on&limit=1000" | jq -r .data[])
-						if [ ! -z "$deezerSearch" ]; then
-							for deezerAlbumID in $(echo "$deezerSearch" | jq -r .album.id | sort -u); do
-								deezerAlbumData="$(echo "$deezerSearch" | jq -r ".album | select(.id==$deezerAlbumID)")"
-								deezerAlbumTitle=$(echo "$deezerAlbumData"| jq -r .title | head -n1)
-								lidarrAlbumReleaseTitleClean=$(echo "$lidarrAlbumReleaseTitle" | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
-								deezerAlbumTitleClean=$(echo ${deezerAlbumTitle} | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
-								diff=$(levenshtein "${lidarrAlbumReleaseTitleClean,,}" "${deezerAlbumTitleClean,,}")
-								log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumReleaseTitleClean vs $deezerAlbumTitleClean :: Checking for Match..."
-								if [ "$diff" -le "5" ]; then
-									log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumReleaseTitleClean vs $deezerAlbumTitleClean :: Deezer MATCH Found :: Calculated Difference = $diff"
-									DownloadProcess "$deezerAlbumID" "DEEZER" "$lidarrAlbumReleaseYear" "$lidarrAlbumReleaseTitle"
-									albumFound=true
-									# Verify it was successfully imported into Lidarr
-									LidarrTaskStatusCheck
-									CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId" "notbeets"
-									if [ $alreadyImported = true ]; then
-										log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Already Imported, skipping..."
-										break 2
-									fi
-								fi
-							done
-						else
-							continue=false
-						fi
-					done
-					if [ $albumFound = true ]; then
-						continue
-					else
-						log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: No Deezer album found, skipping..."
-						continue
-					fi
+					
+					FuzzyDeezerSearch "$processNumber of $wantedListAlbumTotal" "$wantedAlbumId"
+
+					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: ERROR :: Various Artists is not supported by normal search, skipping..."
+					continue
+
 				else
 					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: ERROR :: Various Artists is not supported by normal search, skipping..."
 					continue
@@ -1324,6 +1290,52 @@ SearchProcess () {
 		fi
 		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Search Complete..." 
 	done
+}
+
+FuzzyDeezerSearch () {
+	# Required Inputs
+	# $1 Process ID
+	# $2 Lidarr Album ID
+	lidarrAlbumData="$(curl -s "$lidarrUrl/api/v1/album/$2?apikey=${lidarrApiKey}")"
+	lidarrAlbumTitle=$(echo "$lidarrAlbumData" | jq -r ".title")
+	lidarrAlbumReleaseDate=$(echo "$lidarrAlbumData" | jq -r .releaseDate)
+	lidarrAlbumReleaseYear="${lidarrAlbumReleaseDate:0:4}"
+	lidarrAlbumReleaseIds=$(echo "$lidarrAlbumData" | jq -r ".releases | sort_by(.trackCount) | reverse | .[].id")
+	lidarrArtistData=$(echo "${lidarrAlbumData}" | jq -r ".artist")
+	lidarrArtistName=$(echo "${lidarrArtistData}" | jq -r ".artistName")
+	lidarrArtistNameSanitized="$(basename "${lidarrArtistPath}" | sed 's% (.*)$%%g')"
+	for lidarrAlbumReleaseId in $(echo "$lidarrAlbumReleaseIds"); do
+		log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: Searching Deezer for Album..."
+		lidarrAlbumReleaseData=$(echo "$lidarrAlbumData" | jq -r ".releases[] | select(.id==$lidarrAlbumReleaseId)")
+		lidarrAlbumReleaseTitle=$(echo "$lidarrAlbumReleaseData" | jq -r .title)
+		lidarrAlbumReleaseTitleClean="$(echo "$lidarrAlbumReleaseTitle" | sed -e "s%[^[:alpha:][:digit:]]% %g" -e "s/  */ /g")"
+		albumTitleSearch="$(jq -R -r @uri <<<"${lidarrAlbumReleaseTitleClean}")"
+		deezerSearch=""
+		deezerSearch=$(curl -s "https://api.deezer.com/search?q=album:%22${albumTitleSearch}%22&strict=on&limit=1000" | jq -r .data[])
+		if [ ! -z "$deezerSearch" ]; then
+			for deezerAlbumID in $(echo "$deezerSearch" | jq -r .album.id | sort -u); do
+				deezerAlbumData="$(echo "$deezerSearch" | jq -r ".album | select(.id==$deezerAlbumID)")"
+				deezerAlbumTitle=$(echo "$deezerAlbumData"| jq -r .title | head -n1)
+				lidarrAlbumReleaseTitleClean=$(echo "$lidarrAlbumReleaseTitle" | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
+				deezerAlbumTitleClean=$(echo ${deezerAlbumTitle} | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
+				diff=$(levenshtein "${lidarrAlbumReleaseTitleClean,,}" "${deezerAlbumTitleClean,,}")
+				log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumReleaseTitleClean vs $deezerAlbumTitleClean :: Checking for Match..."
+				if [ "$diff" -le "5" ]; then
+					log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumReleaseTitleClean vs $deezerAlbumTitleClean :: Deezer MATCH Found :: Calculated Difference = $diff"
+					DownloadProcess "$deezerAlbumID" "DEEZER" "$lidarrAlbumReleaseYear" "$lidarrAlbumReleaseTitle"
+					# Verify it was successfully imported into Lidarr
+					LidarrTaskStatusCheck
+					CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId" "notbeets"
+					if [ $alreadyImported = true ]; then
+						break 2
+					fi
+				fi
+			done
+		else
+			log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: ERROR :: No results found..."
+		fi
+	done
+	
 }
 
 ProcessWithBeets () {
@@ -1679,4 +1691,5 @@ if [ "$addDeezerTopArtists" = "true" ] || [ "$addDeezerTopAlbumArtists" = "true"
 	LidarrMissingAlbumSearch
 fi
 
+log ":: Script end..."
 exit
