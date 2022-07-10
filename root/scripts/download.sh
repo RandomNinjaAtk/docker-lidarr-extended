@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.127"
+scriptVersion="1.0.128"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -851,8 +851,6 @@ SearchProcess () {
 		lidarrAlbumTitleFirstWord=${lidarrAlbumTitleCleanSpaces%% *}
 		lidarrAlbumForeignAlbumId=$(echo "$lidarrAlbumData" | jq -r ".foreignAlbumId")
 		lidarrAlbumReleases=$(echo "$lidarrAlbumData" | jq -r ".releases")
-		lidarrAlbumReleasesMinTrackCount=$(echo "$lidarrAlbumData" | jq -r ".releases[].trackCount" | sort | head -n1)
-		lidarrAlbumReleasesMaxTrackCount=$(echo "$lidarrAlbumData" | jq -r ".releases[].trackCount" | sort -r | head -n1)
 		#echo $lidarrAlbumData | jq -r 
 		lidarrAlbumWordCount=$(echo $lidarrAlbumTitle | wc -w)
 		#echo $lidarrAlbumReleases | jq -r 
