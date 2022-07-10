@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.122"
+scriptVersion="1.0.123"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -1135,7 +1135,7 @@ SearchProcess () {
 						continue
 					fi
 
-					ArtistDeezerSearch "$processNumber of $wantedListAlbumTotal" "$wantedAlbumId" "$tidalArtistId" "false"
+					ArtistDeezerSearch "$processNumber of $wantedListAlbumTotal" "$wantedAlbumId" "$deezeArtistId" "false"
 				done
 			fi
 
