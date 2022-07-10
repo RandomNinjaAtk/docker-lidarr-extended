@@ -46,6 +46,7 @@ Container images are configured using parameters passed at runtime (such as thos
 | `-e configureLidarrWithOptimalSettings=true` | true = enabled :: Automatically configures Lidarr with optimal settings |
 | `-e audioFormat=native` | native or alac or mp3 or aac or opus :: native is the native download client file type, selected by the matching audio bitrate |
 | `-e audioBitrate=lossless` | lossless or high or low or ### :: lossless = flac files, high = 320K, low = 128k/96k, ### = the output bitrate of converted lossless files to selected audioFormat that is not native, example: 192... |
+| `-e requireQuality=true` | true = enabled :: Downloads will be required to have the requested file format |
 | `-e audioLyricType=both` | both or explicit or clean :: both, is explicit perferred matching, explicit is explicit releases only matching and clean is clean releases only matching |
 | `-e dlClientSource=both` | deezer, tidal or both :: set to both, to use both clients, tidal requires extra steps, view logging output |
 | `-e arlToken=` | User ARL token for deemix client |
@@ -81,6 +82,7 @@ docker create \
   -e configureLidarrWithOptimalSettings=true \
   -e audioFormat=native \
   -e audioBitrate=lossless \
+  -e requireQuality=true \
   -e audioLyricType=both \
   -e dlClientSource=both \
   -e arlToken=Token_Goes_Here \
@@ -122,6 +124,7 @@ services:
       - configureLidarrWithOptimalSettings=true
       - audioFormat=native
       - audioBitrate=lossless
+      - requireQuality=true
       - audioLyricType=both
       - dlClientSource=both
       - arlToken=Token_Goes_Here
