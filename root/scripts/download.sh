@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.121"
+scriptVersion="1.0.122"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -864,7 +864,7 @@ SearchProcess () {
 		lidarrArtistName=$(echo "${lidarrArtistData}" | jq -r ".artistName")
 		lidarrArtistForeignArtistId=$(echo "${lidarrArtistData}" | jq -r ".foreignArtistId")
 		tidalArtistUrl=$(echo "${lidarrArtistData}" | jq -r ".links | .[] | select(.name==\"tidal\") | .url")
-		tidalArtistId="$(echo "$tidalArtistUrl" | grep -o '[[:digit:]]*' | sort -u)"
+		tidalArtistIds="$(echo "$tidalArtistUrl" | grep -o '[[:digit:]]*' | sort -u)"
 		deezerArtistUrl=$(echo "${lidarrArtistData}" | jq -r ".links | .[] | select(.name==\"deezer\") | .url")
 		lidarrAlbumReleaseIds=$(echo "$lidarrAlbumData" | jq -r ".releases | sort_by(.trackCount) | reverse | .[].id")
 		lidarrAlbumReleaseDate=$(echo "$lidarrAlbumData" | jq -r .releaseDate)
@@ -1060,16 +1060,19 @@ SearchProcess () {
 			if [ ! -d /config/extended/cache/tidal ]; then
 				mkdir -p /config/extended/cache/tidal
 			fi
-						
-			if [ ! -f /config/extended/cache/tidal/$tidalArtistId-videos.json ]; then
-				curl -s "https://api.tidal.com/v1/artists/${tidalArtistId}/videos?limit=10000&countryCode=$tidalCountryCode&filter=ALL" -H 'x-tidal-token: CzET4vdadNUFQ5JU' > /config/extended/cache/tidal/$tidalArtistId-videos.json
-				sleep $sleepTimer
-			fi
 
-			if [ ! -f /config/extended/cache/tidal/$tidalArtistId-albums.json ]; then
-				curl -s "https://api.tidal.com/v1/artists/${tidalArtistId}/albums?limit=10000&countryCode=$tidalCountryCode&filter=ALL" -H 'x-tidal-token: CzET4vdadNUFQ5JU' > /config/extended/cache/tidal/$tidalArtistId-albums.json
-				sleep $sleepTimer
-			fi
+			for tidalArtistId in $(echo $tidalArtistIds); do
+						
+				if [ ! -f /config/extended/cache/tidal/$tidalArtistId-videos.json ]; then
+					curl -s "https://api.tidal.com/v1/artists/${tidalArtistId}/videos?limit=10000&countryCode=$tidalCountryCode&filter=ALL" -H 'x-tidal-token: CzET4vdadNUFQ5JU' > /config/extended/cache/tidal/$tidalArtistId-videos.json
+					sleep $sleepTimer
+				fi
+
+				if [ ! -f /config/extended/cache/tidal/$tidalArtistId-albums.json ]; then
+					curl -s "https://api.tidal.com/v1/artists/${tidalArtistId}/albums?limit=10000&countryCode=$tidalCountryCode&filter=ALL" -H 'x-tidal-token: CzET4vdadNUFQ5JU' > /config/extended/cache/tidal/$tidalArtistId-albums.json
+					sleep $sleepTimer
+				fi
+			done
 
 			
 		fi	
@@ -1095,6 +1098,24 @@ SearchProcess () {
 					ArtistDeezerSearch "$processNumber of $wantedListAlbumTotal" "$wantedAlbumId" "$deezeArtistId" "true"
 				done
 			fi
+
+			LidarrTaskStatusCheck
+			CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId" "notbeets"
+			if [ $alreadyImported = true ]; then
+				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Already Imported, skipping..."
+				continue
+			fi
+
+			# Tidal search
+			if [ "$skipTidal" = "false" ]; then
+				for tidalArtistId in $(echo $tidalArtistIds); do
+					if [ ! -f "/config/extended/cache/tidal/$tidalArtistId-albums.json" ]; then
+						continue
+					fi
+
+					ArtistTidalSearch "$processNumber of $wantedListAlbumTotal" "$wantedAlbumId" "$tidalArtistId" "true"
+				done	
+			fi
 		fi
 
 		LidarrTaskStatusCheck
@@ -1114,7 +1135,26 @@ SearchProcess () {
 						continue
 					fi
 
-					ArtistDeezerSearch "$processNumber of $wantedListAlbumTotal" "$wantedAlbumId" "$deezeArtistId" "false"
+					ArtistDeezerSearch "$processNumber of $wantedListAlbumTotal" "$wantedAlbumId" "$tidalArtistId" "false"
+				done
+			fi
+
+			LidarrTaskStatusCheck
+			CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId" "notbeets"
+			if [ $alreadyImported = true ]; then
+				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Already Imported, skipping..."
+				continue
+			fi
+
+			# Tidal search
+			if [ "$skipTidal" = "false" ]; then
+
+				for tidalArtistId in $(echo $tidalArtistIds); do
+					if [ ! -f "/config/extended/cache/tidal/$tidalArtistId-albums.json"  ]; then
+						continue
+					fi
+
+					ArtistTidalSearch "$processNumber of $wantedListAlbumTotal" "$wantedAlbumId" "$tidalArtistId" "false"
 				done
 			fi
 		fi
@@ -1125,123 +1165,6 @@ SearchProcess () {
 			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Already Imported, skipping..."
 			continue
 		fi
-
-		for lidarrAlbumReleaseId in $(echo "$lidarrAlbumReleaseIds"); do
-			lidarrAlbumReleaseData=$(echo "$lidarrAlbumData" | jq -r ".releases[] | select(.id==$lidarrAlbumReleaseId)")
-			lidarrAlbumReleaseTitle=$(echo "$lidarrAlbumReleaseData" | jq -r .title)
-			lidarrAlbumReleaseTrackCount=$(echo "$lidarrAlbumReleaseData" | jq -r .trackCount)
-			lidarrAlbumReleaseTitleClean=$(echo "$lidarrAlbumReleaseTitle" | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
-			lidarrAlbumReleaseTitleSpaces=$(echo "$lidarrAlbumReleaseTitle" | sed -e "s%[^[:alpha:][:digit:]]% %g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
-			#echo "$lidarrAlbumReleaseTitle"
-			#echo $lidarrAlbumReleaseTrackCount
-		
-			if [ "$skipTidal" = "false" ]; then
-				tidalArtistAlbumsData=$(cat "/config/extended/cache/tidal/$tidalArtistId-albums.json" | jq -r ".items | sort_by(.numberOfTracks) | sort_by(.explicit) | reverse |.[] | select(.numberOfTracks==$lidarrAlbumReleaseTrackCount)")
-			fi
-
-			# Search for explicit matches
-			if [ $audioLyricType = both ] || [ $audioLyricType = explicit ]; then
-	
-
-				LidarrTaskStatusCheck
-				CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId" "notbeets"
-				if [ $alreadyImported = true ]; then
-					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Already Imported, skipping..."
-					continue
-				fi
-
-				# Tidal search
-				if [ "$skipTidal" = "false" ]; then
-					tidalArtistAlbumsIds=($(echo "${tidalArtistAlbumsData}" | jq -r "select(.explicit=="true") | .id"))
-					for id in ${!tidalArtistAlbumsIds[@]}; do
-						processNumberTwo=$(( $id + 1 ))
-						tidalArtistAlbumId="${tidalArtistAlbumsIds[$id]}"
-						tidalArtistAlbumData=$(echo "$tidalArtistAlbumsData" | jq -r "select(.id=="$tidalArtistAlbumId")")
-						tidalArtistAlbumTitleClean=$(echo ${tidalArtistAlbumData} | jq -r .title | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
-						if echo ${tidalArtistAlbumTitleClean} | grep -i "^$lidarrAlbumReleaseTitleClean" | read; then
-							downloadedAlbumTitle="$(echo ${tidalArtistAlbumData} | jq -r .title)"
-							downloadedReleaseDate="$(echo ${tidalArtistAlbumData} | jq -r .releaseDate)"
-							if [ "$downloadedReleaseDate" = "null" ]; then
-								downloadedReleaseDate=$(echo $tidalArtistAlbumData | jq -r '.streamStartDate')
-							fi
-							downloadedReleaseYear="${downloadedReleaseDate:0:4}"
-							log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumReleaseTitleClean vs $tidalArtistAlbumTitleClean :: Explicit Tidal Match Found"
-							if [ -f /config/extended/logs/downloaded/tidal/$tidalArtistAlbumId ]; then
-								log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Previously Downloaded, skipping..."
-								continue
-							fi
-							DownloadProcess "$tidalArtistAlbumId" "TIDAL" "$downloadedReleaseYear" "$downloadedAlbumTitle"
-
-							LidarrTaskStatusCheck
-							CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId" "notbeets"
-							if [ $alreadyImported = true ]; then
-								log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Already Imported, skipping..."
-								break 2
-							fi
-						else
-							log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumReleaseTitleClean vs $tidalArtistAlbumTitleClean :: Explicit Tidal Match NOT Found"
-						fi
-					done
-				fi
-
-				LidarrTaskStatusCheck
-				CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId" "notbeets"
-				if [ $alreadyImported = true ]; then
-					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Already Imported, skipping..."
-					continue
-				fi
-			else
-				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Explicit Albums Disabled, skipping explicit search..."
-			fi
-
-			# Search for clean matches
-			if [ $audioLyricType = both ] || [ $audioLyricType = clean ]; then
-			
-
-				LidarrTaskStatusCheck
-				CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId" "notbeets"
-				if [ $alreadyImported = true ]; then
-					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Already Imported, skipping..."
-					continue
-				fi				
-
-				# Tidal search
-				if [ "$skipTidal" = "false" ]; then
-					tidalArtistAlbumsIds=($(echo "${tidalArtistAlbumsData}" | jq -r "select(.explicit=="false") | .id"))
-					for id in ${!tidalArtistAlbumsIds[@]}; do
-						processNumberTwo=$(( $id + 1 ))
-						tidalArtistAlbumId="${tidalArtistAlbumsIds[$id]}"
-						tidalArtistAlbumData=$(echo "$tidalArtistAlbumsData" | jq -r "select(.id=="$tidalArtistAlbumId")")
-						tidalArtistAlbumTitleClean=$(echo ${tidalArtistAlbumData} | jq -r .title | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
-						if echo ${tidalArtistAlbumTitleClean} | grep -i "^$lidarrAlbumReleaseTitleClean" | read; then
-							downloadedAlbumTitle="$(echo ${tidalArtistAlbumData} | jq -r .title)"
-							downloadedReleaseDate="$(echo ${tidalArtistAlbumData} | jq -r .releaseDate)"
-							if [ "$downloadedReleaseDate" = "null" ]; then
-								downloadedReleaseDate=$(echo $tidalArtistAlbumData | jq -r '.streamStartDate')
-							fi
-							downloadedReleaseYear="${downloadedReleaseDate:0:4}"
-							log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumReleaseTitleClean vs $tidalArtistAlbumTitleClean :: CLEAN Tidal Match Found"
-							if [ -f /config/extended/logs/downloaded/tidal/$tidalArtistAlbumId ]; then
-								log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Previously Downloaded, skipping..."
-								continue
-							fi
-							DownloadProcess "$tidalArtistAlbumId" "TIDAL" "$downloadedReleaseYear" "$downloadedAlbumTitle"
-
-							LidarrTaskStatusCheck
-							CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId" "notbeets"
-							if [ $alreadyImported = true ]; then
-								log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Already Imported, skipping..."
-								break 2
-							fi
-						else
-							log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumReleaseTitleClean vs $tidalArtistAlbumTitleClean :: CLEAN Tidal MATCH NOT Found"
-						fi
-					done
-				fi
-			else
-				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Clean Albums Disabled, skipping clean search..."
-			fi
-		done
 		
 		# Fallback/last resort Fuzzy Search
 		if [ $audioLyricType = both ]; then
@@ -1301,7 +1224,7 @@ ArtistDeezerSearch () {
 		lidarrAlbumReleaseTrackCount=$(echo "$lidarrAlbumReleaseData" | jq -r .trackCount)
 		lidarrAlbumReleaseTitleClean=$(echo "$lidarrAlbumReleaseTitle" | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
 
-		log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: Searching Deezer for $lidarrAlbumReleaseTitle ($lidarrAlbumReleaseTrackCount)..."
+		log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: Searching Deezer ($3) for $lidarrAlbumReleaseTitle ($lidarrAlbumReleaseTrackCount)..."
 		deezerArtistAlbumsData=$(cat "/config/extended/cache/deezer/$3-albums.json" | jq -r "sort_by(.nb_tracks) | sort_by(.explicit_lyrics) | reverse | .[] | select(.nb_tracks==$lidarrAlbumReleaseTrackCount)")
 		
 		deezerArtistAlbumsIds=$(echo "${deezerArtistAlbumsData}" | jq -r "select(.explicit_lyrics=="$4") | .id")
@@ -1334,7 +1257,12 @@ ArtistDeezerSearch () {
 	if [ $alreadyImported = true ]; then
 		return
 	else
-		log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: ERROR :: Album not found via Artist Search..."
+		if [ $4 = true ]; then
+			type=Explicit
+		else
+			type=Clean
+		fi
+		log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: ERROR :: Album not found via $type Artist Search..."
 	fi
 	
 }
@@ -1390,6 +1318,75 @@ FuzzyDeezerSearch () {
 			log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: ERROR :: No results found via Fuzzy Search..."
 		fi
 	done
+	
+}
+
+ArtistTidalSearch () {
+	# Required Inputs
+	# $1 Process ID
+	# $2 Lidarr Album ID
+	# $3 Tidal Artist ID
+	# $4 Lyric Type (true or false) - false = Clean, true = Explicit
+	lidarrAlbumData="$(curl -s "$lidarrUrl/api/v1/album/$2?apikey=${lidarrApiKey}")"
+	lidarrAlbumTitle=$(echo "$lidarrAlbumData" | jq -r ".title")
+	lidarrAlbumReleaseDate=$(echo "$lidarrAlbumData" | jq -r .releaseDate)
+	lidarrAlbumReleaseYear="${lidarrAlbumReleaseDate:0:4}"
+	lidarrAlbumReleaseIds=$(echo "$lidarrAlbumData" | jq -r ".releases | sort_by(.trackCount) | reverse | .[].id")
+	lidarrArtistData=$(echo "${lidarrAlbumData}" | jq -r ".artist")
+	lidarrArtistName=$(echo "${lidarrArtistData}" | jq -r ".artistName")
+	lidarrArtistNameSanitized="$(basename "${lidarrArtistPath}" | sed 's% (.*)$%%g')"
+
+	for lidarrAlbumReleaseId in $(echo "$lidarrAlbumReleaseIds"); do
+		lidarrAlbumReleaseData=$(echo "$lidarrAlbumData" | jq -r ".releases[] | select(.id==$lidarrAlbumReleaseId)")
+		lidarrAlbumReleaseTitle=$(echo "$lidarrAlbumReleaseData" | jq -r .title)
+		lidarrAlbumReleaseTrackCount=$(echo "$lidarrAlbumReleaseData" | jq -r .trackCount)
+		lidarrAlbumReleaseTitleClean=$(echo "$lidarrAlbumReleaseTitle" | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
+
+		log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: Searching Tidal ($3) for $lidarrAlbumReleaseTitle ($lidarrAlbumReleaseTrackCount)..."
+		tidalArtistAlbumsData=$(cat "/config/extended/cache/tidal/$3-albums.json" | jq -r ".items | sort_by(.numberOfTracks) | sort_by(.explicit) | reverse |.[] | select(.numberOfTracks==$lidarrAlbumReleaseTrackCount)")
+
+		tidalArtistAlbumsIds=$(echo "${tidalArtistAlbumsData}" | jq -r "select(.explicit=="$4") | .id")
+
+		for tidalArtistAlbumId in $(echo $tidalArtistAlbumsIds); do
+
+			
+			tidalArtistAlbumData=$(echo "$tidalArtistAlbumsData" | jq -r "select(.id=="$tidalArtistAlbumId")")
+			downloadedAlbumTitle="$(echo ${tidalArtistAlbumData} | jq -r .title)"
+			tidalAlbumTitleClean=$(echo ${downloadedAlbumTitle} | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
+			downloadedReleaseDate="$(echo ${tidalArtistAlbumData} | jq -r .releaseDate)"
+			if [ "$downloadedReleaseDate" = "null" ]; then
+				downloadedReleaseDate=$(echo $tidalArtistAlbumData | jq -r '.streamStartDate')
+			fi
+			downloadedReleaseYear="${downloadedReleaseDate:0:4}"
+		
+			diff=$(levenshtein "${lidarrAlbumReleaseTitleClean,,}" "${tidalAlbumTitleClean,,}")
+			log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumReleaseTitleClean vs $tidalAlbumTitleClean :: Checking for Match..."
+			if [ "$diff" -le "5" ]; then
+				log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumReleaseTitleClean vs $tidalAlbumTitleClean :: Tidal MATCH Found :: Calculated Difference = $diff"
+
+				# Execute Download
+				DownloadProcess "$tidalArtistAlbumId" "TIDAL" "$downloadedReleaseYear" "$downloadedAlbumTitle"
+
+				# Verify it was successfully imported into Lidarr
+				LidarrTaskStatusCheck
+				CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId" "notbeets"
+				if [ $alreadyImported = true ]; then
+					break 2
+				fi
+			fi
+		done
+	done
+
+	if [ $alreadyImported = true ]; then
+		return
+	else
+		if [ $4 = true ]; then
+			type=Explicit
+		else
+			type=Clean
+		fi
+		log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: ERROR :: Album not found via $type Artist Search..."
+	fi
 	
 }
 
