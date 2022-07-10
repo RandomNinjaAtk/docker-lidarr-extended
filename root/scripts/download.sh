@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.119"
+scriptVersion="1.0.120"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -1275,8 +1275,29 @@ SearchProcess () {
 				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Clean Albums Disabled, skipping clean search..."
 			fi
 		done
+		
+		# Fallback/last resort Fuzzy Search
+		if [ $audioLyricType = both ]; then
+			if [ "$skipDeezer" = "false" ]; then
+				# Verify it's not already imported into Lidarr
+				LidarrTaskStatusCheck
+				CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId" "notbeets"
+				if [ $alreadyImported = true ]; then
+					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Already Imported, skipping..."
+					continue
+				fi
+				FuzzyDeezerSearch "$processNumber of $wantedListAlbumTotal" "$wantedAlbumId"
+			fi
+		fi
 
-        log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Album Not found"
+		LidarrTaskStatusCheck
+		CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId" "notbeets"
+		if [ $alreadyImported = true ]; then
+			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Already Imported, skipping..."
+			continue
+		fi
+
+		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Album Not found"
 		if [ ! -d /config/extended/logs/downloaded/notfound ]; then
 			mkdir -p /config/extended/logs/downloaded/notfound
 			chmod 777 /config/extended/logs/downloaded/notfound
