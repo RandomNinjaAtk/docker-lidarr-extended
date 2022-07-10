@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.124"
+scriptVersion="1.0.125"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -1279,7 +1279,7 @@ FuzzyDeezerSearch () {
 	lidarrArtistData=$(echo "${lidarrAlbumData}" | jq -r ".artist")
 	lidarrArtistForeignArtistId=$(echo "${lidarrArtistData}" | jq -r ".foreignArtistId")
 	lidarrArtistName=$(echo "${lidarrArtistData}" | jq -r ".artistName")
-	lidarrArtistNameSanitized="$(basename "${lidarrArtistPath}" | sed 's% (.*)$%%g')"
+	lidarrArtistNameSanitized="$(echo "$lidarrArtistName" | sed -e "s%[^[:alpha:][:digit:]]% %g" -e "s/  */ /g")"
 	albumArtistNameSearch="$(jq -R -r @uri <<<"${lidarrArtistNameSanitized}")"
 	for lidarrAlbumReleaseId in $(echo "$lidarrAlbumReleaseIds"); do
 		log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: Searching Deezer for Album..."
