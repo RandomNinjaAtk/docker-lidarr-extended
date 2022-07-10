@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.131"
+scriptVersion="1.0.132"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -23,6 +23,7 @@ musicbrainzMirror=https://musicbrainz.org
 #addRelatedArtists=true
 #numberOfRelatedArtistsToAddPerArtist=1
 #beetsMatchPercentage=85
+#requireQuality=true
 
 sleepTimer=0.5
 
@@ -120,6 +121,12 @@ Configuration () {
 
 	log ":: Output format = $audioFormat"
 	log ":: Output bitrate = $audioBitrate"
+
+	if [ "$requireQuality" = "true" ]; then
+		log ":: Download Quality Check Enabled"
+	else
+		log ":: Download Quality Check Disabled (enable by setting: requireQuality=true"
+	fi
 
 	if [ $audioLyricType = both ] || [ $audioLyricType = explicit ] || [ $audioLyricType = explicit ]; then
 		log ":: Preferred audio lyric type: $audioLyricType"
@@ -596,9 +603,12 @@ DownloadProcess () {
         return
     fi
 
+	# Check download for required quality (checks based on file extension)
+	DownloadQualityCheck "/downloads/lidarr-extended/incomplete" "$2"
+
 	downloadCount=$(find /downloads/lidarr-extended/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
 	if [ $downloadCount -le 0 ]; then
-		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: ERROR :: All download Attempst failed..."
+		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: ERROR :: All download Attempts failed..."
 		return
 	fi
 
@@ -668,6 +678,59 @@ DownloadProcess () {
     rm -rf /downloads/lidarr-extended/incomplete/*
 
 	# NotifyPlexToScan
+}
+
+DownloadQualityCheck () {
+
+	if [ "$requireQuality" = "true" ]; then
+		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Checking for unwanted files"
+
+		if [ $audioFormat != native ]; then
+			if find "$1" -type f -regex ".*/.*\.\(opus\|m4a\|mp3\)"| read; then
+				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Unwanted files found!"
+				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Performing cleanup..."
+				rm "$1"/*
+			else
+				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: No unwanted files found!"
+			fi
+		fi
+		if [ $audioFormat = native ]; then
+			if [ $audioBitrate = lossless ]; then
+				if find "$1" -type f -regex ".*/.*\.\(opus\|m4a\|mp3\)"| read; then
+					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Unwanted files found!"
+					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Performing cleanup..."
+					rm "$1"/*
+				else
+					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: No unwanted files found!"
+				fi
+			elif [ $2 = DEEZER ]; then
+				if find "$1" -type f -regex ".*/.*\.\(opus\|m4a\|flac\)"| read; then
+					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Unwanted files found!"
+					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Performing cleanup..."
+					rm "$1"/*
+				else
+					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: No unwanted files found!"
+				fi
+			elif [ $2 = TIDAL ]; then
+				if find "$1" -type f -regex ".*/.*\.\(opus\|flac\|mp3\)"| read; then
+					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Unwanted files found!"
+					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Performing cleanup..."
+					rm "$1"/*
+				else
+					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: No unwanted files found!"
+				fi
+			fi
+		fi
+	else
+		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle ::  Skipping download quality check... (enable by setting: requireQuality=true)"
+	fi
+}
+
+AddReplaygainTags () {
+	if [ "$replaygain" == "true" ]; then
+		log "$logheader :: DOWNLOAD :: Adding Replaygain Tags using r128gain"
+		r128gain -r -a -c $POSTPROCESSTHREADS "$DOWNLOADS/amd/dlclient"
+	fi
 }
 
 NotifyLidarrForImport () {
