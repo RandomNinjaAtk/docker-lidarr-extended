@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.133"
+scriptVersion="1.0.134"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -650,6 +650,8 @@ DownloadProcess () {
 
 	fi
 
+	AddReplaygainTags "/downloads/lidarr-extended/incomplete"
+
     albumquality="$(find /downloads/lidarr-extended/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | head -n 1 | egrep -i -E -o "\.{1}\w*$" | sed  's/\.//g')"
 
     find "/downloads/lidarr-extended/incomplete" -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" -print0 | while IFS= read -r -d '' audio; do
@@ -727,10 +729,10 @@ DownloadQualityCheck () {
 }
 
 AddReplaygainTags () {
-	if [ "$replaygain" == "true" ]; then
-		log "$logheader :: DOWNLOAD :: Adding Replaygain Tags using r128gain"
-		r128gain -r -a -c $POSTPROCESSTHREADS "$DOWNLOADS/amd/dlclient"
-	fi
+	# Input Data
+	# $1 Folder path to scan and add tags
+	log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Adding Replaygain Tags using r128gain"
+	r128gain -r -a "$1"
 }
 
 NotifyLidarrForImport () {
