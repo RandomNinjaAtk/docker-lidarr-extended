@@ -1,7 +1,7 @@
 {
   "downloadLocation": "/downloads/lidarr-extended/incomplete",
-  "tracknameTemplate": "%tracknumber% - %title%",
-  "albumTracknameTemplate": "%tracknumber% - %title%",
+  "tracknameTemplate": "%discnumber%%tracknumber% - %title%",
+  "albumTracknameTemplate": "%discnumber%%tracknumber% - %title%",
   "playlistTracknameTemplate": "%position% - %artist% - %title%",
   "createPlaylistFolder": true,
   "playlistNameTemplate": "%playlist%",
