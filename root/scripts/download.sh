@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.140"
+scriptVersion="1.0.141"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -607,6 +607,7 @@ DownloadProcess () {
 	# Consolidate files to a single folder
 	log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Consolidating files to single folder"
 	find "/downloads/lidarr-extended/incomplete" -type f -exec mv "{}" /downloads/lidarr-extended/incomplete/ \;
+	find /downloads/lidarr-extended/incomplete -mindepth 1 -type d -empty -exec rm -rf "{}" \; &>/dev/null
 	find /downloads/lidarr-extended/incomplete -mindepth 1 -type d -empty -exec rm -rf "{}" \; &>/dev/null
 
 	# Check download for required quality (checks based on file extension)
