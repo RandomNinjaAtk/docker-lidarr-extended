@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.144"
+scriptVersion="1.0.145"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -1420,11 +1420,14 @@ ArtistDeezerSearch () {
 		lidarrAlbumReleaseTitle=$(echo "$lidarrAlbumReleaseData" | jq -r .title)
 		lidarrAlbumReleaseTrackCount=$(echo "$lidarrAlbumReleaseData" | jq -r .trackCount)
 		lidarrAlbumReleaseTitleClean=$(echo "$lidarrAlbumReleaseTitle" | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
-
+		lidarrAlbumReleaseTitleFirstWord="$(echo "$lidarrAlbumReleaseTitle"  | awk '{ print $1 }')"
+		
 		log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: Searching Deezer ($3) for $lidarrAlbumReleaseTitle ($lidarrAlbumReleaseTrackCount)..."
 		deezerArtistAlbumsData=$(cat "/config/extended/cache/deezer/$3-albums.json" | jq -r ".[] | select(.nb_tracks==$lidarrAlbumReleaseTrackCount)")
 		
-		deezerArtistAlbumsIds=$(echo "${deezerArtistAlbumsData}" | jq -r "select(.explicit_lyrics=="$4") | .id")
+		log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: Filtering results by lyric type and first word ($lidarrAlbumReleaseTitleFirstWord)..."
+		deezerArtistAlbumsIds=$(echo "${deezerArtistAlbumsData}" | jq -r "select(.explicit_lyrics=="$4") | select(.title | test(\"^$lidarrAlbumReleaseTitleFirstWord\";\"i\")) | .id")
+
 
 		for deezerArtistAlbumId in $(echo $deezerArtistAlbumsIds); do
 			deezerArtistAlbumData=$(echo "$deezerArtistAlbumsData" | jq -r "select(.id=="$deezerArtistAlbumId")")
@@ -1545,11 +1548,13 @@ ArtistTidalSearch () {
 		lidarrAlbumReleaseTitle=$(echo "$lidarrAlbumReleaseData" | jq -r .title)
 		lidarrAlbumReleaseTrackCount=$(echo "$lidarrAlbumReleaseData" | jq -r .trackCount)
 		lidarrAlbumReleaseTitleClean=$(echo "$lidarrAlbumReleaseTitle" | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
+		lidarrAlbumReleaseTitleFirstWord="$(echo "$lidarrAlbumReleaseTitle"  | awk '{ print $1 }')"
 
 		log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: Searching Tidal ($3) for $lidarrAlbumReleaseTitle ($lidarrAlbumReleaseTrackCount)..."
 		tidalArtistAlbumsData=$(cat "/config/extended/cache/tidal/$3-albums.json" | jq -r ".items[] | select(.numberOfTracks==$lidarrAlbumReleaseTrackCount)")
 
-		tidalArtistAlbumsIds=$(echo "${tidalArtistAlbumsData}" | jq -r "select(.explicit=="$4") | .id")
+		log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: Filtering results by lyric type and first word ($lidarrAlbumReleaseTitleFirstWord)..."
+		tidalArtistAlbumsIds=$(echo "${tidalArtistAlbumsData}" | jq -r "select(.explicit=="$4") | select(.title | test(\"^$lidarrAlbumReleaseTitleFirstWord\";\"i\")) | .id")
 
 		for tidalArtistAlbumId in $(echo $tidalArtistAlbumsIds); do
 			
