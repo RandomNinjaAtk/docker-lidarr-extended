@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.137"
+scriptVersion="1.0.138"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -467,6 +467,7 @@ DownloadProcess () {
 	# $2 = Download Client Type (DEEZER or TIDAL)
 	# $3 = Album Year that matches Album ID Metadata
 	# $4 = Album Title that matches Album ID Metadata
+	# $5 = Expected Track Count
 
 	if [ ! -d "/downloads/lidarr-extended" ]; then
 		mkdir -p /downloads/lidarr-extended
@@ -513,8 +514,7 @@ DownloadProcess () {
 	fi
 
 	downloadedAlbumTitleClean="$(echo "$4" | sed -e "s%[^[:alpha:][:digit:]._' ]% %g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
-    downloadedAlbumFolder="$lidarrArtistNameSanitized-$downloadedAlbumTitleClean ($3)-${albumquality^^}-$2"
-	
+    	
 	if find /downloads/lidarr-extended/complete -type d -iname "$lidarrArtistNameSanitized-$downloadedAlbumTitleClean ($3)-*-$2" | read; then
 		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: ERROR :: Previously Downloaded..."
 		return
@@ -529,16 +529,7 @@ DownloadProcess () {
 			if [ -d "/tmp/deemix-imgs" ]; then
 				rm -rf /tmp/deemix-imgs
 			fi
-			touch /config/extended/logs/downloaded/deezer/$1
-			downloadCount=$(find /downloads/lidarr-extended/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
-			if [ $downloadCount -le 0 ]; then
-				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: ERROR :: download failed"
-				completedVerification="false"
-			else
-				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Success"
-				completedVerification="true"
-			fi
-
+						
 			find "/downloads/lidarr-extended/incomplete" -type f -iname "*.flac" -print0 | while IFS= read -r -d '' file; do
 				audioFlacVerification "$file"
 				if [ $verifiedFlacFile = 0 ]; then
@@ -551,6 +542,15 @@ DownloadProcess () {
 					break
 				fi
 			done
+
+			downloadCount=$(find /downloads/lidarr-extended/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
+			if [ $downloadCount -ne $5 ]; then
+				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: ERROR :: download failed"
+				completedVerification="false"
+			else
+				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Success"
+				completedVerification="true"
+			fi
 
 			if [ "$completedVerification" = "true" ]; then
 				break
@@ -568,15 +568,7 @@ DownloadProcess () {
 			downloadTry=$(( $downloadTry + 1 ))
 			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Download Attempt number $downloadTry"
 			tidal-dl -o /downloads/lidarr-extended/incomplete -l "$1"
-			touch /config/extended/logs/downloaded/tidal/$1
-			downloadCount=$(find /downloads/lidarr-extended/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
-			if [ $downloadCount -le 0 ]; then
-				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: ERROR :: download failed"
-				completedVerification=false
-			else
-				completedVerification=true
-			fi
-
+			
 			find "/downloads/lidarr-extended/incomplete" -type f -iname "*.flac" -print0 | while IFS= read -r -d '' file; do
 				audioFlacVerification "$file"
 				if [ $verifiedFlacFile = 0 ]; then
@@ -590,26 +582,49 @@ DownloadProcess () {
 				fi
 			done
 
+			downloadCount=$(find /downloads/lidarr-extended/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
+			if [ $downloadCount -ne $5 ]; then
+				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: ERROR :: download failed"
+				completedVerification=false
+			else
+				completedVerification=true
+			fi
+
 			if [ "$completedVerification" = "true" ]; then
 				break
 			elif [ $downloadTry = 5 ]; then
 				rm /downloads/lidarr-extended/incomplete/*
 				break
 			else
-				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Retry Download to fix errors..."
+				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Retry Download in 5 seconds to fix errors..."
+				sleep 5
 			fi
 		done
     else
         return
     fi
 
+	# Consolidate files to a single folder
+	log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Consolidating files to single folder"
+	find "/downloads/lidarr-extended/incomplete" -type f -exec mv "{}" /downloads/lidarr-extended/incomplete/ \;
+	find "/downloads/lidarr-extended/incomplete" -type d -empty -exec rm -rf "{}" \; &>/dev/null
+
 	# Check download for required quality (checks based on file extension)
 	DownloadQualityCheck "/downloads/lidarr-extended/incomplete" "$2"
 
 	downloadCount=$(find /downloads/lidarr-extended/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
-	if [ $downloadCount -le 0 ]; then
+	if [ $downloadCount -ne $5 ]; then
 		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: ERROR :: All download Attempts failed..."
 		return
+	fi
+
+	# Log Completed Download
+	log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Logging $1 as successfully downloaded..."
+	if [ "$2" = "DEEZER" ]; then
+		touch /config/extended/logs/downloaded/deezer/$1
+	fi
+	if [ "$2" = "TIDAL" ]; then
+		touch /config/extended/logs/downloaded/tidal/$1
 	fi
 
 	if [ $audioFormat != native ]; then
@@ -663,7 +678,8 @@ DownloadProcess () {
 	done
 
     albumquality="$(find /downloads/lidarr-extended/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | head -n 1 | egrep -i -E -o "\.{1}\w*$" | sed  's/\.//g')"
-
+	downloadedAlbumFolder="$lidarrArtistNameSanitized-$downloadedAlbumTitleClean ($3)-${albumquality^^}-$2"
+	
     find "/downloads/lidarr-extended/incomplete" -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" -print0 | while IFS= read -r -d '' audio; do
         file="${audio}"
         filenoext="${file%.*}"
@@ -1070,7 +1086,9 @@ SearchProcess () {
 				if [ ! -z $msuicbrainzTidalDownloadAlbumID ]; then
 					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: Musicbrainz Tidal Album ID :: FOUND!"
 					tidalArtistAlbumData="$(curl -s "https://api.tidal.com/v1/albums/${msuicbrainzTidalDownloadAlbumID}?countryCode=$tidalCountryCode" -H 'x-tidal-token: CzET4vdadNUFQ5JU')"
-					DownloadProcess "$msuicbrainzTidalDownloadAlbumID" "TIDAL" "$lidarrAlbumReleaseYear" "$lidarrAlbumTitle"
+					tidalAlbumTrackCount="$(echo $tidalArtistAlbumData | jq -r .numberOfTracks)"
+					
+					DownloadProcess "$msuicbrainzTidalDownloadAlbumID" "TIDAL" "$lidarrAlbumReleaseYear" "$lidarrAlbumTitle" "$tidalAlbumTrackCount"
 
 					# Verify it was successfully imported into Lidarr
 					LidarrTaskStatusCheck
@@ -1109,8 +1127,9 @@ SearchProcess () {
 					else
 						deezerArtistAlbumData="$(curl -s "https://api.deezer.com/album/${msuicbrainzDeezerDownloadAlbumID}")"
 					fi
-		
-					DownloadProcess "$msuicbrainzDeezerDownloadAlbumID" "DEEZER" "$lidarrAlbumReleaseYear" "$lidarrAlbumTitle"
+					deezerAlbumTrackCount="$(echo $tidalArtistAlbumData | jq -r .nb_tracks)"
+							
+					DownloadProcess "$msuicbrainzDeezerDownloadAlbumID" "DEEZER" "$lidarrAlbumReleaseYear" "$lidarrAlbumTitle" "$deezerAlbumTrackCount"
 
 					# Verify it was successfully imported into Lidarr
 					LidarrTaskStatusCheck
@@ -1391,7 +1410,7 @@ ArtistDeezerSearch () {
 				log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumReleaseTitleClean vs $deezerAlbumTitleClean :: Deezer MATCH Found :: Calculated Difference = $diff"
 
 				# Execute Download
-				DownloadProcess "$deezerArtistAlbumId" "DEEZER" "$downloadedReleaseYear" "$downloadedAlbumTitle"
+				DownloadProcess "$deezerArtistAlbumId" "DEEZER" "$downloadedReleaseYear" "$downloadedAlbumTitle" "$lidarrAlbumReleaseTrackCount"
 
 				# Verify it was successfully imported into Lidarr
 				LidarrTaskStatusCheck
@@ -1461,7 +1480,7 @@ FuzzyDeezerSearch () {
 					DownloadProcess "$deezerAlbumID" "DEEZER" "$lidarrAlbumReleaseYear" "$lidarrAlbumReleaseTitle"
 					# Verify it was successfully imported into Lidarr
 					LidarrTaskStatusCheck
-					CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId" "notbeets"
+					CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId" "notbeets" "$lidarrAlbumReleaseTrackCount"
 					if [ $alreadyImported = true ]; then
 						break 2
 					fi
@@ -1503,7 +1522,6 @@ ArtistTidalSearch () {
 		tidalArtistAlbumsIds=$(echo "${tidalArtistAlbumsData}" | jq -r "select(.explicit=="$4") | .id")
 
 		for tidalArtistAlbumId in $(echo $tidalArtistAlbumsIds); do
-
 			
 			tidalArtistAlbumData=$(echo "$tidalArtistAlbumsData" | jq -r "select(.id=="$tidalArtistAlbumId")")
 			downloadedAlbumTitle="$(echo ${tidalArtistAlbumData} | jq -r .title)"
@@ -1520,7 +1538,7 @@ ArtistTidalSearch () {
 				log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumReleaseTitleClean vs $tidalAlbumTitleClean :: Tidal MATCH Found :: Calculated Difference = $diff"
 
 				# Execute Download
-				DownloadProcess "$tidalArtistAlbumId" "TIDAL" "$downloadedReleaseYear" "$downloadedAlbumTitle"
+				DownloadProcess "$tidalArtistAlbumId" "TIDAL" "$downloadedReleaseYear" "$downloadedAlbumTitle" "$lidarrAlbumReleaseTrackCount"
 
 				# Verify it was successfully imported into Lidarr
 				LidarrTaskStatusCheck
