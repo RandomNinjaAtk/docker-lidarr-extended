@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.138"
+scriptVersion="1.0.139"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -607,7 +607,7 @@ DownloadProcess () {
 	# Consolidate files to a single folder
 	log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Consolidating files to single folder"
 	find "/downloads/lidarr-extended/incomplete" -type f -exec mv "{}" /downloads/lidarr-extended/incomplete/ \;
-	find "/downloads/lidarr-extended/incomplete" -type d -empty -exec rm -rf "{}" \; &>/dev/null
+	find /downloads/lidarr-extended/incomplete -mindepth 1 -type d -empty -exec rm -rf "{}" \; &>/dev/null
 
 	# Check download for required quality (checks based on file extension)
 	DownloadQualityCheck "/downloads/lidarr-extended/incomplete" "$2"
@@ -679,7 +679,7 @@ DownloadProcess () {
 
     albumquality="$(find /downloads/lidarr-extended/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | head -n 1 | egrep -i -E -o "\.{1}\w*$" | sed  's/\.//g')"
 	downloadedAlbumFolder="$lidarrArtistNameSanitized-$downloadedAlbumTitleClean ($3)-${albumquality^^}-$2"
-	
+
     find "/downloads/lidarr-extended/incomplete" -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" -print0 | while IFS= read -r -d '' audio; do
         file="${audio}"
         filenoext="${file%.*}"
