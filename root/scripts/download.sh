@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.136"
+scriptVersion="1.0.137"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -656,6 +656,7 @@ DownloadProcess () {
 		lrcFile="${file%.*}.lrc"
 		if [ -f "$lrcFile" ]; then
 			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Embedding lyrics (lrc) into $file"
+			metaflac --remove-tag=Lyrics "$file"
 			metaflac --set-tag-from-file="Lyrics=$lrcFile" "$file"
 			rm "$lrcFile"
 		fi
