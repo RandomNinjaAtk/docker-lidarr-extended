@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-version=1.0.002
+version=1.0.003
 if [ -z "$lidarr_artist_path" ]; then
 	lidarr_artist_path="$1"
 	notfidedBy=Extended_Script
@@ -29,7 +29,7 @@ log "Processing :: $lidarr_trackfile_path"
 albumFolder=$(dirname "$lidarr_trackfile_path")
 if [ -d "$albumFolder" ]; then
     if [ -f "$albumFolder/folder.jpg" ]; then
-        log "Processing :: $albumFolder :: Albunm Artwork Found"
+        log "Processing :: $albumFolder :: Album Artwork Found"
     else
         ffmpeg -i "$lidarr_trackfile_path" -an -vcodec copy "$albumFolder/folder.jpg" &> /dev/null
         if [ -f "$albumFolder/folder.jpg" ]; then
