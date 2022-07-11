@@ -1,8 +1,8 @@
-FROM linuxserver/lidarr:amd64-nightly
+FROM linuxserver/lidarr:amd64-latest
 LABEL maintainer="RandomNinjaAtk"
 
 ENV dockerTitle="lidarr-extended"
-ENV dockerVersion="amd64-1.0.19"
+ENV dockerVersion="amd64-1.0.20"
 ENV LANG=en_US.UTF-8
 ENV autoStart=true
 ENV configureLidarrWithOptimalSettings=false
