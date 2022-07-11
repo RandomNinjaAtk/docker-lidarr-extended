@@ -2,7 +2,7 @@ FROM linuxserver/lidarr:amd64-nightly
 LABEL maintainer="RandomNinjaAtk"
 
 ENV dockerTitle="lidarr-extended"
-ENV dockerVersion="amd64-1.0.18"
+ENV dockerVersion="amd64-1.0.19"
 ENV LANG=en_US.UTF-8
 ENV autoStart=true
 ENV configureLidarrWithOptimalSettings=false
@@ -39,6 +39,7 @@ RUN \
 		yq \
 		pyacoustid \
 		tidal-dl \
+		r128gain \
 		deemix
 
 # copy local files
