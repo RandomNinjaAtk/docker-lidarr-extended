@@ -35,7 +35,7 @@
   "coverImageTemplate": "cover",
   "saveArtworkArtist": false,
   "artistImageTemplate": "folder",
-  "jpegImageQuality": 90,
+  "jpegImageQuality": 100,
   "dateFormat": "Y-M-D",
   "albumVariousArtists": true,
   "removeAlbumVersion": true,
