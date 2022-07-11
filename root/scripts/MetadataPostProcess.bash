@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-version=1.0.003
+version=1.0.004
 if [ -z "$lidarr_artist_path" ]; then
 	lidarr_artist_path="$1"
 	notfidedBy=Extended_Script
@@ -28,12 +28,12 @@ fi
 log "Processing :: $lidarr_trackfile_path"
 albumFolder=$(dirname "$lidarr_trackfile_path")
 if [ -d "$albumFolder" ]; then
-    if [ -f "$albumFolder/folder.jpg" ]; then
-        log "Processing :: $albumFolder :: Album Artwork Found"
-    else
+    if [ ! -f "$albumFolder/folder.jpg" ]; then
         ffmpeg -i "$lidarr_trackfile_path" -an -vcodec copy "$albumFolder/folder.jpg" &> /dev/null
         if [ -f "$albumFolder/folder.jpg" ]; then
             log "Processing :: $albumFolder :: Album Artwork Extracted to: $albumFolder/folder.jpg"
+            chmod 666 "$albumFolder/folder.jpg"
+            chown abc:abc "$albumFolder/folder.jpg"
         fi
     fi
 else
@@ -49,6 +49,8 @@ if [ "$getLyrics" != "null" ]; then
     log "Processing :: $lidarr_trackfile_path :: Extracting Lyrics..."
     ffprobe -loglevel 0 -print_format json -show_format -show_streams "$lidarr_trackfile_path" | jq -r ".format.tags.LYRICS" > "$lrcFile"
     log "Processing :: $lidarr_trackfile_path :: Lyrics extracted to: $lrcFile"
+    chmod 666 "$lrcFile"
+    chown abc:abc "$lrcFile"
 fi
 
 exit
