@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.142"
+scriptVersion="1.0.143"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -1131,7 +1131,7 @@ SearchProcess () {
 					else
 						deezerArtistAlbumData="$(curl -s "https://api.deezer.com/album/${msuicbrainzDeezerDownloadAlbumID}")"
 					fi
-					deezerAlbumTrackCount="$(echo $tidalArtistAlbumData | jq -r .nb_tracks)"
+					deezerAlbumTrackCount="$(echo $deezerArtistAlbumData | jq -r .nb_tracks)"
 							
 					DownloadProcess "$msuicbrainzDeezerDownloadAlbumID" "DEEZER" "$lidarrAlbumReleaseYear" "$lidarrAlbumTitle" "$deezerAlbumTrackCount"
 
