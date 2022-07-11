@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.143"
+scriptVersion="1.0.144"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -519,6 +519,32 @@ DownloadProcess () {
 		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: ERROR :: Previously Downloaded..."
 		return
     fi
+
+
+	# Check for previously Downloaded
+	# check for folder
+	if find /downloads/lidarr-extended/complete -type d -iname "$lidarrArtistNameSanitized-$downloadedAlbumTitleClean ($3)-*-$2" | read; then
+		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: ERROR :: Previously Downloaded..."
+		return
+    fi
+
+	# check for log file
+	if [ "$2" = "DEEZER" ]; then
+		if [ -f /config/extended/logs/downloaded/deezer/$1 ]; then
+			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: ERROR :: Previously Downloaded ($1)..."
+			return
+		fi
+	fi
+
+	# check for log file
+	if [ "$2" = "TIDAL" ]; then
+		if [ -f /config/extended/logs/downloaded/tidal/$1 ]; then
+			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: ERROR :: Previously Downloaded ($1)..."
+			return
+		fi
+	fi
+
+
 	downloadTry=0
     if [ "$2" = "DEEZER" ]; then
 		until false
@@ -701,7 +727,7 @@ DownloadProcess () {
     chmod -R 777 /downloads/lidarr-extended/complete
     chown -R abc:abc /downloads/lidarr-extended/complete
 
-	log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $filename :: Processing files with beets..."
+    log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Processing files with beets..."
     ProcessWithBeets "/downloads/lidarr-extended/complete/$downloadedAlbumFolder" "${albumquality^^}" "$2"
 
     if [ -d "/downloads/lidarr-extended/complete/$downloadedAlbumFolder" ]; then
