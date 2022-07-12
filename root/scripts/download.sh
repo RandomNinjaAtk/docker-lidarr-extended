@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.151"
+scriptVersion="1.0.152"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -52,7 +52,7 @@ echo "           |~) _ ._  _| _ ._ _ |\ |o._  o _ |~|_|_|"
 echo "           |~\(_|| |(_|(_)| | || \||| |_|(_||~| | |<"
 echo "              Presents: lidarr-extended ($scriptVersion)"
 echo "                Docker Version: $dockerVersion"
-echo "                  May the beats be with you!"
+echo "                 May the beats be with you!"
 echo "-----------------------------------------------------------------"
 echo "Donate: https://github.com/sponsors/RandomNinjaAtk"
 echo "Project: https://github.com/RandomNinjaAtk/docker-lidarr-extended"
@@ -1142,7 +1142,6 @@ SearchProcess () {
 				# Search Musicbrainz
 				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: Musicbrainz Tidal Album ID :: Searching for Album ID..."
 				msuicbrainzTidalDownloadAlbumID=$(curl -s -A "$agent" "https://musicbrainz.org/ws/2/release?release-group=$lidarrAlbumForeignAlbumId&inc=url-rels&fmt=json" | jq -r | grep "tidal.com" | head -n 1 | sed -e "s%[^[:digit:]]%%g")
-				sleep 1.5
 
 				# Process Album ID if found
 				if [ ! -z $msuicbrainzTidalDownloadAlbumID ]; then
@@ -1160,6 +1159,7 @@ SearchProcess () {
 						continue
 					fi
 				else
+					sleep 1.5
 					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: Musicbrainz Tidal Album ID :: NOT FOUND!"
 				fi
 			fi
@@ -1179,7 +1179,6 @@ SearchProcess () {
 				# Search Musicbrainz
 				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: Musicbrainz Deezer Album ID :: Searching for Album ID..."
 				msuicbrainzDeezerDownloadAlbumID=$(curl -s -A "$agent" "https://musicbrainz.org/ws/2/release?release-group=$lidarrAlbumForeignAlbumId&inc=url-rels&fmt=json" | jq -r | grep "deezer.com" | grep "album" | head -n 1 | sed -e "s%[^[:digit:]]%%g")
-				sleep 1.5
 				
 				# Process Album ID if found
 				if [ ! -z $msuicbrainzDeezerDownloadAlbumID ]; then
@@ -1201,6 +1200,7 @@ SearchProcess () {
 						continue
 					fi
 				else
+					sleep 1.5
 					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: Musicbrainz Deezer Album ID :: NOT FOUND!"
 				fi
 			fi
@@ -1266,6 +1266,7 @@ SearchProcess () {
 			fi
 
 			if [ -z "$deezerArtistUrl" ]; then 
+				sleep 1.5
 				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: DEEZER :: ERROR :: musicbrainz id: $lidarrArtistForeignArtistId is missing Tidal link, see: \"/config/logs/deezer-artist-id-not-found.txt\" for more detail..."
 				touch "/config/logs/deezer-artist-id-not-found.txt"
 				if cat "/config/logs/deezer-artist-id-not-found.txt" | grep "https://musicbrainz.org/artist/$lidarrArtistForeignArtistId/relationships" | read; then
@@ -1283,7 +1284,15 @@ SearchProcess () {
 		
         
         if [ "$skipTidal" = "false" ]; then
+			# fallback to musicbrainz db for link
+			if [ -z "$tidalArtistUrl" ]; then
+				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: TIDAL :: Fallback to musicbrainz for Tidal ID"
+				musicbrainzArtistData=$(curl -s -A "$agent" "https://musicbrainz.org/ws/2/artist/${lidarrArtistForeignArtistId}?inc=url-rels&fmt=json")
+				tidalArtistUrl=$(echo "$musicbrainzArtistData" | jq -r '.relations | .[] | .url | select(.resource | contains("tidal")) | .resource')
+			fi
+
 			if [ -z "$tidalArtistUrl" ]; then 
+				sleep 1.5
 				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: TIDAL :: ERROR :: musicbrainz id: $lidarrArtistForeignArtistId is missing Tidal link, see: \"/config/logs/tidal-artist-id-not-found.txt\" for more detail..."
 				touch "/config/logs/tidal-artist-id-not-found.txt" 
 				if cat "/config/logs/tidal-artist-id-not-found.txt" | grep "https://musicbrainz.org/artist/$lidarrArtistForeignArtistId/relationships" | read; then
