@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.153"
+scriptVersion="1.0.154"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -1550,11 +1550,11 @@ FuzzyDeezerSearch () {
 		if [ ! -z "$deezerSearch" ]; then
 			for deezerAlbumID in $(echo "$deezerSearch" | jq -r .album.id | sort -u); do
 				if [ -f "/config/extended/cache/deezer/${msuicbrainzDeezerDownloadAlbumID}.json" ]; then
-					deezerArtistAlbumData="$(cat "/config/extended/cache/deezer/$deezerAlbumID.json")"
+					deezerAlbumData="$(cat "/config/extended/cache/deezer/$deezerAlbumID.json")"
 				else
-					deezerArtistAlbumData="$(curl -s "https://api.deezer.com/album/$deezerAlbumID")"
+					deezerAlbumData="$(curl -s "https://api.deezer.com/album/$deezerAlbumID")"
 				fi
-				deezerAlbumTrackCount="$(echo $deezerArtistAlbumData | jq -r .nb_tracks)"
+				deezerAlbumTrackCount="$(echo $deezerAlbumData | jq -r .nb_tracks)"
 				deezerAlbumTitle=$(echo "$deezerAlbumData"| jq -r .title | head -n1)
 				lidarrAlbumReleaseTitleClean=$(echo "$lidarrAlbumReleaseTitle" | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
 				deezerAlbumTitleClean=$(echo ${deezerAlbumTitle} | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
