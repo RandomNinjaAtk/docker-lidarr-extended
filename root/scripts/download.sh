@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.154"
+scriptVersion="1.0.155"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -51,8 +51,8 @@ echo "-----------------------------------------------------------------"
 echo "           |~) _ ._  _| _ ._ _ |\ |o._  o _ |~|_|_|"
 echo "           |~\(_|| |(_|(_)| | || \||| |_|(_||~| | |<"
 echo "              Presents: lidarr-extended ($scriptVersion)"
-echo "                Docker Version: $dockerVersion"
-echo "                 May the beats be with you!"
+echo "                 Docker Version: $dockerVersion"
+echo "                  May the beats be with you!"
 echo "-----------------------------------------------------------------"
 echo "Donate: https://github.com/sponsors/RandomNinjaAtk"
 echo "Project: https://github.com/RandomNinjaAtk/docker-lidarr-extended"
@@ -1219,9 +1219,24 @@ SearchProcess () {
 			fi
 
 			# Search for explicit matches
-			if [ $audioLyricType = both ] || [ $audioLyricType = clean ]; then
+			if [ $audioLyricType = both ] || [ $audioLyricType = explicit ]; then
 				if [ "$dlClientSource" = "both" ] || [ "$dlClientSource" = "tidal" ]; then
-					FuzzyTidalSearch "$processNumber of $wantedListAlbumTotal" "$wantedAlbumId" "false"
+					FuzzyTidalSearch "$processNumber of $wantedListAlbumTotal" "$wantedAlbumId" "true"
+				fi
+			fi
+
+			# Verify it's not already imported into Lidarr
+			LidarrTaskStatusCheck
+			CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId" "notbeets"
+			if [ $alreadyImported = true ]; then
+				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
+				continue
+			fi
+
+			# Search for explicit matches
+			if [ $audioLyricType = both ] || [ $audioLyricType = explicit ]; then
+				if [ "$dlClientSource" = "both" ] || [ "$dlClientSource" = "deezer" ]; then
+					FuzzyDeezerSearch "$processNumber of $wantedListAlbumTotal" "$wantedAlbumId" "false"
 				fi
 			fi
 
@@ -1248,11 +1263,21 @@ SearchProcess () {
 				continue
 			fi
 
-			if [ $audioLyricType = both ]; then
+			# Search for clean matches
+			if [ $audioLyricType = both ] || [ $audioLyricType = clean ]; then
 				if [ "$dlClientSource" = "both" ] || [ "$dlClientSource" = "deezer" ]; then
-					FuzzyDeezerSearch "$processNumber of $wantedListAlbumTotal" "$wantedAlbumId"
+					FuzzyDeezerSearch "$processNumber of $wantedListAlbumTotal" "$wantedAlbumId" "false"
 				fi
 			fi
+
+			# Verify it's not already imported into Lidarr
+			LidarrTaskStatusCheck
+			CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId" "notbeets"
+			if [ $alreadyImported = true ]; then
+				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
+				continue
+			fi
+
 			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: ERROR :: Various Artists is not supported by normal search, skipping..."
 			continue
 		fi
@@ -1341,8 +1366,20 @@ SearchProcess () {
 				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
 				continue
 			fi
+			
+			# Deezer fuzzy search
+			if [ "$dlClientSource" = "both" ] || [ "$dlClientSource" = "deezer" ]; then
+				FuzzyDeezerSearch "$processNumber of $wantedListAlbumTotal" "$wantedAlbumId" "true"
+			fi
 
-			# Deezer search
+			LidarrTaskStatusCheck
+			CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId" "notbeets"
+			if [ $alreadyImported = true ]; then
+				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
+				continue
+			fi
+
+			# Deezer artist search
 			if [ "$skipDeezer" = "false" ]; then
 				for dId in ${!deezerArtistIds[@]}; do
 					deezerArtistId="${deezerArtistIds[$dId]}"
@@ -1362,7 +1399,7 @@ SearchProcess () {
 		# Search for clean matches
 		if [ $audioLyricType = both ] || [ $audioLyricType = clean ]; then
 			# Tidal search
-			if [ "$skipTidal" = "false" ]; then
+			if [ "$dlClientSource" = "both" ] || [ "$dlClientSource" = "tidal" ]; then
 				FuzzyTidalSearch "$processNumber of $wantedListAlbumTotal" "$wantedAlbumId" "false"
 			fi
 
@@ -1378,7 +1415,19 @@ SearchProcess () {
 					ArtistTidalSearch "$processNumber of $wantedListAlbumTotal" "$wantedAlbumId" "$tidalArtistId" "false"
 				done
 			fi
+
+			LidarrTaskStatusCheck
+			CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId" "notbeets"
+			if [ $alreadyImported = true ]; then
+				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
+				continue
+			fi
 			
+			# Deezer fuzzy search
+			if [ "$dlClientSource" = "both" ] || [ "$dlClientSource" = "deezer" ]; then
+				FuzzyDeezerSearch "$processNumber of $wantedListAlbumTotal" "$wantedAlbumId" "false"
+			fi
+
 			LidarrTaskStatusCheck
 			CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId" "notbeets"
 			if [ $alreadyImported = true ]; then
@@ -1386,7 +1435,7 @@ SearchProcess () {
 				continue
 			fi
 
-			# Deezer search
+			# Deezer artist search
 			if [ "$skipDeezer" = "false" ]; then
 				for dId in ${!deezerArtistIds[@]}; do
 					deezerArtistId="${deezerArtistIds[$dId]}"
@@ -1401,21 +1450,7 @@ SearchProcess () {
 			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
 			continue
 		fi
-		
-		# Fallback/last resort Fuzzy Search
-		if [ $audioLyricType = both ]; then
-			if [ "$dlClientSource" = "both" ] || [ "$dlClientSource" = "deezer" ]; then
-				FuzzyDeezerSearch "$processNumber of $wantedListAlbumTotal" "$wantedAlbumId"
-			fi
-		fi
-
-		LidarrTaskStatusCheck
-		CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId" "notbeets"
-		if [ $alreadyImported = true ]; then
-			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
-			continue
-		fi
-
+				
 		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Album Not found"
 		if [ ! -d /config/extended/logs/downloaded/notfound ]; then
 			mkdir -p /config/extended/logs/downloaded/notfound
@@ -1520,6 +1555,14 @@ FuzzyDeezerSearch () {
 	# Required Inputs
 	# $1 Process ID
 	# $2 Lidarr Album ID
+	# $3 Lyric Type (explicit = true, clean = false)
+
+	if [ $3 = true ]; then
+		type=Explicit
+	else
+		type=Clean
+	fi
+
 	lidarrAlbumData="$(curl -s "$lidarrUrl/api/v1/album/$2?apikey=${lidarrApiKey}")"
 	lidarrAlbumTitle=$(echo "$lidarrAlbumData" | jq -r ".title")
 	lidarrAlbumReleaseDate=$(echo "$lidarrAlbumData" | jq -r .releaseDate)
@@ -1537,15 +1580,15 @@ FuzzyDeezerSearch () {
 		lidarrAlbumReleaseTrackCount=$(echo "$lidarrAlbumReleaseData" | jq -r .trackCount)
 		lidarrAlbumReleaseTitleFirstWord="$(echo "$lidarrAlbumReleaseTitle"  | awk '{ print $1 }')"
 		albumTitleSearch="$(jq -R -r @uri <<<"${lidarrAlbumReleaseTitleClean}")"
-		log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Deezer :: Searching for $lidarrAlbumReleaseTitle"
+		log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Deezer :: $type ::  Searching for $lidarrAlbumReleaseTitle (Filter by: $lidarrAlbumReleaseTitleFirstWord)"
 
 		deezerSearch=""
 		if [ "$lidarrArtistForeignArtistId" = "89ad4ac3-39f7-470e-963a-56509c546377" ]; then
 			# Search without Artist for VA albums
-			deezerSearch=$(curl -s "https://api.deezer.com/search?q=album:%22${albumTitleSearch}%22&strict=on&limit=1000" | jq -r .data[])
+			deezerSearch=$(curl -s "https://api.deezer.com/search?q=album:%22${albumTitleSearch}%22&strict=on&limit=20" | jq -r ".data[] | select(.album.title | test(\"^$lidarrAlbumReleaseTitleFirstWord\";\"i\"))")
 		else
 			# Search with Artist for non VA albums
-			deezerSearch=$(curl -s "https://api.deezer.com/search?q=artist:%22${albumArtistNameSearch}%22%20album:%22${albumTitleSearch}%22&strict=on&limit=1000" | jq -r .data[])
+			deezerSearch=$(curl -s "https://api.deezer.com/search?q=artist:%22${albumArtistNameSearch}%22%20album:%22${albumTitleSearch}%22&strict=on&limit=20" | jq -r ".data[] | select(.album.title | test(\"^$lidarrAlbumReleaseTitleFirstWord\";\"i\"))")
 		fi
 		if [ ! -z "$deezerSearch" ]; then
 			for deezerAlbumID in $(echo "$deezerSearch" | jq -r .album.id | sort -u); do
@@ -1553,17 +1596,26 @@ FuzzyDeezerSearch () {
 					deezerAlbumData="$(cat "/config/extended/cache/deezer/$deezerAlbumID.json")"
 				else
 					deezerAlbumData="$(curl -s "https://api.deezer.com/album/$deezerAlbumID")"
+					sleep $sleepTimer
 				fi
 				deezerAlbumTrackCount="$(echo $deezerAlbumData | jq -r .nb_tracks)"
-				deezerAlbumTitle=$(echo "$deezerAlbumData"| jq -r .title | head -n1)
+				deezerAlbumExplicitLyrics="$(echo $deezerAlbumData | jq -r .explicit_lyrics)"								
+				deezerAlbumTitle=$(echo "$deezerAlbumData"| jq -r .title)
 				lidarrAlbumReleaseTitleClean=$(echo "$lidarrAlbumReleaseTitle" | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
 				deezerAlbumTitleClean=$(echo ${deezerAlbumTitle} | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
 
-				log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Deezer :: $lidarrAlbumReleaseTitleClean vs $deezerAlbumTitleClean :: Checking for Match..."
-				log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Deezer :: $lidarrAlbumReleaseTitleClean vs $deezerAlbumTitleClean :: Calculating Similarity..."
+				if [ "$deezerAlbumExplicitLyrics" != "$3" ]; then
+					continue
+				fi
+
+				if [ $deezerAlbumTrackCount -ne $lidarrAlbumReleaseTrackCount ]; then
+					continue
+				fi
+				log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Deezer :: $type ::  $lidarrAlbumReleaseTitleClean vs $deezerAlbumTitleClean :: Checking for Match..."
+				log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Deezer :: $type ::  $lidarrAlbumReleaseTitleClean vs $deezerAlbumTitleClean :: Calculating Similarity..."
 				diff=$(levenshtein "${lidarrAlbumReleaseTitleClean,,}" "${deezerAlbumTitleClean,,}" 2>/dev/null)
 				if [ "$diff" -le "5" ]; then
-					log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Deezer :: $lidarrAlbumReleaseTitleClean vs $deezerAlbumTitleClean :: Deezer MATCH Found :: Calculated Difference = $diff"
+					log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Deezer :: $type ::  $lidarrAlbumReleaseTitleClean vs $deezerAlbumTitleClean :: Deezer MATCH Found :: Calculated Difference = $diff"
 					DownloadProcess "$deezerAlbumID" "DEEZER" "$lidarrAlbumReleaseYear" "$lidarrAlbumReleaseTitle"
 					# Verify it was successfully imported into Lidarr
 					LidarrTaskStatusCheck
@@ -1572,11 +1624,12 @@ FuzzyDeezerSearch () {
 						break 2
 					fi
 				else
-					log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Deezer :: $lidarrAlbumReleaseTitleClean vs $deezerAlbumTitleClean :: Deezer Match Not Found :: Calculated Difference ($diff) greater than 5"
+					log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Deezer :: $type ::  $lidarrAlbumReleaseTitleClean vs $deezerAlbumTitleClean :: Deezer Match Not Found :: Calculated Difference ($diff) greater than 5"
 				fi
 			done
+			log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Deezer :: $type ::  ERROR :: No results found via Fuzzy Search..."
 		else
-			log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Deezer :: ERROR :: No results found via Fuzzy Search..."
+			log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Deezer :: $type ::  ERROR :: No results found via Fuzzy Search..."
 		fi
 	done
 	
@@ -1706,12 +1759,12 @@ FuzzyTidalSearch () {
 		
 		if [ "$lidarrArtistForeignArtistId" = "89ad4ac3-39f7-470e-963a-56509c546377" ]; then
 			# Search without Artist for VA albums
-			tidalSearch=$(curl -s "https://api.tidal.com/v1/search/albums?query=${albumTitleSearch}&countryCode=${tidalCountryCode}&limit=100" -H 'x-tidal-token: CzET4vdadNUFQ5JU' | jq -r ".items[] | select(.explicit=="$3") | select(.numberOfTracks==$lidarrAlbumReleaseTrackCount)")
+			tidalSearch=$(curl -s "https://api.tidal.com/v1/search/albums?query=${albumTitleSearch}&countryCode=${tidalCountryCode}&limit=20" -H 'x-tidal-token: CzET4vdadNUFQ5JU' | jq -r ".items[] | select(.explicit=="$3") | select(.numberOfTracks==$lidarrAlbumReleaseTrackCount)")
 		else
 			# Search with Artist for non VA albums
-			tidalSearch=$(curl -s "https://api.tidal.com/v1/search/albums?query=${albumArtistNameSearch}%20${albumTitleSearch}&countryCode=${tidalCountryCode}&limit=100" -H 'x-tidal-token: CzET4vdadNUFQ5JU' | jq -r ".items[] | select(.explicit=="$3") | select(.numberOfTracks==$lidarrAlbumReleaseTrackCount)")
+			tidalSearch=$(curl -s "https://api.tidal.com/v1/search/albums?query=${albumArtistNameSearch}%20${albumTitleSearch}&countryCode=${tidalCountryCode}&limit=20" -H 'x-tidal-token: CzET4vdadNUFQ5JU' | jq -r ".items[] | select(.explicit=="$3") | select(.numberOfTracks==$lidarrAlbumReleaseTrackCount)")
 		fi
-
+		sleep $sleepTimer
 		if [ ! -z "$tidalSearch" ]; then
 			for tidalAlbumID in $(echo "$tidalSearch" | jq -r .id | sort -u); do
 				tidalAlbumData="$(echo "$tidalSearch" | jq -r "select(.id==$tidalAlbumID)")"
