@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.157"
+scriptVersion="1.0.158"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -1541,6 +1541,14 @@ ArtistDeezerSearch () {
 				continue
 			fi
 
+			# String Character Count test, quicker than the levenshtein method to allow faster processing
+			characterMath=$(( ${#tidalAlbumTitleClean} - ${#lidarrAlbumReleaseTitleClean} ))
+			if [ $characterMath -gt 5 ]; then
+				continue
+			elif [ $characterMath -lt 0 ]; then
+				continue
+			fi
+
 			log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Deezer :: $type :: $lidarrAlbumReleaseTitleClean vs $deezerAlbumTitleClean :: Checking for Match..."
 			log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Deezer :: $type :: $lidarrAlbumReleaseTitleClean vs $deezerAlbumTitleClean :: Calculating Similarity..."
 			diff=$(levenshtein "${lidarrAlbumReleaseTitleClean,,}" "${deezerAlbumTitleClean,,}" 2>/dev/null)
@@ -1635,6 +1643,15 @@ FuzzyDeezerSearch () {
 				if [ $deezerAlbumTrackCount -ne $lidarrAlbumReleaseTrackCount ]; then
 					continue
 				fi
+
+				# String Character Count test, quicker than the levenshtein method to allow faster processing
+				characterMath=$(( ${#deezerAlbumTitleClean} - ${#lidarrAlbumReleaseTitleClean} ))
+				if [ $characterMath -gt 5 ]; then
+					continue
+				elif [ $characterMath -lt 0 ]; then
+					continue
+				fi
+
 				log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Deezer :: $type ::  $lidarrAlbumReleaseTitleClean vs $deezerAlbumTitleClean :: Checking for Match..."
 				log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Deezer :: $type ::  $lidarrAlbumReleaseTitleClean vs $deezerAlbumTitleClean :: Calculating Similarity..."
 				diff=$(levenshtein "${lidarrAlbumReleaseTitleClean,,}" "${deezerAlbumTitleClean,,}" 2>/dev/null)
@@ -1720,6 +1737,15 @@ ArtistTidalSearch () {
 				downloadedReleaseDate=$(echo $tidalArtistAlbumData | jq -r '.streamStartDate')
 			fi
 			downloadedReleaseYear="${downloadedReleaseDate:0:4}"
+
+			# String Character Count test, quicker than the levenshtein method to allow faster processing
+			characterMath=$(( ${#tidalAlbumTitleClean} - ${#lidarrAlbumReleaseTitleClean} ))
+			if [ $characterMath -gt 5 ]; then
+				continue
+			elif [ $characterMath -lt 0 ]; then
+				continue
+			fi
+
 			log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Tidal :: $type :: $lidarrAlbumReleaseTitleClean vs $tidalAlbumTitleClean :: Checking for Match..."
 			log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Tidal :: $type :: $lidarrAlbumReleaseTitleClean vs $tidalAlbumTitleClean :: Calculating Similarity..."
 			diff=$(levenshtein "${lidarrAlbumReleaseTitleClean,,}" "${tidalAlbumTitleClean,,}" 2>/dev/null)
@@ -1802,6 +1828,15 @@ FuzzyTidalSearch () {
 					downloadedReleaseDate=$(echo $tidalAlbumData | jq -r '.streamStartDate')
 				fi
 				downloadedReleaseYear="${downloadedReleaseDate:0:4}"
+
+				# String Character Count test, quicker than the levenshtein method to allow faster processing
+				characterMath=$(( ${#tidalAlbumTitleClean} - ${#lidarrAlbumReleaseTitleClean} ))
+				if [ $characterMath -gt 5 ]; then
+					continue
+				elif [ $characterMath -lt 0 ]; then
+					continue
+				fi
+
 				log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Tidal :: $type :: $lidarrAlbumReleaseTitleClean vs $tidalAlbumTitleClean :: Checking for Match..."
 				log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Tidal :: $type :: $lidarrAlbumReleaseTitleClean vs $tidalAlbumTitleClean :: Calculating Similarity..."
 				diff=$(levenshtein "${lidarrAlbumReleaseTitleClean,,}" "${tidalAlbumTitleClean,,}" 2>/dev/null)
