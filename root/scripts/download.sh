@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.155"
+scriptVersion="1.0.156"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -419,6 +419,12 @@ TidalClientSetup () {
 		pip3 install tidal-dl==2022.3.4.2
 		log ":: TIDAL :: ERROR :: Loading client for required authentication, please authenticate, then exit the client..."
 		tidal-dl
+	fi
+
+	if [ ! -d /config/extended/cache/tidal ]; then
+		mkdir -p /config/extended/cache/tidal
+		chmod 777 /config/extended/cache/tidal
+		chown abc:abc /config/extended/cache/tidal
 	fi
 	
 	if [ -d /config/extended/cache/tidal ]; then
