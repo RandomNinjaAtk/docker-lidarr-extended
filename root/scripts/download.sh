@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.148"
+scriptVersion="1.0.149"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -1295,18 +1295,7 @@ SearchProcess () {
 			fi
 		fi
 
-		if [ "$skipDeezer" = "false" ]; then
-			deezeArtistIds=($(echo "$deezerArtistUrl" | grep -o '[[:digit:]]*' | sort -u))
-			for dId in ${!deezeArtistIds[@]}; do
-				deezeArtistId="${deezeArtistIds[$dId]}"
-				if [ ! -d /config/extended/cache/deezer ]; then
-					mkdir -p /config/extended/cache/deezer
-				fi
-				if [ ! -f "/config/extended/cache/deezer/$deezeArtistId-albums.json" ]; then
-					DArtistAlbumList "$deezeArtistId"
-				fi
-			done
-		fi
+		
         
         if [ "$skipTidal" = "false" ]; then
 			if [ -z "$tidalArtistUrl" ]; then 
@@ -1322,28 +1311,7 @@ SearchProcess () {
 				skipTidal=true
 			fi
 		fi
-
-		if [ "$skipTidal" = "false" ]; then
-			if [ ! -d /config/extended/cache/tidal ]; then
-				mkdir -p /config/extended/cache/tidal
-			fi
-
-			for tidalArtistId in $(echo $tidalArtistIds); do
-						
-				if [ ! -f /config/extended/cache/tidal/$tidalArtistId-videos.json ]; then
-					curl -s "https://api.tidal.com/v1/artists/${tidalArtistId}/videos?limit=10000&countryCode=$tidalCountryCode&filter=ALL" -H 'x-tidal-token: CzET4vdadNUFQ5JU' > /config/extended/cache/tidal/$tidalArtistId-videos.json
-					sleep $sleepTimer
-				fi
-
-				if [ ! -f /config/extended/cache/tidal/$tidalArtistId-albums.json ]; then
-					curl -s "https://api.tidal.com/v1/artists/${tidalArtistId}/albums?limit=10000&countryCode=$tidalCountryCode&filter=ALL" -H 'x-tidal-token: CzET4vdadNUFQ5JU' > /config/extended/cache/tidal/$tidalArtistId-albums.json
-					sleep $sleepTimer
-				fi
-			done
-
 			
-		fi	
-	
 		LidarrTaskStatusCheck
 		CheckLidarrBeforeImport "$lidarrAlbumForeignAlbumId" "notbeets"
 		if [ $alreadyImported = true ]; then
@@ -1394,6 +1362,7 @@ SearchProcess () {
 					ArtistDeezerSearch "$processNumber of $wantedListAlbumTotal" "$wantedAlbumId" "$deezeArtistId" "true"
 				done
 			fi
+
 		fi
 
 		LidarrTaskStatusCheck
@@ -1498,6 +1467,15 @@ ArtistDeezerSearch () {
 	# $2 Lidarr Album ID
 	# $3 Deezer Artist ID
 	# $4 Lyric Type (true or false) - false = Clean, true = Explicit
+
+	# Get deezer artist album list
+	if [ ! -d /config/extended/cache/deezer ]; then
+		mkdir -p /config/extended/cache/deezer
+	fi
+	if [ ! -f "/config/extended/cache/deezer/$3-albums.json" ]; then
+		DArtistAlbumList "$3"
+	fi
+
 	lidarrAlbumData="$(curl -s "$lidarrUrl/api/v1/album/$2?apikey=${lidarrApiKey}")"
 	lidarrAlbumTitle=$(echo "$lidarrAlbumData" | jq -r ".title")
 	lidarrAlbumReleaseDate=$(echo "$lidarrAlbumData" | jq -r .releaseDate)
@@ -1629,6 +1607,18 @@ ArtistTidalSearch () {
 	# $2 Lidarr Album ID
 	# $3 Tidal Artist ID
 	# $4 Lyric Type (true or false) - false = Clean, true = Explicit
+
+	# Get tidal artist album list
+	if [ ! -f /config/extended/cache/tidal/$3-videos.json ]; then
+		curl -s "https://api.tidal.com/v1/artists/$3/videos?limit=10000&countryCode=$tidalCountryCode&filter=ALL" -H 'x-tidal-token: CzET4vdadNUFQ5JU' > /config/extended/cache/tidal/$3-videos.json
+		sleep $sleepTimer
+	fi
+
+	if [ ! -f /config/extended/cache/tidal/$3-albums.json ]; then
+		curl -s "https://api.tidal.com/v1/artists/$3/albums?limit=10000&countryCode=$tidalCountryCode&filter=ALL" -H 'x-tidal-token: CzET4vdadNUFQ5JU' > /config/extended/cache/tidal/$3-albums.json
+		sleep $sleepTimer
+	fi
+
 	lidarrAlbumData="$(curl -s "$lidarrUrl/api/v1/album/$2?apikey=${lidarrApiKey}")"
 	lidarrAlbumTitle=$(echo "$lidarrAlbumData" | jq -r ".title")
 	lidarrAlbumReleaseDate=$(echo "$lidarrAlbumData" | jq -r .releaseDate)
@@ -1700,6 +1690,7 @@ FuzzyTidalSearch () {
 	# $1 Process ID
 	# $2 Lidarr Album ID
 	# $3 Lyric Type (explicit = true, clean = false)
+
 	lidarrAlbumData="$(curl -s "$lidarrUrl/api/v1/album/$2?apikey=${lidarrApiKey}")"
 	lidarrAlbumTitle=$(echo "$lidarrAlbumData" | jq -r ".title")
 	lidarrAlbumReleaseDate=$(echo "$lidarrAlbumData" | jq -r .releaseDate)
