@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.158"
+scriptVersion="1.0.159"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -1542,7 +1542,7 @@ ArtistDeezerSearch () {
 			fi
 
 			# String Character Count test, quicker than the levenshtein method to allow faster processing
-			characterMath=$(( ${#tidalAlbumTitleClean} - ${#lidarrAlbumReleaseTitleClean} ))
+			characterMath=$(( ${#deezerAlbumTitleClean} - ${#lidarrAlbumReleaseTitleClean} ))
 			if [ $characterMath -gt 5 ]; then
 				continue
 			elif [ $characterMath -lt 0 ]; then
