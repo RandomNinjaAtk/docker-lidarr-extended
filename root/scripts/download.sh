@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.147"
+scriptVersion="1.0.148"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -469,6 +469,8 @@ DownloadProcess () {
 	# $4 = Album Title that matches Album ID Metadata
 	# $5 = Expected Track Count
 
+
+	# Create Required Directories
 	if [ ! -d "/downloads/lidarr-extended" ]; then
 		mkdir -p /downloads/lidarr-extended
 		chmod 777 /downloads/lidarr-extended
@@ -513,6 +515,18 @@ DownloadProcess () {
 		chown abc:abc /config/extended/logs/downloaded/tidal
 	fi
 
+	if [ ! -d /config/extended/logs/downloaded/failed/deezer ]; then
+		mkdir -p /config/extended/logs/downloaded/failed/deezer
+		chmod 777 /config/extended/logs/downloaded/failed/deezer
+		chown abc:abc /config/extended/logs/downloaded/failed/deezer
+	fi
+
+	if [ ! -d /config/extended/logs/downloaded/failed/tidal ]; then
+		mkdir -p /config/extended/logs/downloaded/failed/tidal
+		chmod 777 /config/extended/logs/downloaded/failed/tidal
+		chown abc:abc /config/extended/logs/downloaded/failed/tidal
+	fi
+
 	downloadedAlbumTitleClean="$(echo "$4" | sed -e "s%[^[:alpha:][:digit:]._' ]% %g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
     	
 	if find /downloads/lidarr-extended/complete -type d -iname "$lidarrArtistNameSanitized-$downloadedAlbumTitleClean ($3)-*-$2" | read; then
@@ -534,12 +548,20 @@ DownloadProcess () {
 			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: ERROR :: Previously Downloaded ($1)..."
 			return
 		fi
+		if [ -f /config/extended/logs/downloaded/failed/deezer/$1 ]; then
+			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: ERROR :: Previously Attempted Download ($1)..."
+			return
+		fi
 	fi
 
 	# check for log file
 	if [ "$2" = "TIDAL" ]; then
 		if [ -f /config/extended/logs/downloaded/tidal/$1 ]; then
 			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: ERROR :: Previously Downloaded ($1)..."
+			return
+		fi
+		if [ -f /config/extended/logs/downloaded/failed/tidal/$1 ]; then
+			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: ERROR :: Previously Attempted Download ($1)..."
 			return
 		fi
 	fi
@@ -644,6 +666,15 @@ DownloadProcess () {
 	downloadCount=$(find /downloads/lidarr-extended/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
 	if [ $downloadCount -ne $5 ]; then
 		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: ERROR :: All download Attempts failed..."
+		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Logging $1 as failed download..."
+
+
+		if [ "$2" = "DEEZER" ]; then
+			touch /config/extended/logs/downloaded/failed/deezer/$1
+		fi
+		if [ "$2" = "TIDAL" ]; then
+			touch /config/extended/logs/downloaded/failed/tidal/$1
+		fi
 		return
 	fi
 
