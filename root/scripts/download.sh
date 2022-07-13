@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.160"
+scriptVersion="1.0.161"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -662,8 +662,9 @@ DownloadProcess () {
 	if [ "$2" = "TIDAL" ]; then
 		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Consolidating files to single folder"
 		find "/downloads/lidarr-extended/incomplete" -type f -exec mv "{}" /downloads/lidarr-extended/incomplete/ \;
-		find /downloads/lidarr-extended/incomplete -mindepth 1 -type d -empty -exec rm -rf "{}" \; &>/dev/null
-		find /downloads/lidarr-extended/incomplete -mindepth 1 -type d -empty -exec rm -rf "{}" \; &>/dev/null
+		if [ /downloads/lidarr-extended/incomplete/atd ]; then
+			rm -rf /downloads/lidarr-extended/incomplete/atd
+		fi
 	fi
 
 	# Check download for required quality (checks based on file extension)
@@ -1524,10 +1525,9 @@ ArtistDeezerSearch () {
 
 		for deezerAlbumID in $(echo $deezerArtistAlbumsIds); do
 			deezerAlbumData="$(echo "$deezerSearch" | jq -r ".album | select(.id==$deezerAlbumID)")"
-			deezerAlbumTitle=$(echo "$deezerAlbumData"| jq -r .title | head -n1)
+			deezerAlbumTitle=$(echo "$deezerAlbumData"| jq -r .title | head -n 1)
 			lidarrAlbumReleaseTitleClean=$(echo "$lidarrAlbumReleaseTitle" | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
 			deezerAlbumTitleClean=$(echo ${deezerAlbumTitle} | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
-			deezerAlbumTitle=$(echo "$deezerAlbumData"| jq -r .title)
 
 			# String Character Count test, quicker than the levenshtein method to allow faster processing
 			characterMath=$(( ${#deezerAlbumTitleClean} - ${#lidarrAlbumReleaseTitleClean} ))
@@ -1628,10 +1628,9 @@ FuzzyDeezerSearch () {
 		if [ ! -z "$deezerSearch" ]; then
 			for deezerAlbumID in $(echo "$deezerSearch" | jq -r .album.id | sort -u); do
 				deezerAlbumData="$(echo "$deezerSearch" | jq -r ".album | select(.id==$deezerAlbumID)")"
-				deezerAlbumTitle=$(echo "$deezerAlbumData"| jq -r .title | head -n1)
+				deezerAlbumTitle=$(echo "$deezerAlbumData"| jq -r .title | head -n 1)
 				lidarrAlbumReleaseTitleClean=$(echo "$lidarrAlbumReleaseTitle" | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
 				deezerAlbumTitleClean=$(echo ${deezerAlbumTitle} | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
-				deezerAlbumTitle=$(echo "$deezerAlbumData"| jq -r .title)
 
 				# String Character Count test, quicker than the levenshtein method to allow faster processing
 				characterMath=$(( ${#deezerAlbumTitleClean} - ${#lidarrAlbumReleaseTitleClean} ))
