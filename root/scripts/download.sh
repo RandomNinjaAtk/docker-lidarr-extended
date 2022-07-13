@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.162"
+scriptVersion="1.0.163"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -1573,8 +1573,8 @@ ArtistDeezerSearch () {
 			else
 				log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Deezer :: $type :: $lidarrAlbumReleaseTitleClean vs $deezerAlbumTitleClean :: Deezer Match Not Found :: Calculated Difference ($diff) greater than 5"
 			fi
-			log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Deezer :: $type :: ERROR :: Album not found..."
 		done
+		log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Deezer :: $type :: ERROR :: Albums found, but none matching search criteria..."
 	done
 
 	if [ $alreadyImported = true ]; then
@@ -1680,7 +1680,7 @@ FuzzyDeezerSearch () {
 					log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Deezer :: $type ::  $lidarrAlbumReleaseTitleClean vs $deezerAlbumTitleClean :: Deezer Match Not Found :: Calculated Difference ($diff) greater than 5"
 				fi
 			done
-			log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Deezer :: $type ::  ERROR :: No results found via Fuzzy Search..."
+			log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Deezer :: $type ::  ERROR :: Results found, but none matching search criteria..."
 		else
 			log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Deezer :: $type ::  ERROR :: No results found via Fuzzy Search..."
 		fi
@@ -1777,6 +1777,7 @@ ArtistTidalSearch () {
 				log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Tidal :: $type :: $lidarrAlbumReleaseTitleClean vs $tidalAlbumTitleClean :: Tidal Match Not Found :: Calculated Difference ($diff) greater than 5"
 			fi
 		done
+		log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Tidal :: $type :: ERROR :: Albums found, but none matching search criteria..."
 	done
 
 	if [ $alreadyImported = true ]; then
@@ -1865,6 +1866,7 @@ FuzzyTidalSearch () {
 					log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Tidal :: $type :: $lidarrAlbumReleaseTitleClean vs $tidalAlbumTitleClean :: Tidal Match Not Found :: Calculated Difference ($diff) greater than 5"
 				fi
 			done
+			log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Tidal :: $type :: ERROR :: Albums found, but none matching search criteria..."
 		else
 			log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Tidal :: $type :: ERROR :: No results found..."
 		fi
