@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.164"
+scriptVersion="1.0.165"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -2020,8 +2020,9 @@ CheckLidarrBeforeImport () {
 
 	alreadyImported=false
 	if [ "$2" = "beets" ]; then
-		checkLidarrAlbumData=$(curl -s --header "X-Api-Key:"${lidarrApiKey} --request GET  "$lidarrUrl/api/v1/album/" | jq -r ".[] | select(.foreignAlbumId==\"$1\")")
-		checkLidarrAlbumPercentOfTracks=$(echo "$lidarrAlbumData" | jq -r ".statistics.percentOfTracks")
+		getLidarrAlbumId=$(curl -s "$lidarrUrl/api/v1/search?term=lidarr%3A$1&apikey=$lidarrApiKey" | jq -r .[].album.releases[].albumId | sort -u)
+		checkLidarrAlbumData="$(curl -s "$lidarrUrl/api/v1/album/$getLidarrAlbumId?apikey=${lidarrApiKey}")"
+		checkLidarrAlbumPercentOfTracks=$(echo "$checkLidarrAlbumData" | jq -r ".statistics.percentOfTracks")
 
 		if [ "$checkLidarrAlbumPercentOfTracks" = "null" ]; then
 			checkLidarrAlbumPercentOfTracks=0
