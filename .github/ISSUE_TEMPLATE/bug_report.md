@@ -23,7 +23,8 @@ A clear and concise description of what you expected to happen.
 **Log Data**
 If applicable, add screenshots to help explain your problem.
 
-**Desktop (please complete the following information):**
+**Docker Info:**
+ - Docker Version: [e.g. 22]
  - Extended Script Version [e.g. 22]
 
 **Additional context**
