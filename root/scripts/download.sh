@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.168"
+scriptVersion="1.0.169"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -2013,12 +2013,16 @@ AddRelatedArtists () {
 }
 
 LidarrTaskStatusCheck () {
+	alerted=no
 	until false
 	do
 		taskCount=$(curl -s "$lidarrUrl/api/v1/command?apikey=${lidarrApiKey}" | jq -r .[].status | grep -v completed | grep -v failed | wc -l)
 		if [ "$taskCount" -ge "1" ]; then
-			log ":: STATUS :: LIDARR BUSY :: Waiting for all active Lidarr tasks to end..."
-			sleep 1
+			if [ "$alerted" = "no" ]; then
+				alerted=yes
+				log ":: STATUS :: LIDARR BUSY :: Pausing/waiting for all active Lidarr tasks to end..."
+			fi
+			sleep 2
 		else
 			break
 		fi
