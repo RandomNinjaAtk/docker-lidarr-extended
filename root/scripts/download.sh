@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.177"
+scriptVersion="1.0.178"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -1220,43 +1220,34 @@ SearchProcess () {
 
 			# Search for explicit matches
 			if [ $audioLyricType = both ] || [ $audioLyricType = explicit ]; then
-				# Tidal search
-				if [ "$dlClientSource" = "both" ] || [ "$dlClientSource" = "tidal" ]; then
-					FuzzyTidalSearch "$processNumber of $wantedListAlbumTotal" "$wantedAlbumId" "true"
-				fi
-				
-				LidarrTaskStatusCheck
-				CheckLidarrBeforeImport "$checkLidarrAlbumId" "notbeets"
-				if [ $alreadyImported = true ]; then
-					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
-					continue
-				fi
-
+				# Tidal Artist search
 				if [ "$skipTidal" = "false" ]; then
 					for tidalArtistId in $(echo $tidalArtistIds); do
 						ArtistTidalSearch "$processNumber of $wantedListAlbumTotal" "$wantedAlbumId" "$tidalArtistId" "true"
 					done	
 				fi
 				
+				# Lidarr Status Check
 				LidarrTaskStatusCheck
 				CheckLidarrBeforeImport "$checkLidarrAlbumId" "notbeets"
 				if [ $alreadyImported = true ]; then
 					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
 					continue
+				fi
+							
+				# Tidal fuzzy search
+				if [ "$dlClientSource" = "both" ] || [ "$dlClientSource" = "tidal" ]; then
+					FuzzyTidalSearch "$processNumber of $wantedListAlbumTotal" "$wantedAlbumId" "true"
 				fi
 				
-				# Deezer fuzzy search
-				if [ "$dlClientSource" = "both" ] || [ "$dlClientSource" = "deezer" ]; then
-					FuzzyDeezerSearch "$processNumber of $wantedListAlbumTotal" "$wantedAlbumId" "true"
-				fi
-
+				# Lidarr Status Check
 				LidarrTaskStatusCheck
 				CheckLidarrBeforeImport "$checkLidarrAlbumId" "notbeets"
 				if [ $alreadyImported = true ]; then
 					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
 					continue
 				fi
-
+			
 				# Deezer artist search
 				if [ "$skipDeezer" = "false" ]; then
 					for dId in ${!deezerArtistIds[@]}; do
@@ -1265,6 +1256,18 @@ SearchProcess () {
 					done
 				fi
 
+				# Lidarr Status Check
+				LidarrTaskStatusCheck
+				CheckLidarrBeforeImport "$checkLidarrAlbumId" "notbeets"
+				if [ $alreadyImported = true ]; then
+					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
+					continue
+				fi	
+
+				# Deezer fuzzy search
+				if [ "$dlClientSource" = "both" ] || [ "$dlClientSource" = "deezer" ]; then
+					FuzzyDeezerSearch "$processNumber of $wantedListAlbumTotal" "$wantedAlbumId" "true"
+				fi
 			fi
 
 			LidarrTaskStatusCheck
@@ -1276,43 +1279,34 @@ SearchProcess () {
 
 			# Search for clean matches
 			if [ $audioLyricType = both ] || [ $audioLyricType = clean ]; then
-				# Tidal search
-				if [ "$dlClientSource" = "both" ] || [ "$dlClientSource" = "tidal" ]; then
-					FuzzyTidalSearch "$processNumber of $wantedListAlbumTotal" "$wantedAlbumId" "false"
-				fi
-
-				LidarrTaskStatusCheck
-				CheckLidarrBeforeImport "$checkLidarrAlbumId" "notbeets"
-				if [ $alreadyImported = true ]; then
-					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
-					continue
-				fi
-
+				# Tidal Artist search
 				if [ "$skipTidal" = "false" ]; then
 					for tidalArtistId in $(echo $tidalArtistIds); do
 						ArtistTidalSearch "$processNumber of $wantedListAlbumTotal" "$wantedAlbumId" "$tidalArtistId" "false"
 					done
 				fi
 
+				# Lidarr Status Check
 				LidarrTaskStatusCheck
 				CheckLidarrBeforeImport "$checkLidarrAlbumId" "notbeets"
 				if [ $alreadyImported = true ]; then
 					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
 					continue
 				fi
+
+				# Tidal Fuzzy search
+				if [ "$dlClientSource" = "both" ] || [ "$dlClientSource" = "tidal" ]; then
+					FuzzyTidalSearch "$processNumber of $wantedListAlbumTotal" "$wantedAlbumId" "false"
+				fi
+
+				# Lidarr Status Check
+				LidarrTaskStatusCheck
+				CheckLidarrBeforeImport "$checkLidarrAlbumId" "notbeets"
+				if [ $alreadyImported = true ]; then
+					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
+					continue
+				fi				
 				
-				# Deezer fuzzy search
-				if [ "$dlClientSource" = "both" ] || [ "$dlClientSource" = "deezer" ]; then
-					FuzzyDeezerSearch "$processNumber of $wantedListAlbumTotal" "$wantedAlbumId" "false"
-				fi
-
-				LidarrTaskStatusCheck
-				CheckLidarrBeforeImport "$checkLidarrAlbumId" "notbeets"
-				if [ $alreadyImported = true ]; then
-					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
-					continue
-				fi
-
 				# Deezer artist search
 				if [ "$skipDeezer" = "false" ]; then
 					for dId in ${!deezerArtistIds[@]}; do
@@ -1320,9 +1314,23 @@ SearchProcess () {
 						ArtistDeezerSearch "$processNumber of $wantedListAlbumTotal" "$wantedAlbumId" "$deezerArtistId" "false"
 					done
 				fi
+
+				# Lidarr Status Check
+				LidarrTaskStatusCheck
+				CheckLidarrBeforeImport "$checkLidarrAlbumId" "notbeets"
+				if [ $alreadyImported = true ]; then
+					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
+					continue
+				fi
+
+				# Deezer fuzzy search
+				if [ "$dlClientSource" = "both" ] || [ "$dlClientSource" = "deezer" ]; then
+					FuzzyDeezerSearch "$processNumber of $wantedListAlbumTotal" "$wantedAlbumId" "false"
+				fi
 			fi
 		fi
 
+		# Lidarr Status Check
 		LidarrTaskStatusCheck
 		CheckLidarrBeforeImport "$checkLidarrAlbumId" "notbeets"
 		if [ $alreadyImported = true ]; then
