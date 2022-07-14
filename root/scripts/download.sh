@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.179"
+scriptVersion="1.0.180"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -513,12 +513,9 @@ DownloadProcess () {
 			audioFlacVerification "$file"
 			if [ $verifiedFlacFile = 0 ]; then
 				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Flac Verification :: $file :: Verified"
-				completedVerfication="true"
 			else
 				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Flac Verification :: $file :: ERROR :: Failed Verification"
 				rm "$file"
-				completedVerification="false"
-				break
 			fi
 		done
 
