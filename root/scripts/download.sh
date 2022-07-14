@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.181"
+scriptVersion="1.0.182"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -1302,16 +1302,22 @@ SearchProcess () {
 			if [ "$skipTidal" = "false" ]; then
 				
 				# Search Musicbrainz
-				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz Tidal Album ID :: Searching for Album ID..."
+				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Tidal :: Searching for Album ID..."
 				msuicbrainzTidalDownloadAlbumID=$(curl -s -A "$agent" "https://musicbrainz.org/ws/2/release?release-group=$lidarrAlbumForeignAlbumId&inc=url-rels&fmt=json" | jq -r | grep "tidal.com" | head -n 1 | sed -e "s%[^[:digit:]]%%g")
 
 				# Process Album ID if found
 				if [ ! -z $msuicbrainzTidalDownloadAlbumID ]; then
-					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz Tidal Album ID :: FOUND!"
+					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Tidal ::: FOUND!"
 					tidalArtistAlbumData="$(curl -s "https://api.tidal.com/v1/albums/${msuicbrainzTidalDownloadAlbumID}?countryCode=$tidalCountryCode" -H 'x-tidal-token: CzET4vdadNUFQ5JU')"
-					tidalAlbumTrackCount="$(echo $tidalArtistAlbumData | jq -r .numberOfTracks)"
-					
-					DownloadProcess "$msuicbrainzTidalDownloadAlbumID" "TIDAL" "$lidarrAlbumReleaseYear" "$lidarrAlbumTitle" "$tidalAlbumTrackCount"
+					tidalAlbumTrackCount="$(echo "$tidalArtistAlbumData" | jq -r .numberOfTracks)"
+					downloadedAlbumTitle="$(echo "${tidalArtistAlbumData}" | jq -r .title)"
+					downloadedReleaseDate="$(echo "${tidalArtistAlbumData}" | jq -r .releaseDate)"
+					if [ "$downloadedReleaseDate" = "null" ]; then
+						downloadedReleaseDate=$(echo "$tidalArtistAlbumData" | jq -r '.streamStartDate')
+					fi
+					downloadedReleaseYear="${downloadedReleaseDate:0:4}"
+					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Tidal :: Downloading $tidalAlbumTrackCount Tracks :: $downloadedAlbumTitle ($downloadedReleaseYear)"
+					DownloadProcess "$msuicbrainzTidalDownloadAlbumID" "TIDAL" "$downloadedReleaseYear" "$downloadedAlbumTitle" "$tidalAlbumTrackCount"
 
 					# Verify it was successfully imported into Lidarr
 					LidarrTaskStatusCheck
@@ -1322,7 +1328,7 @@ SearchProcess () {
 					fi
 				else
 					sleep 1.5
-					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz Tidal Album ID :: NOT FOUND!"
+					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Tidal :: NOT FOUND!"
 				fi
 			fi
 		fi
@@ -1339,20 +1345,23 @@ SearchProcess () {
 			if [ "$skipDeezer" = "false" ]; then
 			
 				# Search Musicbrainz
-				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz Deezer Album ID :: Searching for Album ID..."
+				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Deezer :: Searching for Album ID..."
 				msuicbrainzDeezerDownloadAlbumID=$(curl -s -A "$agent" "https://musicbrainz.org/ws/2/release?release-group=$lidarrAlbumForeignAlbumId&inc=url-rels&fmt=json" | jq -r | grep "deezer.com" | grep "album" | head -n 1 | sed -e "s%[^[:digit:]]%%g")
 				
 				# Process Album ID if found
 				if [ ! -z $msuicbrainzDeezerDownloadAlbumID ]; then
-					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz Deezer Album ID :: FOUND!"
+					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Deezer :: FOUND!"
 					if [ -f "/config/extended/cache/deezer/${msuicbrainzDeezerDownloadAlbumID}.json" ]; then
 						deezerArtistAlbumData="$(cat "/config/extended/cache/deezer/${msuicbrainzDeezerDownloadAlbumID}.json")"
 					else
 						deezerArtistAlbumData="$(curl -s "https://api.deezer.com/album/${msuicbrainzDeezerDownloadAlbumID}")"
 					fi
-					deezerAlbumTrackCount="$(echo $deezerArtistAlbumData | jq -r .nb_tracks)"
-							
-					DownloadProcess "$msuicbrainzDeezerDownloadAlbumID" "DEEZER" "$lidarrAlbumReleaseYear" "$lidarrAlbumTitle" "$deezerAlbumTrackCount"
+					deezerAlbumTrackCount="$(echo "$deezerArtistAlbumData" | jq -r .nb_tracks)"
+					deezerAlbumTitle="$(echo "$deezerArtistAlbumData"| jq -r .title)"
+					downloadedReleaseDate="$(echo "$deezerArtistAlbumData" | jq -r .release_date)"
+					downloadedReleaseYear="${downloadedReleaseDate:0:4}"
+					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Deezer :: Downloading $deezerAlbumTrackCount Tracks :: $deezerAlbumTitle ($downloadedReleaseYear)"
+					DownloadProcess "$msuicbrainzDeezerDownloadAlbumID" "DEEZER" "$downloadedReleaseYear" "$deezerAlbumTitle" "$deezerAlbumTrackCount"
 
 					# Verify it was successfully imported into Lidarr
 					LidarrTaskStatusCheck
@@ -1362,7 +1371,7 @@ SearchProcess () {
 						continue
 					fi
 				else
-					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz Deezer Album ID :: NOT FOUND!"
+					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Deezer :: NOT FOUND!"
 				fi
 			fi
 		fi
@@ -1479,8 +1488,8 @@ ArtistDeezerSearch () {
 				log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Deezer :: $type :: $lidarrAlbumReleaseTitleClean vs $deezerAlbumTitleClean :: Deezer MATCH Found :: Calculated Difference = $diff"
 
 				# Execute Download
-				log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Deezer  :: $type :: Downloading $lidarrAlbumReleaseTrackCount Tracks :: $downloadedAlbumTitle ($downloadedReleaseYear)"
-				DownloadProcess "$deezerArtistAlbumId" "DEEZER" "$downloadedReleaseYear" "$downloadedAlbumTitle" "$lidarrAlbumReleaseTrackCount"
+				log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Deezer  :: $type :: Downloading $lidarrAlbumReleaseTrackCount Tracks :: $deezerAlbumTitle ($downloadedReleaseYear)"
+				DownloadProcess "$deezerArtistAlbumId" "DEEZER" "$downloadedReleaseYear" "$deezerAlbumTitle" "$lidarrAlbumReleaseTrackCount"
 
 				# Verify it was successfully imported into Lidarr
 				LidarrTaskStatusCheck
@@ -1488,8 +1497,6 @@ ArtistDeezerSearch () {
 				if [ $alreadyImported = true ]; then
 					break 2
 				fi
-			else
-				log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Deezer :: $type :: $lidarrAlbumReleaseTitleClean vs $deezerAlbumTitleClean :: Deezer Match Not Found :: Calculated Difference ($diff) greater than 5"
 			fi
 		done
 		log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Deezer :: $type :: ERROR :: Albums found, but none matching search criteria..."
@@ -1601,8 +1608,6 @@ FuzzyDeezerSearch () {
 					if [ $alreadyImported = true ]; then
 						break 2
 					fi
-				else
-					log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Deezer :: $type ::  $lidarrAlbumReleaseTitleClean vs $deezerAlbumTitleClean :: Deezer Match Not Found :: Calculated Difference ($diff) greater than 5"
 				fi
 			done
 			log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Deezer :: $type ::  ERROR :: Results found, but none matching search criteria..."
