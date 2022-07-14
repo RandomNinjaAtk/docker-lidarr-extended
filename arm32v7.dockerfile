@@ -11,7 +11,7 @@ COPY --from=builder qemu-arm-static /usr/bin
 
 LABEL maintainer="RandomNinjaAtk"
 ENV dockerTitle="lidarr-extended"
-ENV dockerVersion="arm32v7-1.0.20"
+ENV dockerVersion="arm32v7-1.0.21"
 ENV LANG=en_US.UTF-8
 ENV autoStart=true
 ENV configureLidarrWithOptimalSettings=false
@@ -28,6 +28,7 @@ ENV tidalCountryCode=US
 ENV numberOfRelatedArtistsToAddPerArtist=5
 ENV beetsMatchPercentage=90
 ENV requireQuality=true
+ENV searchSort=date
 
 RUN \
 	echo "*** install packages ***" && \
