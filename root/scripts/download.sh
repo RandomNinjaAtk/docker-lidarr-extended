@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.178"
+scriptVersion="1.0.179"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -12,7 +12,7 @@ agent="lidarr-extended ( https://github.com/RandomNinjaAtk/docker-lidarr-extende
 musicbrainzMirror=https://musicbrainz.org
 
 # Debugging settings
-#dlClientSource=tidal
+#dlClientSource=both
 #topLimit=3
 #addDeezerTopArtists=true
 #addDeezerTopAlbumArtists=true
@@ -460,14 +460,6 @@ DownloadProcess () {
 		return
     fi
 
-
-	# Check for previously Downloaded
-	# check for folder
-	if find /downloads/lidarr-extended/complete -type d -iname "$lidarrArtistNameSanitized-$downloadedAlbumTitleClean ($3)-*-$2" | read; then
-		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: ERROR :: Previously Downloaded..."
-		return
-    fi
-
 	# check for log file
 	if [ "$2" = "DEEZER" ]; then
 		if [ -f /config/extended/logs/downloaded/deezer/$1 ]; then
@@ -492,95 +484,65 @@ DownloadProcess () {
 		fi
 	fi
 
-
+	
+	
 	downloadTry=0
-    if [ "$2" = "DEEZER" ]; then
-		until false
-		do	
-			downloadTry=$(( $downloadTry + 1 ))
-			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Download Attempt number $downloadTry"
+	until false
+	do	
+		downloadTry=$(( $downloadTry + 1 ))
+		if [ -f /temp-download ]; then
+			rm /temp-download
+			sleep 0.1
+		fi
+		touch /temp-download 
+		sleep 0.1
+
+		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Download Attempt number $downloadTry"
+		if [ "$2" = "DEEZER" ]; then
 			deemix -b $deemixQuality -p /downloads/lidarr-extended/incomplete "https://www.deezer.com/album/$1"
 			if [ -d "/tmp/deemix-imgs" ]; then
 				rm -rf /tmp/deemix-imgs
 			fi
-						
-			find "/downloads/lidarr-extended/incomplete" -type f -iname "*.flac" -print0 | while IFS= read -r -d '' file; do
-				audioFlacVerification "$file"
-				if [ $verifiedFlacFile = 0 ]; then
-					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Flac Verification :: $file :: Verified"
-					completedVerfication="true"
-				else
-					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Flac Verification :: $file :: ERROR :: Failed Verification"
-					rm "$file"
-					completedVerification="false"
-					break
-				fi
-			done
+		fi
 
-			downloadCount=$(find /downloads/lidarr-extended/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
-			if [ $downloadCount -ne $5 ]; then
-				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: ERROR :: download failed"
-				completedVerification="false"
-			else
-				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Success"
-				completedVerification="true"
-			fi
-
-			if [ "$completedVerification" = "true" ]; then
-				break
-			elif [ $downloadTry = 5 ]; then
-				if [ -d /downloads/lidarr-extended/incomplete ]; then
-					rm -rf /downloads/lidarr-extended/incomplete/*
-				fi
-				break
-			else
-				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Retry Download to fix errors..."
-			fi
-		done
-
-    elif [ "$2" = "TIDAL" ]; then
-		until false
-		do
-			downloadTry=$(( $downloadTry + 1 ))
-			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Download Attempt number $downloadTry"
+		if [ "$2" = "TIDAL" ]; then
 			tidal-dl -o /downloads/lidarr-extended/incomplete -l "$1"
-			
-			find "/downloads/lidarr-extended/incomplete" -type f -iname "*.flac" -print0 | while IFS= read -r -d '' file; do
-				audioFlacVerification "$file"
-				if [ $verifiedFlacFile = 0 ]; then
-					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Flac Verification :: $file :: Verified"
-					completedVerfication="true"
-				else
-					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Flac Verification :: $file :: ERROR :: Failed Verification"
-					rm "$file"
-					completedVerification="false"
-					break
-				fi
-			done
-
-			downloadCount=$(find /downloads/lidarr-extended/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
-			if [ $downloadCount -ne $5 ]; then
-				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: ERROR :: download failed"
-				completedVerification=false
+		fi
+	
+		find "/downloads/lidarr-extended/incomplete" -type f -iname "*.flac" -newer "/temp-download" -print0 | while IFS= read -r -d '' file; do
+			audioFlacVerification "$file"
+			if [ $verifiedFlacFile = 0 ]; then
+				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Flac Verification :: $file :: Verified"
+				completedVerfication="true"
 			else
-				completedVerification=true
-			fi
-
-			if [ "$completedVerification" = "true" ]; then
+				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Flac Verification :: $file :: ERROR :: Failed Verification"
+				rm "$file"
+				completedVerification="false"
 				break
-			elif [ $downloadTry = 5 ]; then
-				if [ -d /downloads/lidarr-extended/incomplete ]; then
-					rm -rf /downloads/lidarr-extended/incomplete/*
-				fi
-				break
-			else
-				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Retry Download in 5 seconds to fix errors..."
-				sleep 5
 			fi
 		done
-    else
-        return
-    fi
+
+		downloadCount=$(find /downloads/lidarr-extended/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
+		if [ $downloadCount -ne $5 ]; then
+			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: ERROR :: download failed"
+			completedVerification="false"
+		else
+			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Success"
+			completedVerification="true"
+		fi
+
+		if [ "$completedVerification" = "true" ]; then
+			break
+		elif [ $downloadTry = 5 ]; then
+			if [ -d /downloads/lidarr-extended/incomplete ]; then
+				rm -rf /downloads/lidarr-extended/incomplete/*
+			fi
+			break
+		else
+			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Retry Download in 5 seconds fix errors..."
+			sleep 5
+		fi
+	done   
 
 	# Consolidate files to a single folder
 	if [ "$2" = "TIDAL" ]; then
