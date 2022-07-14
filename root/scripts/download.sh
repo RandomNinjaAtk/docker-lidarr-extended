@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.173"
+scriptVersion="1.0.174"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -1465,7 +1465,8 @@ ArtistDeezerSearch () {
 		deezerArtistAlbumsData=$(cat "/config/extended/cache/deezer/$3-albums.json" | jq -r .data[])
 		deezerArtistAlbumsIds=$(echo "${deezerArtistAlbumsData}" | jq -r "select(.explicit_lyrics=="$4") | select(.title | test(\"^$lidarrAlbumReleaseTitleFirstWord\";\"i\")) | .id")
 
-
+		resultsCount=$(echo "$deezerArtistAlbumsIds" | wc -l)
+		log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Deezer :: $type ::  $resultsCount Search Results Found"
 		for deezerAlbumID in $(echo $deezerArtistAlbumsIds); do
 			deezerAlbumData="$(echo "$deezerSearch" | jq -r ".album | select(.id==$deezerAlbumID)")"
 			deezerAlbumTitle=$(echo "$deezerAlbumData"| jq -r .title | head -n 1)
@@ -1572,6 +1573,8 @@ FuzzyDeezerSearch () {
 			# Search with Artist for non VA albums
 			deezerSearch=$(curl -s "https://api.deezer.com/search?q=artist:%22${albumArtistNameSearch}%22%20album:%22${albumTitleSearch}%22&strict=on&limit=20" | jq -r ".data[] | select(.album.title | test(\"^$lidarrAlbumReleaseTitleFirstWord\";\"i\"))")
 		fi
+		resultsCount=$(echo "$deezerSearch" | jq -r .album.id | sort -u | wc -l)
+		log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Deezer :: $type ::  $resultsCount Search Results Found"
 		if [ ! -z "$deezerSearch" ]; then
 			for deezerAlbumID in $(echo "$deezerSearch" | jq -r .album.id | sort -u); do
 				deezerAlbumData="$(echo "$deezerSearch" | jq -r ".album | select(.id==$deezerAlbumID)")"
