@@ -2,7 +2,7 @@ FROM linuxserver/lidarr:amd64-latest
 LABEL maintainer="RandomNinjaAtk"
 
 ENV dockerTitle="lidarr-extended"
-ENV dockerVersion="amd64-1.0.20"
+ENV dockerVersion="amd64-1.0.21"
 ENV LANG=en_US.UTF-8
 ENV autoStart=true
 ENV configureLidarrWithOptimalSettings=false
@@ -18,6 +18,7 @@ ENV tidalCountryCode=US
 ENV numberOfRelatedArtistsToAddPerArtist=5
 ENV beetsMatchPercentage=90
 ENV requireQuality=true
+ENV searchSort=date
 
 RUN \
 	echo "*** install packages ***" && \
