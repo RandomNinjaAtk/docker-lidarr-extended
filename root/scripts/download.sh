@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.169"
+scriptVersion="1.0.170"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -362,6 +362,11 @@ TidalClientSetup () {
 	
 	log ":: TIDAL :: Upgrade tidal-dl to the latest..."
 	pip3 install tidal-dl --upgrade
+	
+}
+
+TidalClientTest () { 
+	log ":: TIDAL :: tidal-dl client setup verification..."
 	tidal-dl -o /downloads/lidarr-extended/incomplete -l "166356219"
 	
 	downloadCount=$(find /downloads/lidarr-extended/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
@@ -369,14 +374,14 @@ TidalClientSetup () {
 		if [ -f /config/xdg/.tidal-dl.token.json ]; then
 			rm /config/xdg/.tidal-dl.token.json
 		fi
-		log ":: tidal-dl client setup verification :: ERROR :: Download failed"
-		log ":: tidal-dl client setup verification :: ERROR :: You will need to re-authenticate on next script run..."
-		log ":: tidal-dl client setup verification :: ERROR :: Exiting..."
+		log ":: TIDAL :: ERROR :: Download failed"
+		log ":: TIDAL :: ERROR :: You will need to re-authenticate on next script run..."
+		log ":: TIDAL :: ERROR :: Exiting..."
 		rm -rf /downloads/lidarr-extended/incomplete/*
 		exit
 	else
 		rm -rf /downloads/lidarr-extended/incomplete/*
-		log ":: tidal-dl client setup verification :: Download Verification Success"
+		log ":: TIDAL :: Successfully Verified"
 	fi
 }
 
@@ -807,22 +812,28 @@ DeemixClientSetup () {
 	log ":: DEEZER :: Upgrade deemix to the latest..."
 	pip3 install deemix --upgrade
 
+}
+
+DeezerClientTest () {
+	log ":: DEEZER :: deemix client setup verification..."
+
 	deemix -b $deemixQuality -p /downloads/lidarr-extended/incomplete "https://www.deezer.com/album/197472472"
 	if [ -d "/tmp/deemix-imgs" ]; then
 		rm -rf /tmp/deemix-imgs
 	fi
 	downloadCount=$(find /downloads/lidarr-extended/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
 	if [ $downloadCount -le 0 ]; then
-		log ":: deemix client setup verification :: ERROR :: Download failed"
-		log ":: deemix client setup verification :: ERROR :: Please review log for errors in client"
-		log ":: deemix client setup verification :: ERROR :: Try updating your ARL Token to possibly resolve the issue..."
-		log ":: deemix client setup verification :: ERROR :: Exiting..."
+		log ":: DEEZER :: ERROR :: Download failed"
+		log ":: DEEZER :: ERROR :: Please review log for errors in client"
+		log ":: DEEZER :: ERROR :: Try updating your ARL Token to possibly resolve the issue..."
+		log ":: DEEZER :: ERROR :: Exiting..."
 		rm -rf /downloads/lidarr-extended/incomplete/*
 		exit
 	else
 		rm -rf /downloads/lidarr-extended/incomplete/*
-		log ":: deemix client setup verification :: Download Verification Success"
+		log ":: DEEZER :: Successfully Verified"
 	fi
+
 }
 
 ConfigureLidarrWithOptimalSettings () {
@@ -832,9 +843,6 @@ ConfigureLidarrWithOptimalSettings () {
 		getSettingsToLidarr=$(curl -s "$lidarrUrl/api/v1/filesystem?path=%2Fmusic&allowFoldersWithoutTrailingSlashes=false&includeFiles=false" -H "X-Api-Key: ${lidarrApiKey}")
 		postSettingsToLidarr=$(curl -s "$lidarrUrl/api/v1/rootFolder?" -X POST -H 'Content-Type: application/json' -H "X-Api-Key: ${lidarrApiKey}" --data-raw '{"defaultTags":[],"defaultQualityProfileId":1,"defaultMetadataProfileId":1,"name":"Music","path":"/music"}')
 	fi
-
-	log ":: Configuring Lidarr Track Naming Settings"
-	postSettingsToLidarr=$(curl -s "$lidarrUrl/api/v1/config/naming" -X PUT -H 'Content-Type: application/json' -H "X-Api-Key: ${lidarrApiKey}" --data-raw '{"renameTracks":true,"replaceIllegalCharacters":true,"standardTrackFormat":"{Artist Name} - {Album Type} - {Release Year} - {Album Title}{ (Album Disambiguation)}/{medium:00}{track:00} - {Track Title}","multiDiscTrackFormat":"{Artist Name} - {Album Type} - {Release Year} - {Album Title}{ (Album Disambiguation)}/{medium:00}{track:00} - {Track Title}","artistFolderFormat":"{Artist Name}{ (Artist Disambiguation)}","includeArtistName":false,"includeAlbumTitle":false,"includeQuality":false,"replaceSpaces":false,"id":1}')
 
 	log ":: Configuring Lidarr Media Management Settings"
 	postSettingsToLidarr=$(curl -s "$lidarrUrl/api/v1/config/mediamanagement" -X PUT -H 'Content-Type: application/json' -H "X-Api-Key: ${lidarrApiKey}" --data-raw '{"autoUnmonitorPreviouslyDownloadedTracks":false,"recycleBin":"","recycleBinCleanupDays":7,"downloadPropersAndRepacks":"preferAndUpgrade","createEmptyArtistFolders":true,"deleteEmptyFolders":true,"fileDate":"none","watchLibraryForChanges":true,"rescanAfterRefresh":"always","allowFingerprinting":"newFiles","setPermissionsLinux":true,"chmodFolder":"777","chownGroup":"abc","skipFreeSpaceCheckWhenImporting":false,"minimumFreeSpaceWhenImporting":100,"copyUsingHardlinks":true,"importExtraFiles":true,"extraFileExtensions":"jpg,png,lrc","id":1}')
@@ -878,6 +886,9 @@ ConfigureLidarrWithOptimalSettings () {
 	
 	log ":: Configuring Lidarr Standard Metadata Profile"
 	postSettingsToLidarr=$(curl -s "$lidarrUrl/api/v1/metadataprofile/1?" -X PUT -H 'Content-Type: application/json' -H "X-Api-Key: ${lidarrApiKey}" --data-raw '{"name":"Standard","primaryAlbumTypes":[{"albumType":{"id":2,"name":"Single"},"allowed":true},{"albumType":{"id":4,"name":"Other"},"allowed":false},{"albumType":{"id":1,"name":"EP"},"allowed":true},{"albumType":{"id":3,"name":"Broadcast"},"allowed":false},{"albumType":{"id":0,"name":"Album"},"allowed":true}],"secondaryAlbumTypes":[{"albumType":{"id":0,"name":"Studio"},"allowed":true},{"albumType":{"id":3,"name":"Spokenword"},"allowed":true},{"albumType":{"id":2,"name":"Soundtrack"},"allowed":true},{"albumType":{"id":7,"name":"Remix"},"allowed":true},{"albumType":{"id":9,"name":"Mixtape/Street"},"allowed":true},{"albumType":{"id":6,"name":"Live"},"allowed":true},{"albumType":{"id":4,"name":"Interview"},"allowed":true},{"albumType":{"id":8,"name":"DJ-mix"},"allowed":true},{"albumType":{"id":10,"name":"Demo"},"allowed":true},{"albumType":{"id":1,"name":"Compilation"},"allowed":true}],"releaseStatuses":[{"releaseStatus":{"id":3,"name":"Pseudo-Release"},"allowed":false},{"releaseStatus":{"id":1,"name":"Promotion"},"allowed":false},{"releaseStatus":{"id":0,"name":"Official"},"allowed":true},{"releaseStatus":{"id":2,"name":"Bootleg"},"allowed":false}],"id":1}')
+
+	log ":: Configuring Lidarr Track Naming Settings"
+	postSettingsToLidarr=$(curl -s "$lidarrUrl/api/v1/config/naming" -X PUT -H 'Content-Type: application/json' -H "X-Api-Key: ${lidarrApiKey}" --data-raw '{"renameTracks":true,"replaceIllegalCharacters":true,"standardTrackFormat":"{Artist Name} - {Album Type} - {Release Year} - {Album Title}{ (Album Disambiguation)}/{medium:00}{track:00} - {Track Title}","multiDiscTrackFormat":"{Artist Name} - {Album Type} - {Release Year} - {Album Title}{ (Album Disambiguation)}/{medium:00}{track:00} - {Track Title}","artistFolderFormat":"{Artist Name}{ (Artist Disambiguation)}","includeArtistName":false,"includeAlbumTitle":false,"includeQuality":false,"replaceSpaces":false,"id":1}')
 
 	touch /config/extended/logs/autoconfig
 	chmod 666 /config/extended/logs/autoconfig
@@ -985,6 +996,15 @@ SearchProcess () {
         log ":: No items to find, end"
         return
     fi
+
+	# Verify clients are working...
+	if [ "$dlClientSource" = "deezer" ] || [ "$dlClientSource" = "both" ]; then
+		DeezerClientTest
+	fi
+
+	if [ "$dlClientSource" = "tidal" ] || [ "$dlClientSource" = "both" ]; then
+		TidalClientTest
+	fi
 
     processNumber=0
 	for lidarrMissingId in $(ls -tr /config/extended/cache/lidarr/list); do
@@ -1507,6 +1527,10 @@ FuzzyDeezerSearch () {
 		type=Explicit
 	else
 		type=Clean
+	fi
+
+	if [ ! -d /config/extended/cache/deezer ]; then
+		mkdir -p /config/extended/cache/deezer
 	fi
 
 	lidarrAlbumData="$(curl -s "$lidarrUrl/api/v1/album/$2?apikey=${lidarrApiKey}")"
