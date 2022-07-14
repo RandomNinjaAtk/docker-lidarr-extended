@@ -22,7 +22,7 @@ The architectures supported by this image are:
 
 | Tag | Description |
 | :----: | --- |
-| latest | Lidarr nightly + Extended Scripts |
+| latest | Lidarr master (stable) + Extended Scripts |
 
 ## Application Setup
 
@@ -144,10 +144,11 @@ services:
 ```
 
 # Credits
-- [Deemix download client](https://deemix.app/)
-- [Musicbrainz](https://musicbrainz.org/)
+- [LinuxServer.io Team](https://github.com/linuxserver/docker-lidarr)
 - [Lidarr](https://lidarr.audio/)
-- [Tidal-Media-Downloader client](https://github.com/yaronzz/Tidal-Media-Downloader)
+- [Musicbrainz](https://musicbrainz.org/)
 - [Docker multi-arch example](https://github.com/ckulka/docker-multi-arch-example)
+- [Deemix download client](https://deemix.app/)
+- [Tidal-Media-Downloader client](https://github.com/yaronzz/Tidal-Media-Downloader)
 - [r128gain](https://github.com/desbma/r128gain)
 - [Algorithm Implementation/Strings/Levenshtein distance](https://en.wikibooks.org/wiki/Algorithm_Implementation/Strings/Levenshtein_distance)
