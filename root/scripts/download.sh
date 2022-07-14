@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.171"
+scriptVersion="1.0.172"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -916,7 +916,7 @@ GetMissingCutOffList () {
 	mkdir -p /config/extended/cache/lidarr/list
 
 	# Get missing album list
-	if [] $searchSort = date ]; then
+	if [ $searchSort = date ]; then
 		searchOrder=releaseDate
 		searchDirection=descending
 	fi
