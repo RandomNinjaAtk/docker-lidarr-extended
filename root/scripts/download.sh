@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.174"
+scriptVersion="1.0.175"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -1467,11 +1467,11 @@ ArtistDeezerSearch () {
 
 		resultsCount=$(echo "$deezerArtistAlbumsIds" | wc -l)
 		log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Deezer :: $type ::  $resultsCount Search Results Found"
-		for deezerAlbumID in $(echo $deezerArtistAlbumsIds); do
+		for deezerAlbumID in $(echo "$deezerArtistAlbumsIds"); do
 			deezerAlbumData="$(echo "$deezerSearch" | jq -r ".album | select(.id==$deezerAlbumID)")"
-			deezerAlbumTitle=$(echo "$deezerAlbumData"| jq -r .title | head -n 1)
-			lidarrAlbumReleaseTitleClean=$(echo "$lidarrAlbumReleaseTitle" | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
-			deezerAlbumTitleClean=$(echo ${deezerAlbumTitle} | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
+			deezerAlbumTitle="$(echo "$deezerAlbumData" | jq -r ".title")"
+			lidarrAlbumReleaseTitleClean="$(echo "$lidarrAlbumReleaseTitle" | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
+			deezerAlbumTitleClean="$(echo ${deezerAlbumTitle} | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
 
 			# String Character Count test, quicker than the levenshtein method to allow faster processing
 			characterMath=$(( ${#deezerAlbumTitleClean} - ${#lidarrAlbumReleaseTitleClean} ))
@@ -1484,15 +1484,15 @@ ArtistDeezerSearch () {
 			if [ -f "/config/extended/cache/deezer/$deezerAlbumID.json" ]; then
 				deezerAlbumData="$(cat "/config/extended/cache/deezer/$deezerAlbumID.json")"
 			else
-				getDeezerAlbumData=$(curl -s "https://api.deezer.com/album/$deezerAlbumID" > "/config/extended/cache/deezer/$deezerAlbumID.json")
+				getDeezerAlbumData="$(curl -s "https://api.deezer.com/album/$deezerAlbumID" > "/config/extended/cache/deezer/$deezerAlbumID.json")"
 				sleep $sleepTimer
 				deezerAlbumData="$(cat "/config/extended/cache/deezer/$deezerAlbumID.json")"
 			fi
-			deezerAlbumTrackCount="$(echo $deezerAlbumData | jq -r .nb_tracks)"
-			deezerAlbumExplicitLyrics="$(echo $deezerAlbumData | jq -r .explicit_lyrics)"								
-			deezerAlbumTitle=$(echo "$deezerAlbumData"| jq -r .title)
-			deezerAlbumTitleClean=$(echo ${deezerAlbumTitle} | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
-			downloadedReleaseDate="$(echo ${deezerAlbumData} | jq -r .release_date)"
+			deezerAlbumTrackCount="$(echo "$deezerAlbumData" | jq -r .nb_tracks)"
+			deezerAlbumExplicitLyrics="$(echo "$deezerAlbumData" | jq -r .explicit_lyrics)"								
+			deezerAlbumTitle="$(echo "$deezerAlbumData"| jq -r .title)"
+			deezerAlbumTitleClean="$(echo "$deezerAlbumTitle" | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
+			downloadedReleaseDate="$(echo "$deezerAlbumData" | jq -r .release_date)"
 			downloadedReleaseYear="${downloadedReleaseDate:0:4}"
 
 			if [ $deezerAlbumTrackCount -ne $lidarrAlbumReleaseTrackCount ]; then
@@ -1578,9 +1578,10 @@ FuzzyDeezerSearch () {
 		if [ ! -z "$deezerSearch" ]; then
 			for deezerAlbumID in $(echo "$deezerSearch" | jq -r .album.id | sort -u); do
 				deezerAlbumData="$(echo "$deezerSearch" | jq -r ".album | select(.id==$deezerAlbumID)")"
-				deezerAlbumTitle=$(echo "$deezerAlbumData"| jq -r .title | head -n 1)
-				lidarrAlbumReleaseTitleClean=$(echo "$lidarrAlbumReleaseTitle" | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
-				deezerAlbumTitleClean=$(echo ${deezerAlbumTitle} | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
+				deezerAlbumTitle="$(echo "$deezerAlbumData" | jq -r ".title")"
+				deezerAlbumTitle="$(echo "$deezerAlbumTitle" | head -n1)"
+				lidarrAlbumReleaseTitleClean="$(echo "$lidarrAlbumReleaseTitle" | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
+				deezerAlbumTitleClean="$(echo "$deezerAlbumTitle" | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
 
 				# String Character Count test, quicker than the levenshtein method to allow faster processing
 				characterMath=$(( ${#deezerAlbumTitleClean} - ${#lidarrAlbumReleaseTitleClean} ))
@@ -1593,17 +1594,17 @@ FuzzyDeezerSearch () {
 				if [ -f "/config/extended/cache/deezer/$deezerAlbumID.json" ]; then
 					deezerAlbumData="$(cat "/config/extended/cache/deezer/$deezerAlbumID.json")"
 				else
-					getDeezerAlbumData=$(curl -s "https://api.deezer.com/album/$deezerAlbumID" > "/config/extended/cache/deezer/$deezerAlbumID.json")
+					getDeezerAlbumData="$(curl -s "https://api.deezer.com/album/$deezerAlbumID" > "/config/extended/cache/deezer/$deezerAlbumID.json")"
 					sleep $sleepTimer
 					deezerAlbumData="$(cat "/config/extended/cache/deezer/$deezerAlbumID.json")"
 				fi
 
-				deezerAlbumTrackCount="$(echo $deezerAlbumData | jq -r .nb_tracks)"
-				deezerAlbumExplicitLyrics="$(echo $deezerAlbumData | jq -r .explicit_lyrics)"								
-				deezerAlbumTitle=$(echo "$deezerAlbumData"| jq -r .title)
-				lidarrAlbumReleaseTitleClean=$(echo "$lidarrAlbumReleaseTitle" | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
-				deezerAlbumTitleClean=$(echo ${deezerAlbumTitle} | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
-				downloadedReleaseDate="$(echo ${deezerAlbumData} | jq -r .release_date)"
+				deezerAlbumTrackCount="$(echo "$deezerAlbumData" | jq -r .nb_tracks)"
+				deezerAlbumExplicitLyrics="$(echo "$deezerAlbumData" | jq -r .explicit_lyrics)"								
+				deezerAlbumTitle="$(echo "$deezerAlbumData"| jq -r .title)"
+				lidarrAlbumReleaseTitleClean="$(echo "$lidarrAlbumReleaseTitle" | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
+				deezerAlbumTitleClean="$(echo "$deezerAlbumTitle" | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
+				downloadedReleaseDate="$(echo "$deezerAlbumData" | jq -r .release_date)"
 				downloadedReleaseYear="${downloadedReleaseDate:0:4}"
 
 				if [ "$deezerAlbumExplicitLyrics" != "$3" ]; then
