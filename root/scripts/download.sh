@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.175"
+scriptVersion="1.0.176"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -582,15 +582,17 @@ DownloadProcess () {
 	if [ "$2" = "TIDAL" ]; then
 		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Consolidating files to single folder"
 		find "/downloads/lidarr-extended/incomplete" -type f -exec mv "{}" /downloads/lidarr-extended/incomplete/ \;
-		if [ /downloads/lidarr-extended/incomplete/atd ]; then
+		if [ -d /downloads/lidarr-extended/incomplete/atd ]; then
 			rm -rf /downloads/lidarr-extended/incomplete/atd
 		fi
 	fi
 
-	# Check download for required quality (checks based on file extension)
-	DownloadQualityCheck "/downloads/lidarr-extended/incomplete" "$2"
-
 	downloadCount=$(find /downloads/lidarr-extended/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
+	if [ $downloadCount -gt 0 ]; then
+		# Check download for required quality (checks based on file extension)
+		DownloadQualityCheck "/downloads/lidarr-extended/incomplete" "$2"
+	fi
+
 	if [ $downloadCount -ne $5 ]; then
 		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: ERROR :: All download Attempts failed..."
 		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Logging $1 as failed download..."
