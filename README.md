@@ -44,6 +44,7 @@ Container images are configured using parameters passed at runtime (such as thos
 | `-e PGID=1000` | for GroupID - see below for explanation |
 | `-e autoStart=true` | true = enabled :: Runs script automatically on startup |
 | `-e configureLidarrWithOptimalSettings=true` | true = enabled :: Automatically configures Lidarr with optimal settings |
+| `-e searchSort=date` | date or ablum :: Sorts the missing/cutoff list by release date (newest -> oldest) or album type (album -> single) for processing the list |
 | `-e audioFormat=native` | native or alac or mp3 or aac or opus :: native is the native download client file type, selected by the matching audio bitrate |
 | `-e audioBitrate=lossless` | lossless or high or low or ### :: lossless = flac files, high = 320K, low = 128k/96k, ### = the output bitrate of converted lossless files to selected audioFormat that is not native, example: 192... |
 | `-e requireQuality=true` | true = enabled :: Downloads will be required to have the requested file format |
@@ -80,6 +81,7 @@ docker create \
   -e PGID=1000 \
   -e autoStart=true \
   -e configureLidarrWithOptimalSettings=true \
+  -e searchSort=date \
   -e audioFormat=native \
   -e audioBitrate=lossless \
   -e requireQuality=true \
@@ -122,6 +124,7 @@ services:
       - PGID=1000
       - autoStart=true
       - configureLidarrWithOptimalSettings=true
+      - searchSort=date
       - audioFormat=native
       - audioBitrate=lossless
       - requireQuality=true
