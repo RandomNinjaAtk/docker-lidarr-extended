@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.176"
+scriptVersion="1.0.177"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -529,7 +529,9 @@ DownloadProcess () {
 			if [ "$completedVerification" = "true" ]; then
 				break
 			elif [ $downloadTry = 5 ]; then
-				rm /downloads/lidarr-extended/incomplete/*
+				if [ -d /downloads/lidarr-extended/incomplete ]; then
+					rm -rf /downloads/lidarr-extended/incomplete/*
+				fi
 				break
 			else
 				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Retry Download to fix errors..."
@@ -567,7 +569,9 @@ DownloadProcess () {
 			if [ "$completedVerification" = "true" ]; then
 				break
 			elif [ $downloadTry = 5 ]; then
-				rm /downloads/lidarr-extended/incomplete/*
+				if [ -d /downloads/lidarr-extended/incomplete ]; then
+					rm -rf /downloads/lidarr-extended/incomplete/*
+				fi
 				break
 			else
 				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Retry Download in 5 seconds to fix errors..."
