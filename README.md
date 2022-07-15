@@ -72,9 +72,9 @@ Here are some example snippets to help you get started creating a container.
 docker create \
   --name=lidarr-extended \
   -v /path/to/config/files:/config \
-  -v /path/to/preferred/directory:/downloads \
-  -v /path/to/preferred/directory:/music \
-  -v /path/to/preferred/directory:/music-videos \
+  -v /path/to/preferred/local/directory:/downloads \
+  -v /path/to/preferred/local/directory:/music \
+  -v /path/to/preferred/local/directory:/music-videos \
   -p 8686:8686 \
   -e TZ=America/New_York \
   -e PUID=1000 \
@@ -115,9 +115,9 @@ services:
     container_name: lidarr-extended
     volumes:
       - /path/to/config/files:/config
-      - /path/to/preferred/directory:/downloads
-      - /path/to/preferred/directory:/music
-      - /path/to/preferred/directory:/music-videos
+      - /path/to/preferred/local/directory:/downloads
+      - /path/to/preferred/local/directory:/music
+      - /path/to/preferred/local/directory:/music-videos
     environment:
       - TZ=America/New_York
       - PUID=1000
