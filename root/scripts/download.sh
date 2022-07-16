@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.190"
+scriptVersion="1.0.191"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -1068,76 +1068,105 @@ SearchProcess () {
 			skipTidal=false
 		fi	
 
-		# Begin cosolidated search process
-		
-			if [ $audioLyricType = both ]; then
-				endLoop=2
-			else
-				endLoop=1
+		if [ "$skipDeezer" = "false" ]; then
+
+			# fallback to musicbrainz db for link
+			if [ -z "$deezerArtistUrl" ]; then
+				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: DEEZER :: Fallback to musicbrainz for Deezer ID"
+				musicbrainzArtistData=$(curl -s -A "$agent" "https://musicbrainz.org/ws/2/artist/${lidarrArtistForeignArtistId}?inc=url-rels&fmt=json")
+				deezerArtistUrl=$(echo "$musicbrainzArtistData" | jq -r '.relations | .[] | .url | select(.resource | contains("deezer")) | .resource')
 			fi
 
-			loopCount=0
-			until false
-			do
-				loopCount=$(( $loopCount + 1 ))
-				if [ $loopCount = 1 ]; then
-					# First loop is either explicit or clean depending on script settings
-					if [ $audioLyricType = both ] || [ $audioLyricType = explicit ]; then
-						lyricFilter=true
-					else
-						lyricFilter=false
-					fi
+			if [ -z "$deezerArtistUrl" ]; then 
+				sleep 1.5
+				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: DEEZER :: ERROR :: musicbrainz id: $lidarrArtistForeignArtistId is missing Tidal link, see: \"/config/logs/deezer-artist-id-not-found.txt\" for more detail..."
+				touch "/config/logs/deezer-artist-id-not-found.txt"
+				if cat "/config/logs/deezer-artist-id-not-found.txt" | grep "https://musicbrainz.org/artist/$lidarrArtistForeignArtistId/relationships" | read; then
+					sleep 0.01
 				else
-					# 2nd loop is always clean
+					echo "Update Musicbrainz Relationship Page: https://musicbrainz.org/artist/$lidarrArtistForeignArtistId/relationships for \"${lidarrArtistName}\" with Deezer Artist Link" >> "/config/logs/deezer-artist-id-not-found.txt"
+					chmod 666 "/config/logs/deezer-artist-id-not-found.txt"
+					chown abc:abc "/config/logs/deezer-artist-id-not-found.txt"
+				fi
+				skipDeezer=true
+			fi
+			deezerArtistIds=($(echo "$deezerArtistUrl" | grep -o '[[:digit:]]*' | sort -u))
+		fi
+
+        if [ "$skipTidal" = "false" ]; then
+			# fallback to musicbrainz db for link
+			if [ -z "$tidalArtistUrl" ]; then
+				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: TIDAL :: Fallback to musicbrainz for Tidal ID"
+				musicbrainzArtistData=$(curl -s -A "$agent" "https://musicbrainz.org/ws/2/artist/${lidarrArtistForeignArtistId}?inc=url-rels&fmt=json")
+				tidalArtistUrl=$(echo "$musicbrainzArtistData" | jq -r '.relations | .[] | .url | select(.resource | contains("tidal")) | .resource')
+			fi
+
+			if [ -z "$tidalArtistUrl" ]; then 
+				sleep 1.5
+				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: TIDAL :: ERROR :: musicbrainz id: $lidarrArtistForeignArtistId is missing Tidal link, see: \"/config/logs/tidal-artist-id-not-found.txt\" for more detail..."
+				touch "/config/logs/tidal-artist-id-not-found.txt" 
+				if cat "/config/logs/tidal-artist-id-not-found.txt" | grep "https://musicbrainz.org/artist/$lidarrArtistForeignArtistId/relationships" | read; then
+					sleep 0.01
+				else
+					echo "Update Musicbrainz Relationship Page: https://musicbrainz.org/artist/$lidarrArtistForeignArtistId/relationships for \"${lidarrArtistName}\" with Tidal Artist Link" >> "/config/logs/tidal-artist-id-not-found.txt"
+					chmod 666 "/config/logs/tidal-artist-id-not-found.txt"
+					chown abc:abc "/config/logs/tidal-artist-id-not-found.txt"
+				fi
+				skipTidal=true
+			fi
+		fi
+
+		# Begin cosolidated search process
+		
+		if [ $audioLyricType = both ]; then
+			endLoop=2
+		else
+			endLoop=1
+		fi
+
+		loopCount=0
+		until false
+		do
+			loopCount=$(( $loopCount + 1 ))
+			if [ $loopCount = 1 ]; then
+				# First loop is either explicit or clean depending on script settings
+				if [ $audioLyricType = both ] || [ $audioLyricType = explicit ]; then
+					lyricFilter=true
+				else
 					lyricFilter=false
 				fi
+			else
+				# 2nd loop is always clean
+				lyricFilter=false
+			fi
 
-				for lidarrAlbumReleaseId in $(echo "$lidarrAlbumReleaseIds"); do
-					lidarrAlbumReleaseData=$(echo "$lidarrAlbumData" | jq -r ".releases[] | select(.id==$lidarrAlbumReleaseId)")
-					lidarrAlbumReleaseTrackCount=$(echo "$lidarrAlbumReleaseData" | jq -r .trackCount)
-					lidarrAlbumReleaseTitle=$(echo "$lidarrAlbumReleaseData" | jq -r .title)
-					lidarrAlbumReleaseTitleClean=$(echo "$lidarrAlbumReleaseTitle" | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
-					lidarrAlbumReleaseTitleSearchClean="$(echo "$lidarrAlbumReleaseTitle" | sed -e "s%[^[:alpha:][:digit:]]% %g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
-					lidarrAlbumReleaseTitleFirstWord="$(echo "$lidarrAlbumReleaseTitle"  | awk '{ print $1 }')"
-					lidarrAlbumReleaseTitleFirstWord="${lidarrAlbumReleaseTitleFirstWord:0:3}"
-					albumTitleSearch="$(jq -R -r @uri <<<"${lidarrAlbumReleaseTitleSearchClean}")"
-					# Debugging :: echo "$lidarrAlbumReleaseTitle :: $lidarrAlbumReleaseTrackCount :: $lidarrAlbumReleaseTitleFirstWord :: $albumArtistNameSearch :: $albumTitleSearch"
+			for lidarrAlbumReleaseId in $(echo "$lidarrAlbumReleaseIds"); do
+				lidarrAlbumReleaseData=$(echo "$lidarrAlbumData" | jq -r ".releases[] | select(.id==$lidarrAlbumReleaseId)")
+				lidarrAlbumReleaseTrackCount=$(echo "$lidarrAlbumReleaseData" | jq -r .trackCount)
+				lidarrAlbumReleaseTitle=$(echo "$lidarrAlbumReleaseData" | jq -r .title)
+				lidarrAlbumReleaseTitleClean=$(echo "$lidarrAlbumReleaseTitle" | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
+				lidarrAlbumReleaseTitleSearchClean="$(echo "$lidarrAlbumReleaseTitle" | sed -e "s%[^[:alpha:][:digit:]]% %g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
+				lidarrAlbumReleaseTitleFirstWord="$(echo "$lidarrAlbumReleaseTitle"  | awk '{ print $1 }')"
+				lidarrAlbumReleaseTitleFirstWord="${lidarrAlbumReleaseTitleFirstWord:0:3}"
+				albumTitleSearch="$(jq -R -r @uri <<<"${lidarrAlbumReleaseTitleSearchClean}")"
+				# echo "Debugging :: $lidarrArtistForeignArtistId :: $lidarrAlbumReleaseTitle :: $lidarrAlbumReleaseTrackCount :: $lidarrAlbumReleaseTitleFirstWord :: $albumArtistNameSearch :: $albumTitleSearch"
 
-					# Skip Various Artists album search that is not supported...
-					if [ "$lidarrArtistForeignArtistId" != "89ad4ac3-39f7-470e-963a-56509c546377" ]; then
+				# Skip Various Artists album search that is not supported...
+				if [ "$lidarrArtistForeignArtistId" != "89ad4ac3-39f7-470e-963a-56509c546377" ]; then
+					# Lidarr Status Check
+					LidarrTaskStatusCheck
+					CheckLidarrBeforeImport "$checkLidarrAlbumId" "notbeets"
+					if [ $alreadyImported = true ]; then
+						log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
+						break 2
+					fi
 						
-						# Lidarr Status Check
-						LidarrTaskStatusCheck
-						CheckLidarrBeforeImport "$checkLidarrAlbumId" "notbeets"
-						if [ $alreadyImported = true ]; then
-							log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
-							break 2
-						fi
-						
-						# Tidal Artist search
-						if [ "$skipTidal" = "false" ]; then
-							for tidalArtistId in $(echo $tidalArtistIds); do
-								ArtistTidalSearch "$processNumber of $wantedListAlbumTotal" "$tidalArtistId" "$lyricFilter"
-								sleep 0.01
-							done	
-						fi
-
-						# Lidarr Status Check
-						LidarrTaskStatusCheck
-						CheckLidarrBeforeImport "$checkLidarrAlbumId" "notbeets"
-						if [ $alreadyImported = true ]; then
-							log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
-							break 2
-						fi
-
-						# Deezer artist search
-						if [ "$skipDeezer" = "false" ]; then
-							for dId in ${!deezerArtistIds[@]}; do
-								deezerArtistId="${deezerArtistIds[$dId]}"
-								ArtistDeezerSearch "$processNumber of $wantedListAlbumTotal" "$deezerArtistId" "$lyricFilter"
-								sleep 0.01
-							done
-						fi
+					# Tidal Artist search
+					if [ "$skipTidal" = "false" ]; then
+						for tidalArtistId in $(echo $tidalArtistIds); do
+							ArtistTidalSearch "$processNumber of $wantedListAlbumTotal" "$tidalArtistId" "$lyricFilter"
+							sleep 0.01
+						done	
 					fi
 
 					# Lidarr Status Check
@@ -1148,33 +1177,51 @@ SearchProcess () {
 						break 2
 					fi
 
-					# Tidal fuzzy search
-					if [ "$dlClientSource" = "both" ] || [ "$dlClientSource" = "tidal" ]; then
-						FuzzyTidalSearch "$processNumber of $wantedListAlbumTotal" "$lyricFilter"
-						sleep 0.01
+					# Deezer artist search
+					if [ "$skipDeezer" = "false" ]; then
+						for dId in ${!deezerArtistIds[@]}; do
+							deezerArtistId="${deezerArtistIds[$dId]}"
+							ArtistDeezerSearch "$processNumber of $wantedListAlbumTotal" "$deezerArtistId" "$lyricFilter"
+							sleep 0.01
+						done
 					fi
-
-					# Lidarr Status Check
-					LidarrTaskStatusCheck
-					CheckLidarrBeforeImport "$checkLidarrAlbumId" "notbeets"
-					if [ $alreadyImported = true ]; then
-						log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
-						break 2
-					fi
-
-					# Deezer fuzzy search
-					if [ "$dlClientSource" = "both" ] || [ "$dlClientSource" = "deezer" ]; then
-						FuzzyDeezerSearch "$processNumber of $wantedListAlbumTotal" "$lyricFilter"
-						sleep 0.01
-					fi
-
-				done
-				
-				# Break after all operations are complete
-				if [ $loopCount = $endLoop ]; then
-					break
 				fi
+				
+				# Lidarr Status Check
+				LidarrTaskStatusCheck
+				CheckLidarrBeforeImport "$checkLidarrAlbumId" "notbeets"
+				if [ $alreadyImported = true ]; then
+					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
+					break 2
+				fi
+
+				# Tidal fuzzy search
+				if [ "$dlClientSource" = "both" ] || [ "$dlClientSource" = "tidal" ]; then
+					FuzzyTidalSearch "$processNumber of $wantedListAlbumTotal" "$lyricFilter"
+					sleep 0.01
+				fi
+
+				# Lidarr Status Check
+				LidarrTaskStatusCheck
+				CheckLidarrBeforeImport "$checkLidarrAlbumId" "notbeets"
+				if [ $alreadyImported = true ]; then
+					log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
+					break 2
+				fi
+
+				# Deezer fuzzy search
+				if [ "$dlClientSource" = "both" ] || [ "$dlClientSource" = "deezer" ]; then
+					FuzzyDeezerSearch "$processNumber of $wantedListAlbumTotal" "$lyricFilter"
+					sleep 0.01
+				fi
+
 			done
+				
+			# Break after all operations are complete
+			if [ $loopCount = $endLoop ]; then
+				break
+			fi
+		done
 		
 
 		# Lidarr Status Check
