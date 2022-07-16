@@ -4,7 +4,27 @@
 [![Docker Stars](https://img.shields.io/docker/stars/randomninjaatk/lidarr-extended?style=flat-square)](https://hub.docker.com/r/randomninjaatk/lidarr-extended)
 [![Docker Hub](https://img.shields.io/badge/Open%20On-DockerHub-blue?style=flat-square)](https://hub.docker.com/r/randomninjaatk/lidarr-extended)
 
-[![lidarr](https://github.com/linuxserver/docker-templates/raw/master/linuxserver.io/img/lidarr.png)](https://lidarr.audio/)
+<table>
+  <tr>
+    <td><img src="https://github.com/RandomNinjaAtk/docker-lidarr-extended/raw/main/.github/lidarr.png" width="200"></td>
+    <td><img src="https://github.com/RandomNinjaAtk/docker-lidarr-extended/raw/main/.github/plus.png" width="100"></td>
+    <td><img src="https://github.com/RandomNinjaAtk/docker-lidarr-extended/raw/main/.github/music.png" width="200"></td>
+  </tr>
+ </table>
+ 
+## Extended Script Features
+* Downloading **Music** using online sources for use in popular applications (Plex/Kodi/Emby/Jellyfin): 
+  * Searches for downloads based on Lidarr's album missing & cutoff list
+  * Downloads using a third party download client automatically
+  * FLAC / MP3 (320/120) / AAC (320/96) Download Quality
+  * Notifies Lidarr to automatically import downloaded files
+  * Music is properly tagged and includes coverart before Lidarr Receives them
+  * Can Adds Replaygain tags to tracks
+  * Can pre-match and tag files using Beets
+  * Can add top artists from online services
+  * Can add artists related to your artists in your existing Library
+  * Can notify Plex application to scan the individual artist folder after successful import, thus increasing the speed of Plex scanning and reducing overhead
+  
 
 ## Supported Architectures
 
@@ -161,3 +181,4 @@ services:
 - [Tidal-Media-Downloader client](https://github.com/yaronzz/Tidal-Media-Downloader)
 - [r128gain](https://github.com/desbma/r128gain)
 - [Algorithm Implementation/Strings/Levenshtein distance](https://en.wikibooks.org/wiki/Algorithm_Implementation/Strings/Levenshtein_distance)
+- Icons made by <a href="http://www.freepik.com/" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon"> www.flaticon.com</a>
