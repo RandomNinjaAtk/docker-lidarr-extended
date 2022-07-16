@@ -11,7 +11,7 @@ COPY --from=builder qemu-aarch64-static /usr/bin
 
 LABEL maintainer="RandomNinjaAtk"
 ENV dockerTitle="lidarr-extended"
-ENV dockerVersion="arm64v8-1.0.21"
+ENV dockerVersion="arm64v8-1.0.22"
 ENV LANG=en_US.UTF-8
 ENV autoStart=true
 ENV configureLidarrWithOptimalSettings=false
@@ -29,6 +29,8 @@ ENV numberOfRelatedArtistsToAddPerArtist=5
 ENV beetsMatchPercentage=90
 ENV requireQuality=true
 ENV searchSort=date
+ENV enableBeetsTagging=true
+ENV enableReplaygainTags=true
 
 RUN \
 	echo "*** install packages ***" && \
@@ -57,4 +59,4 @@ WORKDIR /config
 
 # ports and volumes
 EXPOSE 8686
-VOLUME /config /music /music-videos /downloads
+VOLUME /config /downloads-lidarr-extended /music /music-videos
