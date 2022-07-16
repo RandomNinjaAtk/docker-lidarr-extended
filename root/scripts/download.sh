@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.185"
+scriptVersion="1.0.186"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -134,11 +134,22 @@ Configuration () {
 	fi
 	log ":: Tidal Country Code set to: $tidalCountryCode"
 
-	log ":: Beets Matching Threshold ${beetsMatchPercentage}%"
-	beetsMatchPercentage=$(expr 100 - $beetsMatchPercentage )
-	if cat /config/extended/scripts/beets-config.yaml | grep "strong_rec_thresh: 0.04" | read; then
-		log ":: Configuring Beets Matching Threshold"
-		sed -i "s/strong_rec_thresh: 0.04/strong_rec_thresh: 0.${beetsMatchPercentage}/g" /config/extended/scripts/beets-config.yaml
+	if [ $enableReplaygainTags = true ]; then
+		log ":: Replaygain Tagging Enabled"
+	else
+		log ":: Replaygain Tagging Disabled"
+	fi
+	
+	if [ $enableBeetsTagging = true ]; then
+		log ":: Beets Tagging Enabled"
+		log ":: Beets Matching Threshold ${beetsMatchPercentage}%"
+		beetsMatchPercentage=$(expr 100 - $beetsMatchPercentage )
+		if cat /config/extended/scripts/beets-config.yaml | grep "strong_rec_thresh: 0.04" | read; then
+			log ":: Configuring Beets Matching Threshold"
+			sed -i "s/strong_rec_thresh: 0.04/strong_rec_thresh: 0.${beetsMatchPercentage}/g" /config/extended/scripts/beets-config.yaml
+		fi
+	else
+		log ":: Beets Tagging Disabled"
 	fi
 }
 
@@ -617,9 +628,13 @@ DownloadProcess () {
 		done
 
 	fi
-
-	AddReplaygainTags "/downloads/lidarr-extended/incomplete"
-
+	
+	if [ $enableReplaygainTags = true ]; then
+		AddReplaygainTags "/downloads/lidarr-extended/incomplete"
+	else
+		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Replaygain Tagging Disabled (set enableReplaygainTags=true to enable...)"
+	fi
+	
 	find "/downloads/lidarr-extended/incomplete" -type f -iname "*.flac" -print0 | while IFS= read -r -d '' file; do
 		lrcFile="${file%.*}.lrc"
 		if [ -f "$lrcFile" ]; then
@@ -648,16 +663,20 @@ DownloadProcess () {
         mv "$file" "/downloads/lidarr-extended/complete/$downloadedAlbumFolder"/
         
     done
-    chmod -R 777 /downloads/lidarr-extended/complete
-    chown -R abc:abc /downloads/lidarr-extended/complete
+	chmod -R 777 /downloads/lidarr-extended/complete
+	chown -R abc:abc /downloads/lidarr-extended/complete
 
-    log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Processing files with beets..."
-    ProcessWithBeets "/downloads/lidarr-extended/complete/$downloadedAlbumFolder" "${albumquality^^}" "$2" "$1"
-
-    if [ -d "/downloads/lidarr-extended/complete/$downloadedAlbumFolder" ]; then
-        NotifyLidarrForImport "/downloads/lidarr-extended/complete/$downloadedAlbumFolder"
-    fi
-    rm -rf /downloads/lidarr-extended/incomplete/*
+	if [ $enableBeetsTagging = true ]; then
+		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Processing files with beets..."
+		ProcessWithBeets "/downloads/lidarr-extended/complete/$downloadedAlbumFolder" "${albumquality^^}" "$2" "$1"
+	else
+		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Beets Tagging Disabled (set enableBeetsTagging=true to enable...)"
+	fi
+	
+	if [ -d "/downloads/lidarr-extended/complete/$downloadedAlbumFolder" ]; then
+		NotifyLidarrForImport "/downloads/lidarr-extended/complete/$downloadedAlbumFolder"
+	fi
+	rm -rf /downloads/lidarr-extended/incomplete/*
 
 	# NotifyPlexToScan
 }
