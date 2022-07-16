@@ -21,6 +21,7 @@ ENV requireQuality=true
 ENV searchSort=date
 ENV enableBeetsTagging=true
 ENV enableReplaygainTags=true
+ENV downloadPath=/downloads-lidarr-extended
 
 RUN \
 	echo "*** install packages ***" && \
