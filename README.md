@@ -12,7 +12,8 @@
   </tr>
  </table>
  
-## Extended Script Features
+## Lidarr + Extended Script Features
+* [Lidarr](https://lidarr.audio/) Stable (master branch), base image provided by [LinuxServer.io Team](https://github.com/linuxserver/docker-lidarr)
 * Downloading **Music** using online sources for use in popular applications (Plex/Kodi/Emby/Jellyfin): 
   * Searches for downloads based on Lidarr's album missing & cutoff list
   * Downloads using a third party download client automatically
