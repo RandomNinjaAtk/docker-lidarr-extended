@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.188"
+scriptVersion="1.0.189"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -1003,7 +1003,7 @@ SearchProcess () {
 		TidalClientTest
 	fi
 
-    processNumber=0
+	processNumber=0
 	for lidarrMissingId in $(ls -tr /config/extended/cache/lidarr/list); do
 		processNumber=$(( $processNumber + 1 ))
 		wantedAlbumId=$(echo $lidarrMissingId | sed -e "s%[^[:digit:]]%%g")
@@ -1012,9 +1012,15 @@ SearchProcess () {
 		lidarrAlbumData="$(curl -s "$lidarrUrl/api/v1/album/$wantedAlbumId?apikey=${lidarrApiKey}")"
 		lidarrAlbumType=$(echo "$lidarrAlbumData" | jq -r ".albumType")
 		lidarrAlbumTitle=$(echo "$lidarrAlbumData" | jq -r ".title")
+		lidarrAlbumForeignAlbumId=$(echo "$lidarrAlbumData" | jq -r ".foreignAlbumId")
+		
+		if [ -f "/config/extended/logs/downloaded/notfound/$lidarrAlbumForeignAlbumId" ]; then
+			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrAlbumTitle :: $lidarrAlbumType :: Previously Not Found, skipping..."
+			continue
+		fi
+		
 		lidarrAlbumTitleClean=$(echo "$lidarrAlbumTitle" | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
 		lidarrAlbumTitleCleanSpaces=$(echo "$lidarrAlbumTitle" | sed -e "s%[^[:alpha:][:digit:]]% %g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
-		lidarrAlbumForeignAlbumId=$(echo "$lidarrAlbumData" | jq -r ".foreignAlbumId")
 		lidarrAlbumReleases=$(echo "$lidarrAlbumData" | jq -r ".releases")
 		#echo $lidarrAlbumData | jq -r 
 		lidarrAlbumWordCount=$(echo $lidarrAlbumTitle | wc -w)
@@ -1047,11 +1053,6 @@ SearchProcess () {
 			continue
 		fi
 
-		if [ -f "/config/extended/logs/downloaded/notfound/$lidarrAlbumForeignAlbumId" ]; then
-			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Previously Not Found, skipping..."
-			continue
-		fi
-
 		if [ "$dlClientSource" = "deezer" ]; then
 			skipTidal=true
 			skipDeezer=false
@@ -1063,10 +1064,9 @@ SearchProcess () {
 		fi
 
 		if [ "$dlClientSource" = "both" ]; then
-            skipDeezer=false
-            skipTidal=false
-        fi
-	
+			skipDeezer=false
+			skipTidal=false
+		fi	
 
 		# Skip Various Artists album search that is not supported...
 		if [ "$lidarrArtistForeignArtistId" = "89ad4ac3-39f7-470e-963a-56509c546377" ]; then
