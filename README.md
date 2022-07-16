@@ -18,7 +18,7 @@
   * Completely automated
   * Searches for downloads based on Lidarr's album missing & cutoff list
   * Downloads using a third party download client automatically
-  * FLAC (lossless / MP3 (320/120) / AAC (320/96) Download Quality
+  * FLAC (lossless) / MP3 (320/128) / AAC (320/96) Download Quality
   * Can convert Downloaded FLAC files to preferred audio format and bitrate before import into Lidarr
   * Notifies Lidarr to automatically import downloaded files
   * Music is properly tagged and includes coverart before Lidarr Receives them
