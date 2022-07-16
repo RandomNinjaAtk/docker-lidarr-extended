@@ -59,4 +59,4 @@ WORKDIR /config
 
 # ports and volumes
 EXPOSE 8686
-VOLUME /config /downloads-lidarr-extended
+VOLUME /config /downloads-lidarr-extended /music /music-videos
