@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.192"
+scriptVersion="1.0.193"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -12,7 +12,7 @@ agent="lidarr-extended ( https://github.com/RandomNinjaAtk/docker-lidarr-extende
 musicbrainzMirror=https://musicbrainz.org
 
 # Debugging settings
-#dlClientSource=both
+dlClientSource=both
 #topLimit=3
 #addDeezerTopArtists=true
 #addDeezerTopAlbumArtists=true
@@ -547,8 +547,8 @@ DownloadProcess () {
 			fi
 			break
 		else
-			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Retry Download in 5 seconds fix errors..."
-			sleep 5
+			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Retry Download in 1 second fix errors..."
+			sleep 1
 		fi
 	done   
 
@@ -1560,7 +1560,7 @@ ArtistTidalSearch () {
 
 
 	log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Tidal :: $type :: Searching ($2) for $lidarrAlbumReleaseTitle (Track Count: $lidarrAlbumReleasesMinTrackCount-$lidarrAlbumReleasesMaxTrackCount)..."
-	tidalArtistAlbumsData=$(cat "/config/extended/cache/tidal/$2-albums.json" | jq -r ".items[] | select((.numberOfTracks <= $lidarrAlbumReleasesMaxTrackCount) and .numberOfTracks >= $lidarrAlbumReleasesMinTrackCount)")
+	tidalArtistAlbumsData=$(cat "/config/extended/cache/tidal/$2-albums.json" | jq -r ".items | sort_by(.numberOfTracks) | sort_by(.explicit) | reverse |.[] | select((.numberOfTracks <= $lidarrAlbumReleasesMaxTrackCount) and .numberOfTracks >= $lidarrAlbumReleasesMinTrackCount)")
 
 	log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Tidal :: $type :: Filtering results by lyric type, track count and \"$lidarrAlbumReleaseTitleFirstWord\""
 	tidalArtistAlbumsIds=$(echo "${tidalArtistAlbumsData}" | jq -r "select(.explicit=="$3") | select(.title | test(\"^$lidarrAlbumReleaseTitleFirstWord\";\"i\")) | .id")
@@ -1582,7 +1582,7 @@ ArtistTidalSearch () {
 			downloadedReleaseDate=$(echo $tidalArtistAlbumData | jq -r '.streamStartDate')
 		fi
 		downloadedReleaseYear="${downloadedReleaseDate:0:4}"
-		downloadedTrackCount=$(echo "$tidalAlbumData"| jq -r .numberOfTracks)
+		downloadedTrackCount=$(echo "$tidalArtistAlbumData"| jq -r .numberOfTracks)
 
 		# String Character Count test, quicker than the levenshtein method to allow faster processing
 		characterMath=$(( ${#tidalAlbumTitleClean} - ${#lidarrAlbumReleaseTitleClean} ))
@@ -1599,9 +1599,9 @@ ArtistTidalSearch () {
 			log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Tidal :: $type :: $lidarrAlbumReleaseTitleClean vs $tidalAlbumTitleClean :: Tidal MATCH Found :: Calculated Difference = $diff"
 
 			# Execute Download
-			log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Tidal  :: $type :: Downloading $lidarrAlbumReleaseTrackCount Tracks :: $downloadedAlbumTitle ($downloadedReleaseYear)"
+			log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Tidal  :: $type :: Downloading $downloadedTrackCount Tracks :: $downloadedAlbumTitle ($downloadedReleaseYear)"
 			
-			DownloadProcess "$tidalArtistAlbumId" "TIDAL" "$downloadedReleaseYear" "$downloadedAlbumTitle" "$lidarrAlbumReleaseTrackCount"
+			DownloadProcess "$tidalArtistAlbumId" "TIDAL" "$downloadedReleaseYear" "$downloadedAlbumTitle" "$downloadedTrackCount"
 
 			# Verify it was successfully imported into Lidarr
 			LidarrTaskStatusCheck
@@ -1638,10 +1638,10 @@ FuzzyTidalSearch () {
 	
 	if [ "$lidarrArtistForeignArtistId" = "89ad4ac3-39f7-470e-963a-56509c546377" ]; then
 		# Search without Artist for VA albums
-		tidalSearch=$(curl -s "https://api.tidal.com/v1/search/albums?query=${albumTitleSearch}&countryCode=${tidalCountryCode}&limit=20" -H 'x-tidal-token: CzET4vdadNUFQ5JU' | jq -r ".items[] | select(.explicit=="$2") | select((.numberOfTracks <= $lidarrAlbumReleasesMaxTrackCount) and .numberOfTracks >= $lidarrAlbumReleasesMinTrackCount)")
+		tidalSearch=$(curl -s "https://api.tidal.com/v1/search/albums?query=${albumTitleSearch}&countryCode=${tidalCountryCode}&limit=20" -H 'x-tidal-token: CzET4vdadNUFQ5JU' | jq -r ".items | sort_by(.numberOfTracks) | sort_by(.explicit) | reverse |.[] | select(.explicit=="$2") | select((.numberOfTracks <= $lidarrAlbumReleasesMaxTrackCount) and .numberOfTracks >= $lidarrAlbumReleasesMinTrackCount)")
 	else
 		# Search with Artist for non VA albums
-		tidalSearch=$(curl -s "https://api.tidal.com/v1/search/albums?query=${albumArtistNameSearch}%20${albumTitleSearch}&countryCode=${tidalCountryCode}&limit=20" -H 'x-tidal-token: CzET4vdadNUFQ5JU' | jq -r ".items[] | select(.explicit=="$2") | select((.numberOfTracks <= $lidarrAlbumReleasesMaxTrackCount) and .numberOfTracks >= $lidarrAlbumReleasesMinTrackCount)")
+		tidalSearch=$(curl -s "https://api.tidal.com/v1/search/albums?query=${albumArtistNameSearch}%20${albumTitleSearch}&countryCode=${tidalCountryCode}&limit=20" -H 'x-tidal-token: CzET4vdadNUFQ5JU' | jq -r ".items | sort_by(.numberOfTracks) | sort_by(.explicit) | reverse |.[]| select(.explicit=="$2") | select((.numberOfTracks <= $lidarrAlbumReleasesMaxTrackCount) and .numberOfTracks >= $lidarrAlbumReleasesMinTrackCount)")
 	fi
 	sleep $sleepTimer
 	
