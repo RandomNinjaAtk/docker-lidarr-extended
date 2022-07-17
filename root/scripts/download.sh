@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.191"
+scriptVersion="1.0.192"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -1038,6 +1038,8 @@ SearchProcess () {
 		tidalArtistIds="$(echo "$tidalArtistUrl" | grep -o '[[:digit:]]*' | sort -u)"
 		deezerArtistUrl=$(echo "${lidarrArtistData}" | jq -r ".links | .[] | select(.name==\"deezer\") | .url")
 		lidarrAlbumReleaseIds=$(echo "$lidarrAlbumData" | jq -r ".releases | sort_by(.trackCount) | reverse | .[].id")
+		lidarrAlbumReleasesMinTrackCount=$(echo "$lidarrAlbumData" | jq -r ".releases[].trackCount" | sort | head -n1)
+		lidarrAlbumReleasesMaxTrackCount=$(echo "$lidarrAlbumData" | jq -r ".releases[].trackCount" | sort -r | head -n1)
 		lidarrAlbumReleaseDate=$(echo "$lidarrAlbumData" | jq -r .releaseDate)
 		lidarrAlbumReleaseDate=${lidarrAlbumReleaseDate:0:10}
 		lidarrAlbumReleaseDateClean="$(echo $lidarrAlbumReleaseDate | sed -e "s%[^[:digit:]]%%g")"
@@ -1360,7 +1362,7 @@ ArtistDeezerSearch () {
 		type=Clean
 	fi
 	
-	log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Deezer :: $type :: Searching ($3) for $lidarrAlbumReleaseTitle (Track Count: $lidarrAlbumReleaseTrackCount)..."		
+	log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Deezer :: $type :: Searching ($3) for $lidarrAlbumReleaseTitle (Track Count: $lidarrAlbumReleasesMinTrackCount-$lidarrAlbumReleasesMaxTrackCount)..."		
 	log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Deezer :: $type :: Filtering results by lyric type and \"$lidarrAlbumReleaseTitleFirstWord\"..."
 	deezerArtistAlbumsData=$(cat "/config/extended/cache/deezer/$2-albums.json" | jq -r .data[])
 	deezerArtistAlbumsIds=$(echo "${deezerArtistAlbumsData}" | jq -r "select(.explicit_lyrics=="$3") | select(.title | test(\"^$lidarrAlbumReleaseTitleFirstWord\";\"i\")) | .id")
@@ -1394,10 +1396,16 @@ ArtistDeezerSearch () {
 		downloadedReleaseDate="$(echo "$deezerAlbumData" | jq -r .release_date)"
 		downloadedReleaseYear="${downloadedReleaseDate:0:4}"
 
-		if [ $deezerAlbumTrackCount -ne $lidarrAlbumReleaseTrackCount ]; then
+		# Reject release if greater than the max track count
+		if [ $deezerAlbumTrackCount -gt $lidarrAlbumReleasesMaxTrackCount ]; then
 			continue
 		fi
 
+		# Reject release if less than the min track count
+		if [ $deezerAlbumTrackCount -lt $lidarrAlbumReleasesMinTrackCount ]; then
+			continue
+		fi
+		
 		log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Deezer :: $type :: $lidarrAlbumReleaseTitleClean vs $deezerAlbumTitleClean :: Checking for Match..."
 		log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Deezer :: $type :: $lidarrAlbumReleaseTitleClean vs $deezerAlbumTitleClean :: Calculating Similarity..."
 		diff=$(levenshtein "${lidarrAlbumReleaseTitleClean,,}" "${deezerAlbumTitleClean,,}" 2>/dev/null)
@@ -1405,7 +1413,7 @@ ArtistDeezerSearch () {
 			log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Deezer :: $type :: $lidarrAlbumReleaseTitleClean vs $deezerAlbumTitleClean :: Deezer MATCH Found :: Calculated Difference = $diff"
 
 			# Execute Download
-			log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Deezer  :: $type :: Downloading $lidarrAlbumReleaseTrackCount Tracks :: $deezerAlbumTitle ($downloadedReleaseYear)"
+			log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Deezer  :: $type :: Downloading $deezerAlbumTrackCount Tracks :: $deezerAlbumTitle ($downloadedReleaseYear)"
 			
 			DownloadProcess "$deezerArtistAlbumId" "DEEZER" "$downloadedReleaseYear" "$deezerAlbumTitle" "$lidarrAlbumReleaseTrackCount"
 
@@ -1442,7 +1450,7 @@ FuzzyDeezerSearch () {
 		mkdir -p /config/extended/cache/deezer
 	fi
 
-	log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Deezer :: $type ::  Searching for $lidarrAlbumReleaseTitle..."
+	log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Deezer :: $type :: Searching for $lidarrAlbumReleaseTitle (Track Count: $lidarrAlbumReleasesMinTrackCount-$lidarrAlbumReleasesMaxTrackCount)"
 
 	deezerSearch=""
 	if [ "$lidarrArtistForeignArtistId" = "89ad4ac3-39f7-470e-963a-56509c546377" ]; then
@@ -1489,7 +1497,13 @@ FuzzyDeezerSearch () {
 				continue
 			fi
 
-			if [ $deezerAlbumTrackCount -ne $lidarrAlbumReleaseTrackCount ]; then
+			# Reject release if greater than the max track count
+			if [ $deezerAlbumTrackCount -gt $lidarrAlbumReleasesMaxTrackCount ]; then
+				continue
+			fi
+
+			# Reject release if less than the min track count
+			if [ $deezerAlbumTrackCount -lt $lidarrAlbumReleasesMinTrackCount ]; then
 				continue
 			fi
 
@@ -1545,8 +1559,8 @@ ArtistTidalSearch () {
 	fi
 
 
-	log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Tidal :: $type :: Searching ($2) for $lidarrAlbumReleaseTitle (Track Count: $lidarrAlbumReleaseTrackCount)..."
-	tidalArtistAlbumsData=$(cat "/config/extended/cache/tidal/$2-albums.json" | jq -r ".items[] | select(.numberOfTracks==$lidarrAlbumReleaseTrackCount)")
+	log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Tidal :: $type :: Searching ($2) for $lidarrAlbumReleaseTitle (Track Count: $lidarrAlbumReleasesMinTrackCount-$lidarrAlbumReleasesMaxTrackCount)..."
+	tidalArtistAlbumsData=$(cat "/config/extended/cache/tidal/$2-albums.json" | jq -r ".items[] | select((.numberOfTracks <= $lidarrAlbumReleasesMaxTrackCount) and .numberOfTracks >= $lidarrAlbumReleasesMinTrackCount)")
 
 	log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Tidal :: $type :: Filtering results by lyric type, track count and \"$lidarrAlbumReleaseTitleFirstWord\""
 	tidalArtistAlbumsIds=$(echo "${tidalArtistAlbumsData}" | jq -r "select(.explicit=="$3") | select(.title | test(\"^$lidarrAlbumReleaseTitleFirstWord\";\"i\")) | .id")
@@ -1568,6 +1582,7 @@ ArtistTidalSearch () {
 			downloadedReleaseDate=$(echo $tidalArtistAlbumData | jq -r '.streamStartDate')
 		fi
 		downloadedReleaseYear="${downloadedReleaseDate:0:4}"
+		downloadedTrackCount=$(echo "$tidalAlbumData"| jq -r .numberOfTracks)
 
 		# String Character Count test, quicker than the levenshtein method to allow faster processing
 		characterMath=$(( ${#tidalAlbumTitleClean} - ${#lidarrAlbumReleaseTitleClean} ))
@@ -1619,14 +1634,14 @@ FuzzyTidalSearch () {
 		type=Clean
 	fi
 
-	log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Tidal :: $type :: Searching for $lidarrAlbumReleaseTitle (Track Count: $lidarrAlbumReleaseTrackCount)..."
+	log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Tidal :: $type :: Searching for $lidarrAlbumReleaseTitle (Track Count: $lidarrAlbumReleasesMinTrackCount-$lidarrAlbumReleasesMaxTrackCount)..."
 	
 	if [ "$lidarrArtistForeignArtistId" = "89ad4ac3-39f7-470e-963a-56509c546377" ]; then
 		# Search without Artist for VA albums
-		tidalSearch=$(curl -s "https://api.tidal.com/v1/search/albums?query=${albumTitleSearch}&countryCode=${tidalCountryCode}&limit=20" -H 'x-tidal-token: CzET4vdadNUFQ5JU' | jq -r ".items[] | select(.explicit=="$2") | select(.numberOfTracks==$lidarrAlbumReleaseTrackCount)")
+		tidalSearch=$(curl -s "https://api.tidal.com/v1/search/albums?query=${albumTitleSearch}&countryCode=${tidalCountryCode}&limit=20" -H 'x-tidal-token: CzET4vdadNUFQ5JU' | jq -r ".items[] | select(.explicit=="$2") | select((.numberOfTracks <= $lidarrAlbumReleasesMaxTrackCount) and .numberOfTracks >= $lidarrAlbumReleasesMinTrackCount)")
 	else
 		# Search with Artist for non VA albums
-		tidalSearch=$(curl -s "https://api.tidal.com/v1/search/albums?query=${albumArtistNameSearch}%20${albumTitleSearch}&countryCode=${tidalCountryCode}&limit=20" -H 'x-tidal-token: CzET4vdadNUFQ5JU' | jq -r ".items[] | select(.explicit=="$2") | select(.numberOfTracks==$lidarrAlbumReleaseTrackCount)")
+		tidalSearch=$(curl -s "https://api.tidal.com/v1/search/albums?query=${albumArtistNameSearch}%20${albumTitleSearch}&countryCode=${tidalCountryCode}&limit=20" -H 'x-tidal-token: CzET4vdadNUFQ5JU' | jq -r ".items[] | select(.explicit=="$2") | select((.numberOfTracks <= $lidarrAlbumReleasesMaxTrackCount) and .numberOfTracks >= $lidarrAlbumReleasesMinTrackCount)")
 	fi
 	sleep $sleepTimer
 	
@@ -1642,6 +1657,7 @@ FuzzyTidalSearch () {
 				downloadedReleaseDate=$(echo $tidalAlbumData | jq -r '.streamStartDate')
 			fi
 			downloadedReleaseYear="${downloadedReleaseDate:0:4}"
+			downloadedTrackCount=$(echo "$tidalAlbumData"| jq -r .numberOfTracks)
 
 			# String Character Count test, quicker than the levenshtein method to allow faster processing
 			characterMath=$(( ${#tidalAlbumTitleClean} - ${#lidarrAlbumReleaseTitleClean} ))
@@ -1656,9 +1672,9 @@ FuzzyTidalSearch () {
 			diff=$(levenshtein "${lidarrAlbumReleaseTitleClean,,}" "${tidalAlbumTitleClean,,}" 2>/dev/null)
 			if [ "$diff" -le "5" ]; then
 				log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Tidal :: $type :: $lidarrAlbumReleaseTitleClean vs $tidalAlbumTitleClean :: Tidal MATCH Found :: Calculated Difference = $diff"
-				log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Tidal :: $type :: Downloading $lidarrAlbumReleaseTrackCount Tracks :: $tidalAlbumTitle ($downloadedReleaseYear)"
+				log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Tidal :: $type :: Downloading $downloadedTrackCount Tracks :: $tidalAlbumTitle ($downloadedReleaseYear)"
 				
-				DownloadProcess "$tidalAlbumID" "TIDAL" "$downloadedReleaseYear" "$tidalAlbumTitle" "$lidarrAlbumReleaseTrackCount"
+				DownloadProcess "$tidalAlbumID" "TIDAL" "$downloadedReleaseYear" "$tidalAlbumTitle" "$downloadedTrackCount"
 				
 				# Verify it was successfully imported into Lidarr
 				LidarrTaskStatusCheck
