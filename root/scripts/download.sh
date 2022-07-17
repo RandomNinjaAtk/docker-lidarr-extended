@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.193"
+scriptVersion="1.0.194"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -12,7 +12,7 @@ agent="lidarr-extended ( https://github.com/RandomNinjaAtk/docker-lidarr-extende
 musicbrainzMirror=https://musicbrainz.org
 
 # Debugging settings
-dlClientSource=both
+#dlClientSource=both
 #topLimit=3
 #addDeezerTopArtists=true
 #addDeezerTopAlbumArtists=true
