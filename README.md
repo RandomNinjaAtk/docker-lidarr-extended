@@ -58,7 +58,7 @@ Container images are configured using parameters passed at runtime (such as thos
 | --- | --- |
 | `-p 8686` | The port for the Lidarr webinterface |
 | `-v /config` | Configuration files for Lidarr. |
-| `-v /downloads` | Path to your download folder location. (<strong>required path</strong>)|
+| `-v /downloads-lidarr-extended` | Path for online service downloads. (<strong>required path</strong>)|
 | `-v /music` | Path to your music folder location. (<strong>required path</strong>)|
 | `-v /music-videos` | Path to your music-videos folder location.|
 | `-e TZ=America/New_York` | Specify a timezone to use EST, America/New_York. |
@@ -96,7 +96,7 @@ Here are some example snippets to help you get started creating a container.
 docker create \
   --name=lidarr-extended \
   -v /path/to/config/files:/config \
-  -v /path/to/preferred/local/directory:/downloads \
+  -v /path/to/preferred/local/directory:/downloads-lidarr-extended \
   -v /path/to/preferred/local/directory:/music \
   -v /path/to/preferred/local/directory:/music-videos \
   -p 8686:8686 \
@@ -141,7 +141,7 @@ services:
     container_name: lidarr-extended
     volumes:
       - /path/to/config/files:/config
-      - /path/to/preferred/local/directory:/downloads
+      - /path/to/preferred/local/directory:/downloads-lidarr-extended
       - /path/to/preferred/local/directory:/music
       - /path/to/preferred/local/directory:/music-videos
     environment:
