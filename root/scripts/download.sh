@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.197"
+scriptVersion="1.0.198"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -1494,7 +1494,6 @@ FuzzyDeezerSearch () {
 			deezerAlbumTrackCount="$(echo "$deezerAlbumData" | jq -r .nb_tracks)"
 			deezerAlbumExplicitLyrics="$(echo "$deezerAlbumData" | jq -r .explicit_lyrics)"								
 			deezerAlbumTitle="$(echo "$deezerAlbumData"| jq -r .title)"
-			lidarrAlbumReleaseTitleClean="$(echo "$lidarrAlbumReleaseTitle" | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
 			deezerAlbumTitleClean="$(echo "$deezerAlbumTitle" | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
 			downloadedReleaseDate="$(echo "$deezerAlbumData" | jq -r .release_date)"
 			downloadedReleaseYear="${downloadedReleaseDate:0:4}"
