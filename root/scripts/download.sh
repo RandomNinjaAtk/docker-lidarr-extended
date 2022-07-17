@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.195"
+scriptVersion="1.0.196"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -1119,12 +1119,17 @@ SearchProcess () {
 		fi
 
 		# Begin cosolidated search process
-		
 		if [ $audioLyricType = both ]; then
 			endLoop=2
 		else
 			endLoop=1
 		fi
+
+		# Get Release Titles
+		OLDIFS="$IFS"
+		IFS=$'\n'
+		lidarrReleaseTitles=($(echo "$lidarrAlbumData" | jq -r ".releases[].title" | sort -u))
+		IFS="$OLDIFS"
 
 		loopCount=0
 		until false
@@ -1142,13 +1147,11 @@ SearchProcess () {
 				lyricFilter=false
 			fi
 
-			for lidarrAlbumReleaseId in $(echo "$lidarrAlbumReleaseIds"); do
-				lidarrAlbumReleaseData=$(echo "$lidarrAlbumData" | jq -r ".releases[] | select(.id==$lidarrAlbumReleaseId)")
-				lidarrAlbumReleaseTrackCount=$(echo "$lidarrAlbumReleaseData" | jq -r .trackCount)
-				lidarrAlbumReleaseTitle=$(echo "$lidarrAlbumReleaseData" | jq -r .title)
-				lidarrAlbumReleaseTitleClean=$(echo "$lidarrAlbumReleaseTitle" | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
-				lidarrAlbumReleaseTitleSearchClean="$(echo "$lidarrAlbumReleaseTitle" | sed -e "s%[^[:alpha:][:digit:]]% %g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
-				lidarrAlbumReleaseTitleFirstWord="$(echo "$lidarrAlbumReleaseTitle"  | awk '{ print $1 }')"
+			for title in ${!lidarrReleaseTitles[@]}; do
+				lidarrReleaseTitle="${lidarrReleaseTitles[$title]}"
+				lidarrAlbumReleaseTitleClean=$(echo "$lidarrReleaseTitle" | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
+				lidarrAlbumReleaseTitleSearchClean="$(echo "$lidarrReleaseTitle" | sed -e "s%[^[:alpha:][:digit:]]% %g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
+				lidarrAlbumReleaseTitleFirstWord="$(echo "$lidarrReleaseTitle"  | awk '{ print $1 }')"
 				lidarrAlbumReleaseTitleFirstWord="${lidarrAlbumReleaseTitleFirstWord:0:3}"
 				albumTitleSearch="$(jq -R -r @uri <<<"${lidarrAlbumReleaseTitleSearchClean}")"
 				# echo "Debugging :: $lidarrArtistForeignArtistId :: $lidarrAlbumReleaseTitle :: $lidarrAlbumReleaseTrackCount :: $lidarrAlbumReleaseTitleFirstWord :: $albumArtistNameSearch :: $albumTitleSearch"
