@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.198"
+scriptVersion="1.0.199"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -426,6 +426,8 @@ DownloadProcess () {
 		mkdir -p /downloads/lidarr-extended/complete
 		chmod 777 /downloads/lidarr-extended/complete
 		chown abc:abc /downloads/lidarr-extended/complete
+	else
+		rm -rf /downloads/lidarr-extended/complete/*
 	fi
 
 	if [ ! -d "/config/extended/logs" ]; then
