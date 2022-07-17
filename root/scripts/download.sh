@@ -119,7 +119,8 @@ Configuration () {
 	else
 		log ":: Configure Lidarr with optimal settings is disabled (enable by setting configureLidarrWithOptimalSettings=true)"
 	fi
-
+	
+	log ":: Download Location :: $downloadPath"
 	log ":: Output format = $audioFormat"
 	log ":: Output bitrate = $audioBitrate"
 
