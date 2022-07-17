@@ -83,18 +83,18 @@ if [ "$skipTidal" = "false" ]; then
 				fileNameNoExt="${fileName%.*}"
 
 				if [ ! -f "$fileDirectory/$fileNameNoExt.mkv" ]; then
-					if [ ! -d /downloads/lidarr-extended/music-videos ]; then
-						mkdir -p /downloads/lidarr-extended/music-videos
-						chmod 777 /downloads/lidarr-extended/music-videos
-						chown abc:abc /downloads/lidarr-extended/music-videos
+					if [ ! -d $downloadPath/music-videos ]; then
+						mkdir -p $downloadPath/music-videos
+						chmod 777 $downloadPath/music-videos
+						chown abc:abc $downloadPath/music-videos
 					else
-						rm -rf /downloads/lidarr-extended/music-videos/*
+						rm -rf $downloadPath/music-videos/*
 					fi
 
 					tidal-dl -r P1080
-					tidal-dl -o /downloads/lidarr-extended/music-videos -l "https://tidal.com/browse/video/$i"
+					tidal-dl -o $downloadPath/music-videos -l "https://tidal.com/browse/video/$i"
 
-					find "/downloads/lidarr-extended/music-videos" -type f -iname "*.mp4" -print0 | while IFS= read -r -d '' video; do
+					find "$downloadPath/music-videos" -type f -iname "*.mp4" -print0 | while IFS= read -r -d '' video; do
 						ffmpeg \
 						-i "${video}" \
 						-vcodec copy \
@@ -104,7 +104,7 @@ if [ "$skipTidal" = "false" ]; then
 					log "Downloaded Video to: $fileDirectory/$fileNameNoExt.mkv"
 					chmod 666 "$fileDirectory/$fileNameNoExt.mkv"
 					chown abc:abc "$fileDirectory/$fileNameNoExt.mkv"
-					rm -rf /downloads/lidarr-extended/music-videos/*
+					rm -rf $downloadPath/music-videos/*
 				else
 					log "ERROR :: Previously Downloaded $fileDirectory/$fileNameNoExt.mkv ($i)"
 				fi
