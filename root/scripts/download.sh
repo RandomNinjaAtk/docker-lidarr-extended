@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.201"
+scriptVersion="1.0.202"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -1406,7 +1406,7 @@ ArtistDeezerSearch () {
 			# Execute Download
 			log ":: $1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Deezer  :: $type :: $lidarrReleaseTitle :: Downloading $deezerAlbumTrackCount Tracks :: $deezerAlbumTitle ($downloadedReleaseYear)"
 			
-			DownloadProcess "$deezerArtistAlbumId" "DEEZER" "$downloadedReleaseYear" "$deezerAlbumTitle" "$lidarrAlbumReleaseTrackCount"
+			DownloadProcess "$deezerArtistAlbumId" "DEEZER" "$downloadedReleaseYear" "$deezerAlbumTitle" "$deezerAlbumTrackCount"
 
 			# Verify it was successfully imported into Lidarr
 			LidarrTaskStatusCheck
