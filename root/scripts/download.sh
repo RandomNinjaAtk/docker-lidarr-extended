@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.205"
+scriptVersion="1.0.206"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -937,7 +937,7 @@ GetMissingCutOffList () {
 			lidarrRecords=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/wanted/missing?page=$page&pagesize=$amountPerPull&sortKey=$searchOrder&sortDirection=$searchDirection&apikey=${lidarrApiKey}" | jq -r '.records[].id')
 			
 			for lidarrRecordId in $(echo $lidarrRecords); do
-				if [ ! -f /config/extended/logs/notfound/$lidarrRecordId-* ]; then
+				if [ ! -f /config/extended/logs/notfound/$lidarrRecordId--* ]; then
 					touch /config/extended/cache/lidarr/list/${lidarrRecordId}-missing
 				fi
 			done
@@ -962,7 +962,7 @@ GetMissingCutOffList () {
 			log ":: Downloading page $page... ($offset - $dlnumber of $lidarrCutoffTotalRecords Results)"
 			lidarrRecords=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/wanted/cutoff?page=$page&pagesize=$amountPerPull&sortKey=$searchOrder&sortDirection=$searchDirection&apikey=${lidarrApiKey}" | jq -r '.records[].id')
 			for lidarrRecordId in $(echo $lidarrRecords); do
-				if [ ! -f /config/extended/logs/notfound/$lidarrRecordId-* ]; then
+				if [ ! -f /config/extended/logs/notfound/$lidarrRecordId--* ]; then
 					touch /config/extended/cache/lidarr/list/${lidarrRecordId}-cutoff
 				fi
 			done
@@ -1012,7 +1012,7 @@ SearchProcess () {
 			chown abc:abc /config/extended/logs/notfound
 		fi
 
-		if [ -f "/config/extended/logs/notfound/$wantedAlbumId-$lidarrArtistForeignArtistId-$lidarrAlbumForeignAlbumId" ]; then
+		if [ -f "/config/extended/logs/notfound/$wantedAlbumId--$lidarrArtistForeignArtistId--$lidarrAlbumForeignAlbumId" ]; then
 			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrAlbumTitle :: $lidarrAlbumType :: Previously Not Found, skipping..."
 			continue
 		fi
@@ -1020,9 +1020,9 @@ SearchProcess () {
 		if [ -f "/config/extended/logs/downloaded/notfound/$lidarrAlbumForeignAlbumId" ]; then
 			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrAlbumTitle :: $lidarrAlbumType :: Previously Not Found, skipping..."
 			rm "/config/extended/logs/downloaded/notfound/$lidarrAlbumForeignAlbumId"
-			touch "/config/extended/logs/notfound/$wantedAlbumId-$lidarrArtistForeignArtistId-$lidarrAlbumForeignAlbumId"
-			chmod 666 "/config/extended/logs/notfound/$wantedAlbumId-$lidarrArtistForeignArtistId-$lidarrAlbumForeignAlbumId"
-			chown abc:abc "/config/extended/logs/notfound/$wantedAlbumId-$lidarrArtistForeignArtistId-$lidarrAlbumForeignAlbumId"
+			touch "/config/extended/logs/notfound/$wantedAlbumId--$lidarrArtistForeignArtistId--$lidarrAlbumForeignAlbumId"
+			chmod 666 "/config/extended/logs/notfound/$wantedAlbumId--$lidarrArtistForeignArtistId--$lidarrAlbumForeignAlbumId"
+			chown abc:abc "/config/extended/logs/notfound/$wantedAlbumId--$lidarrArtistForeignArtistId--$lidarrAlbumForeignAlbumId"
 			continue
 		fi
 
@@ -1341,10 +1341,10 @@ SearchProcess () {
 			chown abc:abc /config/extended/logs/notfound
 		fi
 		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Marking Album as notfound"
-		if [ ! -f "/config/extended/logs/notfound/$wantedAlbumId-$lidarrArtistForeignArtistId" ]; then
-			touch "/config/extended/logs/notfound/$wantedAlbumId-$lidarrArtistForeignArtistId"
-			chmod 666 "/config/extended/logs/notfound/$wantedAlbumId-$lidarrArtistForeignArtistId"
-			chown abc:abc "/config/extended/logs/notfound/$wantedAlbumId-$lidarrArtistForeignArtistId"
+		if [ ! -f "/config/extended/logs/notfound/$wantedAlbumId--$lidarrArtistForeignArtistId--$lidarrAlbumForeignAlbumId" ]; then
+			touch "/config/extended/logs/notfound/$wantedAlbumId--$lidarrArtistForeignArtistId--$lidarrAlbumForeignAlbumId"
+			chmod 666 "/config/extended/logs/notfound/$wantedAlbumId--$lidarrArtistForeignArtistId--$lidarrAlbumForeignAlbumId"
+			chown abc:abc "/config/extended/logs/notfound/$wantedAlbumId--$lidarrArtistForeignArtistId--$lidarrAlbumForeignAlbumId"
 		fi
 		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Search Complete..." 
 	done
