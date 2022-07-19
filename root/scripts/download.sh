@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.204"
+scriptVersion="1.0.205"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -1004,6 +1004,7 @@ SearchProcess () {
 		lidarrArtistForeignArtistId=$(echo "${lidarrArtistData}" | jq -r ".foreignArtistId")
 		lidarrAlbumType=$(echo "$lidarrAlbumData" | jq -r ".albumType")
 		lidarrAlbumTitle=$(echo "$lidarrAlbumData" | jq -r ".title")
+		lidarrAlbumForeignAlbumId=$(echo "$lidarrAlbumData" | jq -r ".foreignAlbumId")
 				
 		if [ ! -d /config/extended/logs/notfound ]; then
 			mkdir -p /config/extended/logs/notfound
@@ -1011,18 +1012,17 @@ SearchProcess () {
 			chown abc:abc /config/extended/logs/notfound
 		fi
 
-		if [ -f "/config/extended/logs/notfound/$wantedAlbumId-$lidarrArtistForeignArtistId" ]; then
+		if [ -f "/config/extended/logs/notfound/$wantedAlbumId-$lidarrArtistForeignArtistId-$lidarrAlbumForeignAlbumId" ]; then
 			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrAlbumTitle :: $lidarrAlbumType :: Previously Not Found, skipping..."
 			continue
 		fi
 		
-		lidarrAlbumForeignAlbumId=$(echo "$lidarrAlbumData" | jq -r ".foreignAlbumId")
 		if [ -f "/config/extended/logs/downloaded/notfound/$lidarrAlbumForeignAlbumId" ]; then
 			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrAlbumTitle :: $lidarrAlbumType :: Previously Not Found, skipping..."
 			rm "/config/extended/logs/downloaded/notfound/$lidarrAlbumForeignAlbumId"
-			touch "/config/extended/logs/notfound/$wantedAlbumId-$lidarrArtistForeignArtistId"
-			chmod 666 "/config/extended/logs/notfound/$wantedAlbumId-$lidarrArtistForeignArtistId"
-			chown abc:abc "/config/extended/logs/notfound/$wantedAlbumId-$lidarrArtistForeignArtistId"
+			touch "/config/extended/logs/notfound/$wantedAlbumId-$lidarrArtistForeignArtistId-$lidarrAlbumForeignAlbumId"
+			chmod 666 "/config/extended/logs/notfound/$wantedAlbumId-$lidarrArtistForeignArtistId-$lidarrAlbumForeignAlbumId"
+			chown abc:abc "/config/extended/logs/notfound/$wantedAlbumId-$lidarrArtistForeignArtistId-$lidarrAlbumForeignAlbumId"
 			continue
 		fi
 
