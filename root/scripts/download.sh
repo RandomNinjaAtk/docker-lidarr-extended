@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.202"
+scriptVersion="1.0.203"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -937,11 +937,13 @@ GetMissingCutOffList () {
 			lidarrRecords=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/wanted/missing?page=$page&pagesize=$amountPerPull&sortKey=$searchOrder&sortDirection=$searchDirection&apikey=${lidarrApiKey}" | jq -r '.records[].id')
 			
 			for lidarrRecordId in $(echo $lidarrRecords); do
-				touch /config/extended/cache/lidarr/list/${lidarrRecordId}-missing
+				if [ ! -f "/config/extended/logs/notfound/$lidarrRecordId" ]; then
+					touch /config/extended/cache/lidarr/list/${lidarrRecordId}-missing
+				fi
 			done
 		done
 	fi
-
+	lidarrMissingTotalRecords=$(find /config/extended/cache/lidarr/list -type f -iname "*-missing" | wc -l)
 	log ":: ${lidarrMissingTotalRecords} MISSING ALBUMS FOUND"
 
 	# Get cutoff album list
@@ -960,11 +962,14 @@ GetMissingCutOffList () {
 			log ":: Downloading page $page... ($offset - $dlnumber of $lidarrCutoffTotalRecords Results)"
 			lidarrRecords=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/wanted/cutoff?page=$page&pagesize=$amountPerPull&sortKey=$searchOrder&sortDirection=$searchDirection&apikey=${lidarrApiKey}" | jq -r '.records[].id')
 			for lidarrRecordId in $(echo $lidarrRecords); do
-				touch /config/extended/cache/lidarr/list/${lidarrRecordId}-cutoff
+				if [ ! -f "/config/extended/logs/notfound/$lidarrRecordId" ]; then
+					touch /config/extended/cache/lidarr/list/${lidarrRecordId}-cutoff
+				fi
 			done
 		done
 	fi
 
+	lidarrCutoffTotalRecords=$(find /config/extended/cache/lidarr/list -type f -iname "*-cutoff" | wc -l)
 	log ":: ${lidarrCutoffTotalRecords} CUTOFF ALBUMS FOUND"
 	
 	wantedListAlbumTotal=$(( $lidarrMissingTotalRecords + $lidarrCutoffTotalRecords ))
@@ -997,12 +1002,26 @@ SearchProcess () {
 		lidarrAlbumData="$(curl -s "$lidarrUrl/api/v1/album/$wantedAlbumId?apikey=${lidarrApiKey}")"
 		lidarrAlbumType=$(echo "$lidarrAlbumData" | jq -r ".albumType")
 		lidarrAlbumTitle=$(echo "$lidarrAlbumData" | jq -r ".title")
-		lidarrAlbumForeignAlbumId=$(echo "$lidarrAlbumData" | jq -r ".foreignAlbumId")
-		
-		if [ -f "/config/extended/logs/downloaded/notfound/$lidarrAlbumForeignAlbumId" ]; then
+				
+		if [ ! -d /config/extended/logs/notfound ]; then
+			mkdir -p /config/extended/logs/notfound
+			chmod 777 /config/extended/logs/notfound
+			chown abc:abc /config/extended/logs/notfound
+		fi
+
+		if [ -f "/config/extended/logs/notfound/$wantedAlbumId" ]; then
 			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrAlbumTitle :: $lidarrAlbumType :: Previously Not Found, skipping..."
 			continue
 		fi
+		
+		lidarrAlbumForeignAlbumId=$(echo "$lidarrAlbumData" | jq -r ".foreignAlbumId")
+		if [ -f "/config/extended/logs/downloaded/notfound/$lidarrAlbumForeignAlbumId" ]; then
+			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrAlbumTitle :: $lidarrAlbumType :: Previously Not Found, skipping..."
+			rm "/config/extended/logs/downloaded/notfound/$lidarrAlbumForeignAlbumId"
+			touch "/config/extended/logs/notfound/$wantedAlbumId"
+			continue
+		fi
+
 		
 		lidarrAlbumTitleClean=$(echo "$lidarrAlbumTitle" | sed -e "s%[^[:alpha:][:digit:]]%%g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
 		lidarrAlbumTitleCleanSpaces=$(echo "$lidarrAlbumTitle" | sed -e "s%[^[:alpha:][:digit:]]% %g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')
@@ -1312,16 +1331,16 @@ SearchProcess () {
 		fi
 				
 		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Album Not found"
-		if [ ! -d /config/extended/logs/downloaded/notfound ]; then
-			mkdir -p /config/extended/logs/downloaded/notfound
-			chmod 777 /config/extended/logs/downloaded/notfound
-			chown abc:abc /config/extended/logs/downloaded/notfound
+		if [ ! -d /config/extended/logs/notfound ]; then
+			mkdir -p /config/extended/logs/notfound
+			chmod 777 /config/extended/logs/notfound
+			chown abc:abc /config/extended/logs/notfound
 		fi
 		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Marking Album as notfound"
-		if [ ! -f /config/extended/logs/downloaded/notfound/$lidarrAlbumForeignAlbumId ]; then
-			touch /config/extended/logs/downloaded/notfound/$lidarrAlbumForeignAlbumId
-			chmod 666 /config/extended/logs/downloaded/notfound/$lidarrAlbumForeignAlbumId
-			chown abc:abc /config/extended/logs/downloaded/notfound/$lidarrAlbumForeignAlbumId
+		if [ ! -f /config/extended/logs/notfound/$wantedAlbumId ]; then
+			touch /config/extended/logs/notfound/$wantedAlbumId
+			chmod 666 /config/extended/logs/notfound/$wantedAlbumId
+			chown abc:abc /config/extended/logs/notfound/$wantedAlbumId
 		fi
 		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Search Complete..." 
 	done
