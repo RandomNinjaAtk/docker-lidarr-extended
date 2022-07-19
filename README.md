@@ -65,6 +65,7 @@ Container images are configured using parameters passed at runtime (such as thos
 | `-e PUID=1000` | for UserID - see below for explanation |
 | `-e PGID=1000` | for GroupID - see below for explanation |
 | `-e autoStart=true` | true = enabled :: Runs script automatically on startup |
+| `-e scriptInterval=15m` | #s or #m or #h or #d :: s = seconds, m = minutes, h = hours, d = days :: Amount of time between each script run, when AUTOSTART is enabled |
 | `-e configureLidarrWithOptimalSettings=true` | true = enabled :: Automatically configures Lidarr with optimal settings |
 | `-e searchSort=date` | date or ablum :: Sorts the missing/cutoff list by release date (newest -> oldest) or album type (album -> single) for processing the list |
 | `-e audioFormat=native` | native or alac or mp3 or aac or opus :: native is the native download client file type, selected by the matching audio bitrate |
@@ -104,6 +105,7 @@ docker create \
   -e PUID=1000 \
   -e PGID=1000 \
   -e autoStart=true \
+  -e scriptInterval=15m \
   -e configureLidarrWithOptimalSettings=true \
   -e searchSort=date \
   -e audioFormat=native \
@@ -149,6 +151,7 @@ services:
       - PUID=1000
       - PGID=1000
       - autoStart=true
+      - scriptInterval=15m
       - configureLidarrWithOptimalSettings=true
       - searchSort=date
       - audioFormat=native
