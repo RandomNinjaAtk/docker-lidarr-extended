@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.209"
+scriptVersion="1.0.210"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -949,7 +949,7 @@ GetMissingCutOffList () {
 			lidarrRecords=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/wanted/missing?page=$page&pagesize=$amountPerPull&sortKey=$searchOrder&sortDirection=$searchDirection&apikey=${lidarrApiKey}" | jq -r '.records[].id')
 			
 			for lidarrRecordId in $(echo $lidarrRecords); do
-				if ! echo "$getNotFound" | grep "$lidarrRecordId--" | read; then
+				if ! echo "$getNotFound" | grep "^$lidarrRecordId--" | read; then
 					touch /config/extended/cache/lidarr/list/${lidarrRecordId}-missing
 				fi
 			done
@@ -974,7 +974,7 @@ GetMissingCutOffList () {
 			log ":: Downloading page $page... ($offset - $dlnumber of $lidarrCutoffTotalRecords Results)"
 			lidarrRecords=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/wanted/cutoff?page=$page&pagesize=$amountPerPull&sortKey=$searchOrder&sortDirection=$searchDirection&apikey=${lidarrApiKey}" | jq -r '.records[].id')
 			for lidarrRecordId in $(echo $lidarrRecords); do
-				if ! echo "$getNotFound" | grep "$lidarrRecordId--" | read; then
+				if ! echo "$getNotFound" | grep "^$lidarrRecordId--" | read; then
 					touch /config/extended/cache/lidarr/list/${lidarrRecordId}-cutoff
 				fi
 			done
