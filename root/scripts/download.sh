@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.210"
+scriptVersion="1.0.211"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -48,17 +48,17 @@ verifyApiAccess () {
 	done
 }
 
-echo "-----------------------------------------------------------------"
-echo "           |~) _ ._  _| _ ._ _ |\ |o._  o _ |~|_|_|"
-echo "           |~\(_|| |(_|(_)| | || \||| |_|(_||~| | |<"
-echo "              Presents: lidarr-extended ($scriptVersion)"
-echo "                 Docker Version: $dockerVersion"
-echo "                  May the beats be with you!"
-echo "-----------------------------------------------------------------"
+echo "-----------------------------------------------------------------------------"
+echo " |~) _ ._  _| _ ._ _ |\ |o._  o _ |~|_|_|"
+echo " |~\(_|| |(_|(_)| | || \||| |_|(_||~| | |<"
+echo " Presents: lidarr-extended ($scriptVersion)"
+echo " Docker Version: $dockerVersion"
+echo " May the beats be with you!"
+echo "-----------------------------------------------------------------------------"
 echo "Donate: https://github.com/sponsors/RandomNinjaAtk"
 echo "Project: https://github.com/RandomNinjaAtk/docker-lidarr-extended"
-echo "Support: https://discord.gg/JumQXDc"
-echo "-----------------------------------------------------------------"
+echo "Support: https://github.com/RandomNinjaAtk/docker-lidarr-extended/discussions"
+echo "-----------------------------------------------------------------------------"
 sleep 5
 echo ""
 echo "Lift off in..."; sleep 0.5
