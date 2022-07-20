@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.208"
+scriptVersion="1.0.209"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -877,27 +877,39 @@ LidarrRootFolderCheck () {
 }
 
 GetMissingCutOffList () {
-        
+    
+	# Remove previous search missing/cutoff list
 	if [ -d  /config/extended/cache/lidarr/list ]; then
 		rm -rf  /config/extended/cache/lidarr/list
 		sleep 0.1
 	fi
 
+	# Create list folder if does not exist
 	mkdir -p /config/extended/cache/lidarr/list
 
-	# Get missing album list
+	# Create notfound log folder if does not exist
+	if [ ! -d /config/extended/logs/notfound ]; then
+		mkdir -p /config/extended/logs/notfound
+		chmod 777 /config/extended/logs/notfound
+		chown abc:abc /config/extended/logs/notfound
+	fi
+	
+	#get notfound log files list
+	getNotFound=$(ls /config/extended/logs/notfound)
+
+	# Configure searchSort preferences based on settings
 	if [ $searchSort = date ]; then
 		searchOrder=releaseDate
 		searchDirection=descending
 	fi
-
+	
 	if [ $searchSort = album ]; then
 		searchOrder=albumType
 		searchDirection=ascending
 	fi
 
 	lidarrMissingTotalRecords=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/wanted/missing?page=1&pagesize=1&sortKey=$searchOrder&sortDirection=$searchDirection&apikey=${lidarrApiKey}" | jq -r .totalRecords)
-	getNotfound=$(ls /config/extended/logs/notfound)
+
 	log ":: FINDING MISSING ALBUMS :: sorted by $searchSort"
 
 	if [ $lidarrMissingTotalRecords -le 1000 ]; then
@@ -937,7 +949,7 @@ GetMissingCutOffList () {
 			lidarrRecords=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/wanted/missing?page=$page&pagesize=$amountPerPull&sortKey=$searchOrder&sortDirection=$searchDirection&apikey=${lidarrApiKey}" | jq -r '.records[].id')
 			
 			for lidarrRecordId in $(echo $lidarrRecords); do
-				if ! echo "$getNotfound" | grep "$lidarrRecordId--" ]; then
+				if ! echo "$getNotFound" | grep "$lidarrRecordId--" | read; then
 					touch /config/extended/cache/lidarr/list/${lidarrRecordId}-missing
 				fi
 			done
@@ -962,7 +974,7 @@ GetMissingCutOffList () {
 			log ":: Downloading page $page... ($offset - $dlnumber of $lidarrCutoffTotalRecords Results)"
 			lidarrRecords=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/wanted/cutoff?page=$page&pagesize=$amountPerPull&sortKey=$searchOrder&sortDirection=$searchDirection&apikey=${lidarrApiKey}" | jq -r '.records[].id')
 			for lidarrRecordId in $(echo $lidarrRecords); do
-				if ! echo "$getNotfound" | grep "$lidarrRecordId--" ]; then
+				if ! echo "$getNotFound" | grep "$lidarrRecordId--" | read; then
 					touch /config/extended/cache/lidarr/list/${lidarrRecordId}-cutoff
 				fi
 			done
@@ -1006,12 +1018,6 @@ SearchProcess () {
 		lidarrAlbumTitle=$(echo "$lidarrAlbumData" | jq -r ".title")
 		lidarrAlbumForeignAlbumId=$(echo "$lidarrAlbumData" | jq -r ".foreignAlbumId")
 				
-		if [ ! -d /config/extended/logs/notfound ]; then
-			mkdir -p /config/extended/logs/notfound
-			chmod 777 /config/extended/logs/notfound
-			chown abc:abc /config/extended/logs/notfound
-		fi
-
 		if [ -f "/config/extended/logs/notfound/$wantedAlbumId--$lidarrArtistForeignArtistId--$lidarrAlbumForeignAlbumId" ]; then
 			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrAlbumTitle :: $lidarrAlbumType :: Previously Not Found, skipping..."
 			continue
@@ -1335,11 +1341,6 @@ SearchProcess () {
 		fi
 				
 		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Album Not found"
-		if [ ! -d /config/extended/logs/notfound ]; then
-			mkdir -p /config/extended/logs/notfound
-			chmod 777 /config/extended/logs/notfound
-			chown abc:abc /config/extended/logs/notfound
-		fi
 		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Marking Album as notfound"
 		if [ ! -f "/config/extended/logs/notfound/$wantedAlbumId--$lidarrArtistForeignArtistId--$lidarrAlbumForeignAlbumId" ]; then
 			touch "/config/extended/logs/notfound/$wantedAlbumId--$lidarrArtistForeignArtistId--$lidarrAlbumForeignAlbumId"
