@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.212"
+scriptVersion="1.0.213"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -75,8 +75,8 @@ if [ ! -d /config/xdg ]; then
 fi
 
 Configuration () {
-	processstartid="$(ps -A -o pid,cmd|grep "start.sh" | grep -v grep | head -n 1 | awk '{print $1}')"
-	processdownloadid="$(ps -A -o pid,cmd|grep "download.sh" | grep -v grep | head -n 1 | awk '{print $1}')"
+	processstartid="$(ps -A -o pid,cmd|grep "start_audio.sh" | grep -v grep | head -n 1 | awk '{print $1}')"
+	processdownloadid="$(ps -A -o pid,cmd|grep "audio.sh" | grep -v grep | head -n 1 | awk '{print $1}')"
 	log ":: To kill script, use the following command:"
 	log ":: kill -9 $processstartid"
 	log ":: kill -9 $processdownloadid"
