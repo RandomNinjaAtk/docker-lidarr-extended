@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.213"
+scriptVersion="1.0.214"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -374,6 +374,7 @@ TidalClientSetup () {
 
 TidalClientTest () { 
 	log ":: TIDAL :: tidal-dl client setup verification..."
+	TidaldlStatusCheck
 	tidal-dl -o $downloadPath/incomplete -l "166356219"
 	
 	downloadCount=$(find $downloadPath/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
@@ -390,6 +391,20 @@ TidalClientTest () {
 		rm -rf $downloadPath/incomplete/*
 		log ":: TIDAL :: Successfully Verified"
 	fi
+}
+
+TidaldlStatusCheck () {
+	until false
+	do
+        running=no
+        if ps aux | grep "tidal-dl" | grep -v "grep" | read; then 
+            running=yes
+            log ":: STATUS :: TIDAL-DL :: BUSY :: Pausing/waiting for all active tidal-dl tasks to end..."
+            sleep 2
+            continue
+        fi
+		break
+	done
 }
 
 DownloadProcess () {
@@ -508,6 +523,7 @@ DownloadProcess () {
 		fi
 
 		if [ "$2" = "TIDAL" ]; then
+			TidaldlStatusCheck
 			tidal-dl -o $downloadPath/incomplete -l "$1"
 		fi
 	
