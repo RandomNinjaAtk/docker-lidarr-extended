@@ -12,7 +12,7 @@ agent="lidarr-extended ( https://github.com/RandomNinjaAtk/docker-lidarr-extende
 musicbrainzMirror=https://musicbrainz.org
 
 # Debugging Settings
-sourcePreference=tidal
+sourcePreference=youtube
 
 log () {
 	m_time=`date "+%F %T"`
@@ -102,6 +102,12 @@ CacheMusicbrainzRecords () {
             if ! [[ $(find "/config/extended/cache/musicbrainz" -type f -name "$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json" -mtime +7 -print) ]]; then
                 log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: Previously cached, skipping..."
             else
+                log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: Previously cached, data needs to be updated..."
+                rm "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json"
+            fi
+            musibrainzArtistDownloadedRecordingsCount=$(cat "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json" | jq -r .id | wc -l)
+            if [ $musicbrainzArtistRecordingsCount -ne $musibrainzArtistDownloadedRecordingsCount  ]; then
+                log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: Previously cached, data needs to be updated..."
                 rm "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json"
             fi
         fi
@@ -128,7 +134,7 @@ CacheMusicbrainzRecords () {
         musibrainzArtistVideoRecordings=$(cat "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json" | jq -r "select(.video==true)")
         musibrainzArtistVideoRecordingsCount=$(echo "$musibrainzArtistVideoRecordings" | jq -r .id | wc -l)
         log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: $musibrainzArtistVideoRecordingsCount videos found..."
-        musibrainzArtistVideoRecordingsDataWithUrl=$(echo "$musibrainzArtistVideoRecordings" | jq -r "select(.relations[])")
+        musibrainzArtistVideoRecordingsDataWithUrl=$(echo "$musibrainzArtistVideoRecordings" | jq -r "select(.relations[])" | jq -s "." | jq -r "unique | .[]")
         musibrainzArtistVideoRecordingsDataWithUrlIds=$(echo "$musibrainzArtistVideoRecordingsDataWithUrl" | jq -r .id)
         musibrainzArtistVideoRecordingsDataWithUrlIdsCount=$(echo "$musibrainzArtistVideoRecordingsDataWithUrl" | jq -r .id | wc -l)
         log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: $musibrainzArtistVideoRecordingsDataWithUrlIdsCount videos found with URL..."
@@ -169,9 +175,22 @@ CacheMusicbrainzRecords () {
                 chown abc:abc "/music-videos/$lidarrArtistFolder"
             fi 
 
-            yt-dlp -o "/music-videos/$lidarrArtistFolder/$lidarrArtistNameSanitized - ${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}" --embed-subs --sub-lang en --merge-output-format mkv --remux-video mkv --no-mtime --geo-bypass "$videoDownloadUrl"
+            if [ -f "/music-videos/$lidarrArtistFolder/$lidarrArtistNameSanitized - ${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.mkv" ]; then
+                log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: $musibrainzVideoTitle ($musibrainzVideoDisambiguation) :: Previously Downloaded, skipping..."
+                continue
+            fi
 
-            if [ -f "/music-videos/$lidarrArtistFolder/$lidarrArtistNameSanitized - ${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}" ]; then
+            log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: $musibrainzVideoTitle ($musibrainzVideoDisambiguation) :: Downloading..."
+
+            if echo "$videoDownloadUrl" | grep -i "tidal" | read; then
+                continue
+            fi
+
+            if echo "$videoDownloadUrl" | grep -i "youtube" | read; then
+                yt-dlp -o "/music-videos/$lidarrArtistFolder/$lidarrArtistNameSanitized - ${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}" --embed-subs --sub-lang en --merge-output-format mkv --remux-video mkv --no-mtime --geo-bypass "$videoDownloadUrl"
+            fi
+
+            if [ -f "/music-videos/$lidarrArtistFolder/$lidarrArtistNameSanitized - ${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.mkv" ]; then
                 chmod 666 "/music-videos/$lidarrArtistFolder/$lidarrArtistNameSanitized - ${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.mkv"
                 chown abc:abc "/music-videos/$lidarrArtistFolder/$lidarrArtistNameSanitized - ${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.mkv"
             fi
