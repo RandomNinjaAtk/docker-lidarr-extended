@@ -12,7 +12,7 @@ agent="lidarr-extended ( https://github.com/RandomNinjaAtk/docker-lidarr-extende
 musicbrainzMirror=https://musicbrainz.org
 
 # Debugging Settings
-sourcePreference=youtube
+sourcePreference=tidal
 
 log () {
 	m_time=`date "+%F %T"`
@@ -64,6 +64,9 @@ Configuration () {
 	sleep 2
 	
 	verifyApiAccess
+
+    downloadPath="$downloadPath/videos"
+    log "Download Location :: $downloadPath"
 }
 
 CacheMusicbrainzRecords () {
@@ -175,7 +178,7 @@ CacheMusicbrainzRecords () {
                 chown abc:abc "/music-videos/$lidarrArtistFolder"
             fi 
 
-            if [ -f "/music-videos/$lidarrArtistFolder/$lidarrArtistNameSanitized - ${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.mkv" ]; then
+            if [ -f "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.mkv" ]; then
                 log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: $musibrainzVideoTitle ($musibrainzVideoDisambiguation) :: Previously Downloaded, skipping..."
                 continue
             fi
@@ -183,22 +186,102 @@ CacheMusicbrainzRecords () {
             log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: $musibrainzVideoTitle ($musibrainzVideoDisambiguation) :: Downloading..."
 
             if echo "$videoDownloadUrl" | grep -i "tidal" | read; then
+                TidalClientTest
+                tidal-dl -o $downloadPath/incomplete -l "$videoDownloadUrl"
+                exit
                 continue
             fi
 
             if echo "$videoDownloadUrl" | grep -i "youtube" | read; then
-                yt-dlp -o "/music-videos/$lidarrArtistFolder/$lidarrArtistNameSanitized - ${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}" --embed-subs --sub-lang en --merge-output-format mkv --remux-video mkv --no-mtime --geo-bypass "$videoDownloadUrl"
+                yt-dlp -o "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}" --embed-subs --sub-lang en --merge-output-format mkv --remux-video mkv --no-mtime --geo-bypass "$videoDownloadUrl"
             fi
 
-            if [ -f "/music-videos/$lidarrArtistFolder/$lidarrArtistNameSanitized - ${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.mkv" ]; then
-                chmod 666 "/music-videos/$lidarrArtistFolder/$lidarrArtistNameSanitized - ${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.mkv"
-                chown abc:abc "/music-videos/$lidarrArtistFolder/$lidarrArtistNameSanitized - ${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.mkv"
+            if [ -f "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.mkv" ]; then
+                chmod 666 "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.mkv"
+                chown abc:abc "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.mkv"
             fi
         done
     done
 }
 
+TidalClientSetup () {
+	log ":: TIDAL :: Verifying tidal-dl configuration"
+	touch /config/xdg/.tidal-dl.log
+	if [ -f /config/xdg/.tidal-dl.json ]; then
+		rm /config/xdg/.tidal-dl.json
+	fi
+	if [ ! -f /config/xdg/.tidal-dl.json ]; then
+		log "TIDAL :: No default config found, importing default config \"tidal.json\""
+		if [ -f /config/extended/scripts/tidal-dl.json ]; then
+			cp /config/extended/scripts/tidal-dl.json /config/xdg/.tidal-dl.json
+			chmod 777 -R /config/xdg/
+		fi
+
+	fi
+	
+	tidal-dl -o $downloadPath/incomplete
+		
+	if [ -f /config/xdg/.tidal-dl.token.json ]; then
+		if [[ $(find "/config/xdg/.tidal-dl.token.json" -mtime +5 -print) ]]; then
+			log "TIDAL :: ERROR :: Token expired, removing..."
+			rm /config/xdg/.tidal-dl.token.json
+		fi
+	fi
+
+	if [ ! -f /config/xdg/.tidal-dl.token.json ]; then
+		log "TIDAL :: ERROR :: Downgrade tidal-dl for workaround..."
+		pip3 install tidal-dl==2022.3.4.2
+		log "TIDAL :: ERROR :: Loading client for required authentication, please authenticate, then exit the client..."
+		tidal-dl
+	fi
+
+	if [ ! -d /config/extended/cache/tidal ]; then
+		mkdir -p /config/extended/cache/tidal
+		chmod 777 /config/extended/cache/tidal
+		chown abc:abc /config/extended/cache/tidal
+	fi
+	
+	if [ -d /config/extended/cache/tidal ]; then
+		log ":: TIDAL :: Purging album list cache..."
+		find /config/extended/cache/tidal -type f -name "*.json" -delete
+	fi
+	
+	if [ ! -d "$downloadPath/incomplete" ]; then
+		mkdir -p $downloadPath/incomplete
+		chmod 777 $downloadPath/incomplete
+		chown abc:abc $downloadPath/incomplete
+	else
+		rm -rf $downloadPath/incomplete/*
+	fi
+	
+	log ":: TIDAL :: Upgrade tidal-dl to the latest..."
+	pip3 install tidal-dl --upgrade
+	
+}
+
+TidalClientTest () { 
+	log "TIDAL :: tidal-dl client setup verification..."
+	tidal-dl -o $downloadPath/incomplete -l "166356219"
+	
+	downloadCount=$(find $downloadPath/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
+	if [ $downloadCount -le 0 ]; then
+		if [ -f /config/xdg/.tidal-dl.token.json ]; then
+			rm /config/xdg/.tidal-dl.token.json
+		fi
+		log "TIDAL :: ERROR :: Download failed"
+		log "TIDAL :: ERROR :: You will need to re-authenticate on next script run..."
+		log "TIDAL :: ERROR :: Exiting..."
+		rm -rf $downloadPath/incomplete/*
+		exit
+	else
+		rm -rf $downloadPath/incomplete/*
+		log "TIDAL :: Successfully Verified"
+	fi
+}
+
+
 Configuration
+TidalClientSetup
 CacheMusicbrainzRecords
 
 exit
