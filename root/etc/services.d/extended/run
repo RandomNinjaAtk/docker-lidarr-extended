@@ -1,4 +1,4 @@
-#!/usr/bin/with-contenv bash
+#!/usr/bin/env bash
 echo "-----------------------------------------------------------------------------"
 echo " |~) _ ._  _| _ ._ _ |\ |o._  o _ |~|_|_|"
 echo " |~\(_|| |(_|(_)| | || \||| |_|(_||~| | |<"
@@ -14,10 +14,10 @@ echo "--------------------------------------------------------------------------
 if [ "$autoStart" = "true" ]; then
 	echo "Automatic Start Enabled, starting in 2 min..."
 	sleep 2m
-	bash /config/extended/scripts/start.sh
+	bash /config/extended/scripts/start_audio.sh
 else
 	echo "Automatic Start Disabled, manually run using this command:"
-	echo "bash /config/extended/scripts/start.sh"
+	echo "bash /config/extended/scripts/start_audio.sh"
 	sleep infinity
 fi
 
