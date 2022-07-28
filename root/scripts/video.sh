@@ -172,34 +172,71 @@ CacheMusicbrainzRecords () {
 
             log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: $musibrainzVideoTitle ($musibrainzVideoDisambiguation) :: $videoDownloadUrl..."
 
-            if [ ! -d "/music-videos/$lidarrArtistFolder" ]; then
-                mkdir -p "/music-videos/$lidarrArtistFolder"
-                chmod 777 "/music-videos/$lidarrArtistFolder"
-                chown abc:abc "/music-videos/$lidarrArtistFolder"
-            fi 
 
             if [ -f "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.mkv" ]; then
                 log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: $musibrainzVideoTitle ($musibrainzVideoDisambiguation) :: Previously Downloaded, skipping..."
                 continue
             fi
 
+            if [ -d "$downloadPath/incomplete" ]; then
+                rm -rf "$downloadPath/incomplete"
+            fi
+
+            if [ ! -d "$downloadPath/incomplete" ]; then
+                mkdir -p "$downloadPath/incomplete"
+                chmod 777 "$downloadPath/incomplete"
+                chown abc:abc "$downloadPath/incomplete"
+            fi 
+
             log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: $musibrainzVideoTitle ($musibrainzVideoDisambiguation) :: Downloading..."
 
             if echo "$videoDownloadUrl" | grep -i "tidal" | read; then
                 TidalClientTest
-                tidal-dl -o $downloadPath/incomplete -l "$videoDownloadUrl"
-                exit
-                continue
+                TidaldlStatusCheck
+                tidal-dl -o "$downloadPath/incomplete" -l "$videoDownloadUrl"
             fi
 
             if echo "$videoDownloadUrl" | grep -i "youtube" | read; then
-                yt-dlp -o "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}" --embed-subs --sub-lang en --merge-output-format mkv --remux-video mkv --no-mtime --geo-bypass "$videoDownloadUrl"
+                yt-dlp -o "$downloadPath/incomplete/$lidarrArtistFolder/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}" --embed-subs --sub-lang en --merge-output-format mkv --remux-video mkv --no-mtime --geo-bypass "$videoDownloadUrl"
             fi
 
-            if [ -f "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.mkv" ]; then
-                chmod 666 "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.mkv"
-                chown abc:abc "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.mkv"
-            fi
+            find "$downloadPath/incomplete" -type f -regex ".*/.*\.\(mkv\|mp4\)"  -print0 | while IFS= read -r -d '' video; do
+                count=$(($count+1))if ps aux | grep "tidal-dl" | grep -v "grep" | read; then echo "found"; else echo "not found"; fi
+                file="${video}"
+				filenoext="${file%.*}"
+                filename="$(basename "$video")"
+                extension="${filename##*.}"
+                filenamenoext="${filename%.*}"
+
+                if python3 /usr/local/sma/manual.py --config "/config/extended/scripts/sma.ini" -i "$file" -nt &>/dev/null; then
+					sleep 0.01
+					log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: $musibrainzVideoTitle ($musibrainzVideoDisambiguation) :: Processed with SMA..."
+					rm  /usr/local/sma/config/*log*
+				else
+					log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: $musibrainzVideoTitle ($musibrainzVideoDisambiguation) :: ERROR: SMA Processing Error"
+					rm "$video"
+                    log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: $musibrainzVideoTitle ($musibrainzVideoDisambiguation) :: INFO: deleted: $filename"
+				fi
+
+                if [ ! -f "$filenoext.mkv" ]; then
+                    break
+                fi
+
+                if [ ! -d "/music-videos/$lidarrArtistFolder" ]; then
+                    mkdir -p "/music-videos/$lidarrArtistFolder"
+                    chmod 777 "/music-videos/$lidarrArtistFolder"
+                    chown abc:abc "/music-videos/$lidarrArtistFolder"
+                fi 
+
+                log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: $musibrainzVideoTitle ($musibrainzVideoDisambiguation) :: Moving completed download to: /music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.mkv"
+                mv "$filenoext.mkv" "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.mkv"
+
+                if [ -f "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.mkv" ]; then
+                    chmod 666 "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.mkv"
+                    chown abc:abc "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.mkv"
+                fi
+
+            done
         done
     done
 }
@@ -261,6 +298,7 @@ TidalClientSetup () {
 
 TidalClientTest () { 
 	log "TIDAL :: tidal-dl client setup verification..."
+    TidaldlStatusCheck
 	tidal-dl -o $downloadPath/incomplete -l "166356219"
 	
 	downloadCount=$(find $downloadPath/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
@@ -277,6 +315,20 @@ TidalClientTest () {
 		rm -rf $downloadPath/incomplete/*
 		log "TIDAL :: Successfully Verified"
 	fi
+}
+
+TidaldlStatusCheck () {
+	until false
+	do
+        running=no
+        if ps aux | grep "tidal-dl" | grep -v "grep" | read; then 
+            running=yes
+            log "STATUS :: TIDAL-DL :: BUSY :: Pausing/waiting for all active tidal-dl tasks to end..."
+            sleep 2
+            continue
+        fi
+		break
+	done
 }
 
 
