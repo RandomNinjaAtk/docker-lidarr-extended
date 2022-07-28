@@ -42,6 +42,7 @@ RUN \
 		jq \
 		ffmpeg \
 		python3 \
+		git \
 		py3-pip \
 		gcc \
 		libc-dev \
