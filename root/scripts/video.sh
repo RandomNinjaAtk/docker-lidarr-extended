@@ -258,7 +258,7 @@ TidalClientSetup () {
 		fi
 
 	fi
-	
+	TidaldlStatusCheck
 	tidal-dl -o $downloadPath/incomplete
 		
 	if [ -f /config/xdg/.tidal-dl.token.json ]; then
@@ -269,6 +269,7 @@ TidalClientSetup () {
 	fi
 
 	if [ ! -f /config/xdg/.tidal-dl.token.json ]; then
+        TidaldlStatusCheck
 		log "TIDAL :: ERROR :: Downgrade tidal-dl for workaround..."
 		pip3 install tidal-dl==2022.3.4.2
 		log "TIDAL :: ERROR :: Loading client for required authentication, please authenticate, then exit the client..."
@@ -294,6 +295,7 @@ TidalClientSetup () {
 		rm -rf $downloadPath/incomplete/*
 	fi
 	
+    TidaldlStatusCheck
 	log ":: TIDAL :: Upgrade tidal-dl to the latest..."
 	pip3 install tidal-dl --upgrade
 	
