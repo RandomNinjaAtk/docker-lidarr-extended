@@ -2,7 +2,7 @@ FROM linuxserver/lidarr:amd64-latest
 LABEL maintainer="RandomNinjaAtk"
 
 ENV dockerTitle="lidarr-extended"
-ENV dockerVersion="amd64-1.0.25"
+ENV dockerVersion="amd64-1.0.26"
 ENV LANG=en_US.UTF-8
 ENV autoStart=true
 ENV configureLidarrWithOptimalSettings=false
@@ -43,12 +43,12 @@ RUN \
 		py3-pip \
 		yt-dlp && \
 	echo "*** install python packages ***" && \
-	pip install --upgrade \
+	pip install --upgrade --no-cache-dir \
 		yq \
 		pyacoustid \
-		tidal-dl \
 		r128gain \
 		deemix &&\
+	pip install tidal-dl==2022.3.4.2 --no-cache-dir && \
 	echo "************ setup SMA ************" && \
 	echo "************ setup directory ************" && \
 	mkdir -p ${SMA_PATH} && \
