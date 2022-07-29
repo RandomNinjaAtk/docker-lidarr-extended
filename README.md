@@ -33,6 +33,23 @@
   * Completely automated
   * Searches Lidarr Artists (musicbrainz) video recordings for videos to download
   * Saves videos in MKV format
+  * Downloads using Highest available quality for both audio and video
+  * Saves thumbnail of video locally for Plex/Kodi/Jellyfin/Emby usage
+  * Embed subtitles if available matching desired language
+  * Writes metadata into Kodi/Jellyfin/Emby compliant NFO file
+    * Tagged Data includes
+      * Title (musicbrainz)
+      * Year (upload year/release year)
+      * Artist (Lidarr)
+      * Thumbnail Image (service thumbnail image
+      * Artist Genere Tags (Lidarr)
+  * Embeds metadata into Music Video file
+    * Tagged Data includes
+      * Title (musicbrainz)
+      * Year (upload year/release year)
+      * Artist (Lidarr)
+      * Thumbnail Image (service thumbnail image
+      * Artist Genere Tags (Lidarr)
 
 ## Supported Architectures
 
@@ -193,3 +210,6 @@ services:
 - [r128gain](https://github.com/desbma/r128gain)
 - [Algorithm Implementation/Strings/Levenshtein distance](https://en.wikibooks.org/wiki/Algorithm_Implementation/Strings/Levenshtein_distance)
 - Icons made by <a href="http://www.freepik.com/" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon"> www.flaticon.com</a>
+- [ffmpeg](https://ffmpeg.org/)
+- [yt-dlp](https://github.com/yt-dlp/yt-dlp)
+- [SMA Conversion/Tagging Automation Script]([https://lidarr.audio/](https://github.com/mdhiggins/sickbeard_mp4_automator))
