@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.007"
+scriptVersion="1.0.008"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -299,10 +299,15 @@ CacheMusicbrainzRecords () {
                 
                 if [ -f "$downloadPath/incomplete/${musibrainzVideoTitleClean}${plexVideoType}.jpg" ]; then
                     mv "$downloadPath/incomplete/${musibrainzVideoTitleClean}${plexVideoType}.jpg" "/music-videos/$lidarrArtistFolder"/
+                    chmod 666 "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${plexVideoType}.jpg"
+                    chown abc:abc "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${plexVideoType}.jpg"
                 fi
 
                 log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: ${musibrainzVideoTitle}${musibrainzVideoDisambiguation} :: Writing NFO"
                 nfo="/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${plexVideoType}.nfo"
+                if [ -f "$nfo" ]; then
+                    rm "$nfo"
+                fi
                 echo "<musicvideo>" >> "$nfo"
                 echo "	<title>${musibrainzVideoTitle}${videoDisambiguationTitle}</title>" >> "$nfo"
                 echo "	<userrating/>" >> "$nfo"
@@ -328,23 +333,14 @@ CacheMusicbrainzRecords () {
                 fi
                 echo "</musicvideo>" >> "$nfo"
 
+                chmod 666 "$nfo"
+                chown abc:abc "$nfo"
+
                 log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: ${musibrainzVideoTitle}${musibrainzVideoDisambiguation} :: Moving completed download to: /music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${plexVideoType}.mkv"
                 mv "$filenoext.mkv" "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${plexVideoType}.mkv"
+                chmod 666 "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${plexVideoType}.mkv"
+                chown abc:abc "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${plexVideoType}.mkv"          
                 
-                if [ -f "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${plexVideoType}.mkv" ]; then
-                    chmod 666 "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${plexVideoType}.mkv"
-                    chown abc:abc "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${plexVideoType}.mkv"
-                fi
-
-                if [ -f "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${plexVideoType}.jpg" ]; then
-                    chmod 666 "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${plexVideoType}.jpg"
-                    chown abc:abc "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${plexVideoType}.jpg"
-                fi
-
-                if [ -f "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${plexVideoType}.nfo" ]; then
-                    chmod 666 "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${plexVideoType}.nfo"
-                    chown abc:abc "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${plexVideoType}.nfo"
-                fi
 
             done
         done
