@@ -41,14 +41,14 @@
       * Title (musicbrainz)
       * Year (upload year/release year)
       * Artist (Lidarr)
-      * Thumbnail Image (service thumbnail image
+      * Thumbnail Image (service thumbnail image)
       * Artist Genere Tags (Lidarr)
   * Embeds metadata into Music Video file
     * Tagged Data includes
       * Title (musicbrainz)
       * Year (upload year/release year)
       * Artist (Lidarr)
-      * Thumbnail Image (service thumbnail image
+      * Thumbnail Image (service thumbnail image)
       * Artist Genere Tags (Lidarr)
 
 ## Supported Architectures
