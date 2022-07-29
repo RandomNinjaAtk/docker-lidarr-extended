@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.004"
+scriptVersion="1.0.005"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -361,7 +361,7 @@ TidalClientSetup () {
 	if [ ! -f /config/xdg/.tidal-dl.token.json ]; then
 		TidaldlStatusCheck
 		log "TIDAL :: ERROR :: Downgrade tidal-dl for workaround..."
-		pip3 install tidal-dl==2022.3.4.2
+		pip3 install tidal-dl==2022.3.4.2 --no-cache-dir
 		TidaldlStatusCheck
 		log "TIDAL :: ERROR :: Loading client for required authentication, please authenticate, then exit the client..."
 		tidal-dl
@@ -387,8 +387,8 @@ TidalClientSetup () {
 	fi
 	
     TidaldlStatusCheck
-	log "TIDAL :: Upgrade tidal-dl to the latest..."
-	pip3 install tidal-dl --upgrade
+	log "TIDAL :: Upgrade tidal-dl to newer version..."
+	pip3 install tidal-dl==2022.07.06.1 --no-cache-dir
 	
 }
 
