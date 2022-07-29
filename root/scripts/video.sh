@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.005"
+scriptVersion="1.0.006"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -159,8 +159,10 @@ CacheMusicbrainzRecords () {
             musibrainzVideoDisambiguation=""
             musibrainzVideoDisambiguation="$(echo "$musibrainzVideoRecordingData" | jq -r .disambiguation)"
             if [ ! -z "$musibrainzVideoDisambiguation" ]; then
+                musibrainzVideoDisambiguation=" ($musibrainzVideoDisambiguation)"
                 musibrainzVideoDisambiguationClean=" ($(echo "$musibrainzVideoDisambiguation" | sed -e "s%[^[:alpha:][:digit:]]% %g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g'))"
             else
+                musibrainzVideoDisambiguation=""
                 musibrainzVideoDisambiguationClean=""
             fi
             musibrainzVideoRelations="$(echo "$musibrainzVideoRecordingData" | jq -r .relations[].url.resource)"
@@ -175,11 +177,25 @@ CacheMusicbrainzRecords () {
                 videoDownloadUrl="$(echo "$musibrainzVideoRelations" | grep -i "youtube" | head -n1)"
             fi
 
-            log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: $musibrainzVideoTitle ($musibrainzVideoDisambiguation) :: $videoDownloadUrl..."
+            log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: ${musibrainzVideoTitle}${musibrainzVideoDisambiguation} :: $videoDownloadUrl..."
 
+            if ! echo "$musibrainzVideoDisambiguation" | grep -i "official" | read; then
+                log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: ${musibrainzVideoTitle}${musibrainzVideoDisambiguation} :: ERROR :: Video is not Official, skipping..."
+                continue
+            else
+                if echo "$musibrainzVideoDisambiguation" | grep -i "lyric" | read; then
+                    plexVideoType="-lyrics"
+                    videoDisambiguationTitle=" (lyric)"
+                else
+                    plexVideoType="-video"
+                    videoDisambiguationTitle=""
+                fi
+            fi
 
-            if [ -f "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.mkv" ]; then
-                log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: $musibrainzVideoTitle ($musibrainzVideoDisambiguation) :: Previously Downloaded, skipping..."
+            
+
+            if [ -f "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}-$plexVideoType.mkv" ]; then
+                log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: ${musibrainzVideoTitle}${musibrainzVideoDisambiguation} :: Previously Downloaded, skipping..."
                 continue
             fi
 
@@ -193,7 +209,7 @@ CacheMusicbrainzRecords () {
                 chown abc:abc "$downloadPath/incomplete"
             fi 
 
-            log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: $musibrainzVideoTitle ($musibrainzVideoDisambiguation) :: Downloading..."
+            log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: ${musibrainzVideoTitle}${musibrainzVideoDisambiguation} :: Downloading..."
 
             if echo "$videoDownloadUrl" | grep -i "tidal" | read; then
                 TidalClientTest
@@ -207,7 +223,7 @@ CacheMusicbrainzRecords () {
                 videoImageIdFix="$(echo "$videoImageId" | sed "s/-/\//g")"
                 videoThumbnail="https://resources.tidal.com/images/$videoImageIdFix/750x500.jpg"
                 tidal-dl -o "$downloadPath/incomplete" -l "$videoDownloadUrl"
-                curl -s "$videoThumbnail" -o "$downloadPath/incomplete/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.jpg"
+                curl -s "$videoThumbnail" -o "$downloadPath/incomplete/${musibrainzVideoTitleClean}${plexVideoType}.jpg"
             fi
 
             if echo "$videoDownloadUrl" | grep -i "youtube" | read; then
@@ -215,8 +231,8 @@ CacheMusicbrainzRecords () {
                 videoThumbnail="$(echo "$videoData" | jq -r .thumbnail)"
                 videoUploadDate="$(echo "$videoData" | jq -r .upload_date)"
                 videoYear="${videoUploadDate:0:4}"
-                yt-dlp -o "$downloadPath/incomplete/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}" --embed-subs --sub-lang $youtubeSubtitleLanguage --merge-output-format mkv --remux-video mkv --no-mtime --geo-bypass "$videoDownloadUrl"
-                curl -s "$videoThumbnail" -o "$downloadPath/incomplete/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.jpg"
+                yt-dlp -o "$downloadPath/incomplete/${musibrainzVideoTitleClean}${plexVideoType}" --embed-subs --sub-lang $youtubeSubtitleLanguage --merge-output-format mkv --remux-video mkv --no-mtime --geo-bypass "$videoDownloadUrl"
+                curl -s "$videoThumbnail" -o "$downloadPath/incomplete/${musibrainzVideoTitleClean}${plexVideoType}.jpg"
             fi
 
             find "$downloadPath/incomplete" -type f -regex ".*/.*\.\(mkv\|mp4\)"  -print0 | while IFS= read -r -d '' video; do
@@ -229,12 +245,12 @@ CacheMusicbrainzRecords () {
 
                 if python3 /usr/local/sma/manual.py --config "/config/extended/scripts/sma.ini" -i "$file" -nt &>/dev/null; then
 					sleep 0.01
-					log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: $musibrainzVideoTitle ($musibrainzVideoDisambiguation) :: Processed with SMA..."
+					log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: ${musibrainzVideoTitle}${musibrainzVideoDisambiguation} :: Processed with SMA..."
 					rm  /usr/local/sma/config/*log*
 				else
-					log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: $musibrainzVideoTitle ($musibrainzVideoDisambiguation) :: ERROR: SMA Processing Error"
+					log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: ${musibrainzVideoTitle}${musibrainzVideoDisambiguation} :: ERROR: SMA Processing Error"
 					rm "$video"
-                    log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: $musibrainzVideoTitle ($musibrainzVideoDisambiguation) :: INFO: deleted: $filename"
+                    log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: ${musibrainzVideoTitle}${musibrainzVideoDisambiguation} :: INFO: deleted: $filename"
 				fi
 
                 if [ ! -f "$filenoext.mkv" ]; then
@@ -258,11 +274,11 @@ CacheMusicbrainzRecords () {
                 fi
 
                 mv "$filenoext.mkv" "$filenoext-temp.mkv"
-				log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: $musibrainzVideoTitle ($musibrainzVideoDisambiguation) :: Tagging file"
+				log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: ${musibrainzVideoTitle}${musibrainzVideoDisambiguation} :: Tagging file"
 				ffmpeg -y \
 					-i "$filenoext-temp.mkv" \
 					-c copy \
-					-metadata TITLE="$musibrainzVideoTitle" \
+					-metadata TITLE="${musibrainzVideoTitle}${videoDisambiguationTitle}" \
 					-metadata DATE_RELEASE="$videoYear" \
 					-metadata DATE="$videoYear" \
 					-metadata YEAR="$videoYear" \
@@ -270,7 +286,7 @@ CacheMusicbrainzRecords () {
 					-metadata ARTIST="$lidarrArtistName" \
 					-metadata ALBUMARTIST="$lidarrArtistName" \
 					-metadata ENCODED_BY="lidarr-extended" \
-					-attach "$downloadPath/incomplete/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.jpg" -metadata:s:t mimetype=image/jpeg \
+					-attach "$downloadPath/incomplete/${musibrainzVideoTitleClean}${plexVideoType}.jpg" -metadata:s:t mimetype=image/jpeg \
 					"$filenoext.mkv" &>/dev/null
 
 
@@ -280,16 +296,16 @@ CacheMusicbrainzRecords () {
                     chown abc:abc "/music-videos/$lidarrArtistFolder"
                 fi 
 
-                log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: $musibrainzVideoTitle ($musibrainzVideoDisambiguation) :: Moving completed download to: /music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.mkv"
-                mv "$filenoext.mkv" "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.mkv"
-                if [ -f "$downloadPath/incomplete/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.jpg" ]; then
-                    mv "$downloadPath/incomplete/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.jpg" "/music-videos/$lidarrArtistFolder"/
+                log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: ${musibrainzVideoTitle}${musibrainzVideoDisambiguation} :: Moving completed download to: /music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${plexVideoType}.mkv"
+                mv "$filenoext.mkv" "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${plexVideoType}.mkv"
+                if [ -f "$downloadPath/incomplete/${musibrainzVideoTitleClean}${plexVideoType}.jpg" ]; then
+                    mv "$downloadPath/incomplete/${musibrainzVideoTitleClean}${plexVideoType}.jpg" "/music-videos/$lidarrArtistFolder"/
                 fi
 
 
-                nfo="/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.nfo"
+                nfo="/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${plexVideoType}.nfo"
                 echo "<musicvideo>" >> "$nfo"
-                echo "	<title>$musibrainzVideoTitle</title>" >> "$nfo"
+                echo "	<title>${musibrainzVideoTitle}${videoDisambiguationTitle}</title>" >> "$nfo"
                 echo "	<userrating/>" >> "$nfo"
                 echo "	<track/>" >> "$nfo"
                 echo "	<studio/>" >> "$nfo"
@@ -306,27 +322,27 @@ CacheMusicbrainzRecords () {
 			    echo "		<artist>$lidarrArtistName</artist>" >> "$nfo"
 			    echo "		<musicBrainzArtistID>$lidarrArtistMusicbrainzId</musicBrainzArtistID>" >> "$nfo"
 			    echo "	</albumArtistCredits>" >> "$nfo"
-                if [ -f "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.jpg" ]; then
-                    echo "	<thumb>${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.jpg</thumb>" >> "$nfo"
+                if [ -f "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${plexVideoType}.jpg" ]; then
+                    echo "	<thumb>${musibrainzVideoTitleClean}${plexVideoType}.jpg</thumb>" >> "$nfo"
                 else
                     echo "	<thumb/>" >> "$nfo"
                 fi
                 echo "</musicvideo>" >> "$nfo"
 
                 
-                if [ -f "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.mkv" ]; then
-                    chmod 666 "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.mkv"
-                    chown abc:abc "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.mkv"
+                if [ -f "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${plexVideoType}.mkv" ]; then
+                    chmod 666 "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${plexVideoType}.mkv"
+                    chown abc:abc "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${plexVideoType}.mkv"
                 fi
 
-                if [ -f "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.jpg" ]; then
-                    chmod 666 "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.jpg"
-                    chown abc:abc "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.jpg"
+                if [ -f "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${plexVideoType}.jpg" ]; then
+                    chmod 666 "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${plexVideoType}.jpg"
+                    chown abc:abc "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${plexVideoType}.jpg"
                 fi
 
-                if [ -f "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.nfo" ]; then
-                    chmod 666 "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.nfo"
-                    chown abc:abc "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.nfo"
+                if [ -f "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${plexVideoType}.nfo" ]; then
+                    chmod 666 "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${plexVideoType}.nfo"
+                    chown abc:abc "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${plexVideoType}.nfo"
                 fi
 
             done
