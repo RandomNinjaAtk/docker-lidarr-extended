@@ -12,7 +12,10 @@ agent="lidarr-extended ( https://github.com/RandomNinjaAtk/docker-lidarr-extende
 musicbrainzMirror=https://musicbrainz.org
 
 # Debugging Settings
-sourcePreference=tidal
+
+if [ "$dlClientSource" = "tidal" ] || [ "$dlClientSource" = "both" ]; then
+	sourcePreference=tidal
+fi
 
 log () {
 	m_time=`date "+%F %T"`
