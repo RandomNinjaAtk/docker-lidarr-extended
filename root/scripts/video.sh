@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.002"
+scriptVersion="1.0.003"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -70,6 +70,7 @@ Configuration () {
 
     downloadPath="$downloadPath/videos"
     log "Download Location :: $downloadPath"
+    log "Subtitle Language set to: $youtubeSubtitleLanguage"
 }
 
 CacheMusicbrainzRecords () {
@@ -213,7 +214,7 @@ CacheMusicbrainzRecords () {
                 videoThumbnail="$(echo "$videoData" | jq -r .thumbnail)"
                 videoUploadDate="$(echo "$videoData" | jq -r .upload_date)"
                 videoYear="${videoUploadDate:0:4}"
-                yt-dlp -o "$downloadPath/incomplete/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}" --embed-subs --sub-lang en --merge-output-format mkv --remux-video mkv --no-mtime --geo-bypass "$videoDownloadUrl"
+                yt-dlp -o "$downloadPath/incomplete/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}" --embed-subs --sub-lang $youtubeSubtitleLanguage --merge-output-format mkv --remux-video mkv --no-mtime --geo-bypass "$videoDownloadUrl"
                 curl -s "$videoThumbnail" -o "$downloadPath/incomplete/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.jpg"
             fi
 
