@@ -1,0 +1,24 @@
+#!/usr/bin/with-contenv bash
+echo "-----------------------------------------------------------------------------"
+echo " |~) _ ._  _| _ ._ _ |\ |o._  o _ |~|_|_|"
+echo " |~\(_|| |(_|(_)| | || \||| |_|(_||~| | |<"
+echo " Presents: lidarr-extended"
+echo " Docker Version: $dockerVersion"
+echo " May the vidz be with you!"
+echo "-----------------------------------------------------------------------------"
+echo "Donate: https://github.com/sponsors/RandomNinjaAtk"
+echo "Project: https://github.com/RandomNinjaAtk/docker-lidarr-extended"
+echo "Support: https://github.com/RandomNinjaAtk/docker-lidarr-extended/discussions"
+echo "-----------------------------------------------------------------------------"
+autoStart=false
+if [ "$autoStart" = "true" ]; then
+	echo "Automatic Start Enabled, starting in 2 min..."
+	sleep 2m
+	bash /config/extended/scripts/start_video.sh
+else
+	echo "Automatic Start Disabled, manually run using this command:"
+	echo "bash /config/extended/scripts/start_video.sh"
+	sleep infinity
+fi
+
+exit $?
