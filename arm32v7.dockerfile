@@ -11,7 +11,7 @@ COPY --from=builder qemu-arm-static /usr/bin
 
 LABEL maintainer="RandomNinjaAtk"
 ENV dockerTitle="lidarr-extended"
-ENV dockerVersion="arm32v7-1.0.24"
+ENV dockerVersion="arm32v7-1.0.25"
 ENV LANG=en_US.UTF-8
 ENV autoStart=true
 ENV configureLidarrWithOptimalSettings=false
@@ -34,6 +34,8 @@ ENV enableReplaygainTags=true
 ENV downloadPath=/downloads-lidarr-extended
 ENV SMA_PATH /usr/local/sma
 ENV youtubeSubtitleLanguage=en
+ENV enableAudioScript=true
+ENV enableVideoScript=true
 
 RUN \
 	echo "*** install packages ***" && \
