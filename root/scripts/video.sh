@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.001"
+scriptVersion="1.0.002"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -195,12 +195,26 @@ CacheMusicbrainzRecords () {
 
             if echo "$videoDownloadUrl" | grep -i "tidal" | read; then
                 TidalClientTest
+                sleep 1
                 TidaldlStatusCheck
+                videoId="$(echo "$videoDownloadUrl" | grep -o '[[:digit:]]*')"
+                videoData="$(curl -s "https://api.tidal.com/v1/videos/$videoId?countryCode=$tidalCountryCode" -H 'x-tidal-token: CzET4vdadNUFQ5JU' | jq -r)"
+                videoDate="$(echo "$videoData" | jq -r ".releaseDate")"
+                videoYear="${videoDate:0:4}"
+                videoImageId="$(echo "$videoData" | jq -r ".imageId")"
+                videoImageIdFix="$(echo "$videoImageId" | sed "s/-/\//g")"
+                videoThumbnail="https://resources.tidal.com/images/$videoImageIdFix/750x500.jpg"
                 tidal-dl -o "$downloadPath/incomplete" -l "$videoDownloadUrl"
+                curl -s "$videoThumbnail" -o "$downloadPath/incomplete/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.jpg"
             fi
 
             if echo "$videoDownloadUrl" | grep -i "youtube" | read; then
-                yt-dlp -o "$downloadPath/incomplete/$lidarrArtistFolder/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}" --embed-subs --sub-lang en --merge-output-format mkv --remux-video mkv --no-mtime --geo-bypass "$videoDownloadUrl"
+                videoData="$(yt-dlp -j "$videoDownloadUrl")"
+                videoThumbnail="$(echo "$videoData" | jq -r .thumbnail)"
+                videoUploadDate="$(echo "$videoData" | jq -r .upload_date)"
+                videoYear="${videoUploadDate:0:4}"
+                yt-dlp -o "$downloadPath/incomplete/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}" --embed-subs --sub-lang en --merge-output-format mkv --remux-video mkv --no-mtime --geo-bypass "$videoDownloadUrl"
+                curl -s "$videoThumbnail" -o "$downloadPath/incomplete/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.jpg"
             fi
 
             find "$downloadPath/incomplete" -type f -regex ".*/.*\.\(mkv\|mp4\)"  -print0 | while IFS= read -r -d '' video; do
@@ -225,6 +239,39 @@ CacheMusicbrainzRecords () {
                     break
                 fi
 
+                artistGenres=""
+                OLDIFS="$IFS"
+				IFS=$'\n'
+				artistGenres=($(echo $lidarrArtistData | jq -r ".genres[]"))
+				IFS="$OLDIFS"
+
+                if [ ! -z "$artistGenres" ]; then
+                    for genre in ${!artistGenres[@]}; do
+                        artistGenre="${artistGenres[$genre]}"
+                        OUT=$OUT"$artistGenre / "
+                    done
+                    genre="${OUT%???}"
+                else
+                    genre=""
+                fi
+
+                mv "$filenoext.mkv" "$filenoext-temp.mkv"
+				log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: $musibrainzVideoTitle ($musibrainzVideoDisambiguation) :: Tagging file"
+				ffmpeg -y \
+					-i "$filenoext-temp.mkv" \
+					-c copy \
+					-metadata TITLE="$musibrainzVideoTitle" \
+					-metadata DATE_RELEASE="$videoYear" \
+					-metadata DATE="$videoYear" \
+					-metadata YEAR="$videoYear" \
+					-metadata GENRE="$genre" \
+					-metadata ARTIST="$lidarrArtistName" \
+					-metadata ALBUMARTIST="$lidarrArtistName" \
+					-metadata ENCODED_BY="lidarr-extended" \
+					-attach "$downloadPath/incomplete/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.jpg" -metadata:s:t mimetype=image/jpeg \
+					"$filenoext.mkv" &>/dev/null
+
+
                 if [ ! -d "/music-videos/$lidarrArtistFolder" ]; then
                     mkdir -p "/music-videos/$lidarrArtistFolder"
                     chmod 777 "/music-videos/$lidarrArtistFolder"
@@ -233,10 +280,51 @@ CacheMusicbrainzRecords () {
 
                 log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: $musibrainzVideoTitle ($musibrainzVideoDisambiguation) :: Moving completed download to: /music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.mkv"
                 mv "$filenoext.mkv" "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.mkv"
+                if [ -f "$downloadPath/incomplete/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.jpg" ]; then
+                    mv "$downloadPath/incomplete/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.jpg" "/music-videos/$lidarrArtistFolder"/
+                fi
 
+
+                nfo="/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.nfo"
+                echo "<musicvideo>" >> "$nfo"
+                echo "	<title>$musibrainzVideoTitle</title>" >> "$nfo"
+                echo "	<userrating/>" >> "$nfo"
+                echo "	<track/>" >> "$nfo"
+                echo "	<studio/>" >> "$nfo"
+                if [ ! -z "$artistGenres" ]; then
+                    for genre in ${!artistGenres[@]}; do
+                        artistGenre="${artistGenres[$genre]}"
+                        echo "	<genre>$artistGenre</genre>" >> "$nfo"
+                    done
+                fi
+                echo "	<premiered/>" >> "$nfo"
+                echo "	<year>$videoYear</year>" >> "$nfo"
+                echo "	<artist>$lidarrArtistName</artist>" >> "$nfo"
+                echo "	<albumArtistCredits>" >> "$nfo"
+			    echo "		<artist>$lidarrArtistName</artist>" >> "$nfo"
+			    echo "		<musicBrainzArtistID>$lidarrArtistMusicbrainzId</musicBrainzArtistID>" >> "$nfo"
+			    echo "	</albumArtistCredits>" >> "$nfo"
+                if [ -f "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.jpg" ]; then
+                    echo "	<thumb>${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.jpg</thumb>" >> "$nfo"
+                else
+                    echo "	<thumb/>" >> "$nfo"
+                fi
+                echo "</musicvideo>" >> "$nfo"
+
+                
                 if [ -f "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.mkv" ]; then
                     chmod 666 "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.mkv"
                     chown abc:abc "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.mkv"
+                fi
+
+                if [ -f "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.jpg" ]; then
+                    chmod 666 "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.jpg"
+                    chown abc:abc "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.jpg"
+                fi
+
+                if [ -f "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.nfo" ]; then
+                    chmod 666 "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.nfo"
+                    chown abc:abc "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${musibrainzVideoDisambiguationClean}.nfo"
                 fi
 
             done
@@ -245,7 +333,7 @@ CacheMusicbrainzRecords () {
 }
 
 TidalClientSetup () {
-	log ":: TIDAL :: Verifying tidal-dl configuration"
+	log "TIDAL :: Verifying tidal-dl configuration"
 	touch /config/xdg/.tidal-dl.log
 	if [ -f /config/xdg/.tidal-dl.json ]; then
 		rm /config/xdg/.tidal-dl.json
@@ -284,7 +372,7 @@ TidalClientSetup () {
 	fi
 	
 	if [ -d /config/extended/cache/tidal ]; then
-		log ":: TIDAL :: Purging album list cache..."
+		log "TIDAL :: Purging album list cache..."
 		find /config/extended/cache/tidal -type f -name "*.json" -delete
 	fi
 	
@@ -297,7 +385,7 @@ TidalClientSetup () {
 	fi
 	
     TidaldlStatusCheck
-	log ":: TIDAL :: Upgrade tidal-dl to the latest..."
+	log "TIDAL :: Upgrade tidal-dl to the latest..."
 	pip3 install tidal-dl --upgrade
 	
 }
