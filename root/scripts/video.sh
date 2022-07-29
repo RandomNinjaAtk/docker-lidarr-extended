@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.003"
+scriptVersion="1.0.004"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -85,6 +85,7 @@ CacheMusicbrainzRecords () {
 		lidarrArtistMusicbrainzId=$(echo $lidarrArtistData | jq -r .foreignArtistId)
         lidarrArtistPath="$(echo "${lidarrArtistData}" | jq -r " .path")"
 		lidarrArtistFolder="$(basename "${lidarrArtistPath}")"
+        lidarrArtistFolder="$(echo "$lidarrArtistFolder" | sed "s/ (.*)$//g")" # Plex Sanitization, remove disambiguation
         lidarrArtistNameSanitized="$(echo "$lidarrArtistFolder" | sed 's% (.*)$%%g')"
 
         if  [ "$lidarrArtistName" == "Various Artists" ]; then
