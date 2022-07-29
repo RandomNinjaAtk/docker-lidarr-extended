@@ -11,7 +11,7 @@ COPY --from=builder qemu-arm-static /usr/bin
 
 LABEL maintainer="RandomNinjaAtk"
 ENV dockerTitle="lidarr-extended"
-ENV dockerVersion="arm32v7-1.0.25"
+ENV dockerVersion="arm32v7-1.0.26"
 ENV LANG=en_US.UTF-8
 ENV autoStart=true
 ENV configureLidarrWithOptimalSettings=false
@@ -51,12 +51,12 @@ RUN \
 		libc-dev \
 		yt-dlp && \
 	echo "*** install python packages ***" && \
-	pip3 install --upgrade \
+	pip install --upgrade --no-cache-dir \
 		yq \
 		pyacoustid \
-		tidal-dl \
 		r128gain \
-		deemix &&\
+		deemix && \
+	pip install tidal-dl==2022.3.4.2 --no-cache-dir && \
 	echo "************ setup SMA ************" && \
 	echo "************ setup directory ************" && \
 	mkdir -p ${SMA_PATH} && \
