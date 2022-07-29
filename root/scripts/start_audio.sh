@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+if [ $enableAudioScript != true ]; then
+	echo "Extended Audio script disabled, enable by setting parameter: enableAudioScript=true"
+	exit
+fi
+
 echo "Starting Script...."
 processstartid="$(ps -A -o pid,cmd|grep "/config/extended/scripts/start_audio.sh" | grep -v grep | head -n 1 | awk '{print $1}')"
 echo "To kill script, use the following command:"
