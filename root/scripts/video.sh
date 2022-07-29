@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.000"
+scriptVersion="1.0.001"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -204,7 +204,7 @@ CacheMusicbrainzRecords () {
             fi
 
             find "$downloadPath/incomplete" -type f -regex ".*/.*\.\(mkv\|mp4\)"  -print0 | while IFS= read -r -d '' video; do
-                count=$(($count+1))if ps aux | grep "tidal-dl" | grep -v "grep" | read; then echo "found"; else echo "not found"; fi
+                count=$(($count+1))
                 file="${video}"
 				filenoext="${file%.*}"
                 filename="$(basename "$video")"
