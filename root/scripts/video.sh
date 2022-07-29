@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.006"
+scriptVersion="1.0.007"
 lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 if [ "$lidarrUrlBase" = "null" ]; then
 	lidarrUrlBase=""
@@ -194,7 +194,7 @@ CacheMusicbrainzRecords () {
 
             
 
-            if [ -f "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}-$plexVideoType.mkv" ]; then
+            if [ -f "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${plexVideoType}.mkv" ]; then
                 log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: ${musibrainzVideoTitle}${musibrainzVideoDisambiguation} :: Previously Downloaded, skipping..."
                 continue
             fi
@@ -296,13 +296,12 @@ CacheMusicbrainzRecords () {
                     chown abc:abc "/music-videos/$lidarrArtistFolder"
                 fi 
 
-                log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: ${musibrainzVideoTitle}${musibrainzVideoDisambiguation} :: Moving completed download to: /music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${plexVideoType}.mkv"
-                mv "$filenoext.mkv" "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${plexVideoType}.mkv"
+                
                 if [ -f "$downloadPath/incomplete/${musibrainzVideoTitleClean}${plexVideoType}.jpg" ]; then
                     mv "$downloadPath/incomplete/${musibrainzVideoTitleClean}${plexVideoType}.jpg" "/music-videos/$lidarrArtistFolder"/
                 fi
 
-
+                log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: ${musibrainzVideoTitle}${musibrainzVideoDisambiguation} :: Writing NFO"
                 nfo="/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${plexVideoType}.nfo"
                 echo "<musicvideo>" >> "$nfo"
                 echo "	<title>${musibrainzVideoTitle}${videoDisambiguationTitle}</title>" >> "$nfo"
@@ -329,6 +328,8 @@ CacheMusicbrainzRecords () {
                 fi
                 echo "</musicvideo>" >> "$nfo"
 
+                log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: ${musibrainzVideoTitle}${musibrainzVideoDisambiguation} :: Moving completed download to: /music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${plexVideoType}.mkv"
+                mv "$filenoext.mkv" "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${plexVideoType}.mkv"
                 
                 if [ -f "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${plexVideoType}.mkv" ]; then
                     chmod 666 "/music-videos/$lidarrArtistFolder/${musibrainzVideoTitleClean}${plexVideoType}.mkv"
