@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+if [ $enableVideoScript != true ]; then
+	echo "Extended Video script disabled, enable by setting parameter: enableVideoScript=true"
+	exit
+fi
+
 echo "Starting Script...."
 processstartid="$(ps -A -o pid,cmd|grep "/config/extended/scripts/start_video.sh" | grep -v grep | head -n 1 | awk '{print $1}')"
 echo "To kill script, use the following command:"
