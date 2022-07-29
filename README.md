@@ -50,6 +50,13 @@
       * Artist (Lidarr)
       * Thumbnail Image (service thumbnail image)
       * Artist Genere Tags (Lidarr)
+      
+
+### Audio & Video (Plex Example)
+![](https://github.com/RandomNinjaAtk/docker-lidarr-extended/raw/main/.github/plex.png)
+
+### Video Example (Kodi)
+![](https://github.com/RandomNinjaAtk/docker-lidarr-extended/raw/main/.github/kodi-music-videos.png)
 
 ## Supported Architectures
 
@@ -108,6 +115,7 @@ Container images are configured using parameters passed at runtime (such as thos
 | `-e beetsMatchPercentage=90` | 1-100 :: Set this to the minimum percentage required for Beets to match the downloaded album to a musicbrainz release :: Lower percentage is less restrictive |
 | `-e plexUrl=http://x.x.x.x:32400` | ONLY used if PlexNotify.bash is used...|
 | `-e plexToken=` | ONLY used if PlexNotify.bash is used... |
+| `-e youtubeSubtitleLanguage=en` | Desired Language Code :: For guidence, please see yt-dlp documentation.
 
 ## Usage
 
@@ -148,6 +156,7 @@ docker create \
   -e beetsMatchPercentage=90 \
   -e plexUrl=http://x.x.x.x:32400 \
   -e plexToken=Token_Goes_Here \
+  -e youtubeSubtitleLanguage=en \
   --restart unless-stopped \
   randomninjaatk/lidarr-extended:latest
 ```
@@ -194,6 +203,7 @@ services:
       - beetsMatchPercentage=90
       - plexUrl=http://x.x.x.x:32400
       - plexToken=Token_Goes_Here
+      - youtubeSubtitleLanguage=en
     ports:
       - 8686:8686
     restart: unless-stopped
@@ -212,4 +222,4 @@ services:
 - Icons made by <a href="http://www.freepik.com/" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon"> www.flaticon.com</a>
 - [ffmpeg](https://ffmpeg.org/)
 - [yt-dlp](https://github.com/yt-dlp/yt-dlp)
-- [SMA Conversion/Tagging Automation Script]([https://lidarr.audio/](https://github.com/mdhiggins/sickbeard_mp4_automator))
+- [SMA Conversion/Tagging Automation Script](https://github.com/mdhiggins/sickbeard_mp4_automator)
