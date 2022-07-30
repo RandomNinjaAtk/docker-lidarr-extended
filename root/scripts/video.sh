@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.008"
+scriptVersion="1.0.009"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -122,6 +122,11 @@ CacheMusicbrainzRecords () {
                 log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: Previously cached, data needs to be updated..."
                 rm "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json"
             fi
+
+            if ! cat "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json" | grep -i "artist-credit" | read; then
+                log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: Previously cached, data needs to be updated..."
+                rm "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json"
+            fi
         fi
 
         if [ ! -f "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json" ]; then
@@ -136,7 +141,7 @@ CacheMusicbrainzRecords () {
                 fi
 
                 log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: Downloading page $i... ($offset - $dlnumber Results)"
-                curl -s -A "$agent" "$musicbrainzMirror/ws/2/recording?artist=$lidarrArtistMusicbrainzId&inc=url-rels&limit=100&offset=$offset&fmt=json" | jq -r ".recordings[]" >> "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json"
+                curl -s -A "$agent" "$musicbrainzMirror/ws/2/recording?artist=$lidarrArtistMusicbrainzId&inc=artist-credits+url-rels+recording-rels+release-rels+release-group-rels&limit=100&offset=$offset&fmt=json" | jq -r ".recordings[]" >> "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json"
                 sleep 1
         
             done
@@ -146,7 +151,7 @@ CacheMusicbrainzRecords () {
         musibrainzArtistVideoRecordings=$(cat "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json" | jq -r "select(.video==true)")
         musibrainzArtistVideoRecordingsCount=$(echo "$musibrainzArtistVideoRecordings" | jq -r .id | wc -l)
         log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: $musibrainzArtistVideoRecordingsCount videos found..."
-        musibrainzArtistVideoRecordingsDataWithUrl=$(echo "$musibrainzArtistVideoRecordings" | jq -r "select(.relations[])" | jq -s "." | jq -r "unique | .[]")
+        musibrainzArtistVideoRecordingsDataWithUrl=$(echo "$musibrainzArtistVideoRecordings" | jq -r "select(.relations[].url)" | jq -s "." | jq -r "unique | .[]")
         musibrainzArtistVideoRecordingsDataWithUrlIds=$(echo "$musibrainzArtistVideoRecordingsDataWithUrl" | jq -r .id)
         musibrainzArtistVideoRecordingsDataWithUrlIdsCount=$(echo "$musibrainzArtistVideoRecordingsDataWithUrl" | jq -r .id | wc -l)
         log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: $musibrainzArtistVideoRecordingsDataWithUrlIdsCount videos found with URL..."
@@ -160,6 +165,8 @@ CacheMusicbrainzRecords () {
             musibrainzVideoRecordingData=$(echo "$musibrainzArtistVideoRecordingsDataWithUrl" | jq -r "select(.id==\"$musicbrainzVideoId\")")
             musibrainzVideoTitle="$(echo "$musibrainzVideoRecordingData" | jq -r .title)"
             musibrainzVideoTitleClean="$(echo "$musibrainzVideoTitle" | sed -e "s%[^[:alpha:][:digit:]]% %g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
+            musibrainzVideoArtistCredits="$(echo "$musibrainzVideoRecordingData" |  jq -r ".\"artist-credit\"[]")"
+            musibrainzVideoArtistCreditsNames="$(echo "$musibrainzVideoArtistCredits" |  jq -r ".artist.name")"
             musibrainzVideoDisambiguation=""
             musibrainzVideoDisambiguation="$(echo "$musibrainzVideoRecordingData" | jq -r .disambiguation)"
             if [ ! -z "$musibrainzVideoDisambiguation" ]; then
@@ -325,7 +332,12 @@ CacheMusicbrainzRecords () {
                 fi
                 echo "	<premiered/>" >> "$nfo"
                 echo "	<year>$videoYear</year>" >> "$nfo"
-                echo "	<artist>$lidarrArtistName</artist>" >> "$nfo"
+                OLDIFS="$IFS"
+			    IFS=$'\n'
+                for artistName in $(echo "$musibrainzVideoArtistCreditsNames"); do 
+                    echo "	<artist>$artistName</artist>" >> "$nfo"
+                done
+                IFS="$OLDIFS"
                 echo "	<albumArtistCredits>" >> "$nfo"
 			    echo "		<artist>$lidarrArtistName</artist>" >> "$nfo"
 			    echo "		<musicBrainzArtistID>$lidarrArtistMusicbrainzId</musicBrainzArtistID>" >> "$nfo"
