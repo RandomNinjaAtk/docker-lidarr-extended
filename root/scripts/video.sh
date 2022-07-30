@@ -1,13 +1,17 @@
 #!/usr/bin/env bash
 scriptVersion="1.0.008"
-lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
-if [ "$lidarrUrlBase" = "null" ]; then
-	lidarrUrlBase=""
-else
-	lidarrUrlBase="/$(echo "$lidarrUrlBase" | sed "s/\///g")"
+
+if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
+	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
+	if [ "$lidarrUrlBase" = "null" ]; then
+		lidarrUrlBase=""
+	else
+		lidarrUrlBase="/$(echo "$lidarrUrlBase" | sed "s/\///g")"
+	fi
+	lidarrApiKey="$(cat /config/config.xml | xq | jq -r .Config.ApiKey)"
+	lidarrUrl="http://127.0.0.1:8686${lidarrUrlBase}"
 fi
-lidarrApiKey="$(cat /config/config.xml | xq | jq -r .Config.ApiKey)"
-lidarrUrl="http://127.0.0.1:8686${lidarrUrlBase}"
+
 agent="lidarr-extended ( https://github.com/RandomNinjaAtk/docker-lidarr-extended )"
 musicbrainzMirror=https://musicbrainz.org
 
