@@ -11,7 +11,7 @@ echo "Project: https://github.com/RandomNinjaAtk/docker-lidarr-extended"
 echo "Support: https://github.com/RandomNinjaAtk/docker-lidarr-extended/discussions"
 echo "-----------------------------------------------------------------------------"
 
-if [ "$autoStart" = "true" ]; then
+if [ "$autoStart" = "true" ] && [ "$enableAudioScript" = "true" ]; then
 	echo "Automatic Start Enabled, starting in 2 min..."
 	sleep 2m
 	bash /config/extended/scripts/start_audio.sh
