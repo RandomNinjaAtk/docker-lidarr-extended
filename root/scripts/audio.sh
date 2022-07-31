@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.216"
+scriptVersion="1.0.217"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" = "null" ]; then
@@ -347,7 +347,7 @@ TidalClientSetup () {
 	if [ ! -f /config/xdg/.tidal-dl.token.json ]; then
 		TidaldlStatusCheck
 		log ":: TIDAL :: ERROR :: Downgrade tidal-dl for workaround..."
-		pip3 install tidal-dl==2022.3.4.2 --no-cache-dir
+		pip3 install tidal-dl==2022.3.4.2 --no-cache-dir 1>/dev/null
 		log ":: TIDAL :: ERROR :: Loading client for required authentication, please authenticate, then exit the client..."
 		TidaldlStatusCheck
 		tidal-dl
@@ -374,14 +374,14 @@ TidalClientSetup () {
 	
 	TidaldlStatusCheck
 	log ":: TIDAL :: Upgrade tidal-dl to newer version..."
-	pip3 install tidal-dl==2022.07.06.1 --no-cache-dir
+	pip3 install tidal-dl==2022.07.06.1 --no-cache-dir 1>/dev/null
 	
 }
 
 TidalClientTest () { 
 	log ":: TIDAL :: tidal-dl client setup verification..."
 	TidaldlStatusCheck
-	tidal-dl -o $downloadPath/incomplete -l "166356219"
+	tidal-dl -o $downloadPath/incomplete -l "166356219" 1>/dev/null
 	
 	downloadCount=$(find $downloadPath/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
 	if [ $downloadCount -le 0 ]; then
@@ -522,7 +522,8 @@ DownloadProcess () {
 
 		log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Download Attempt number $downloadTry"
 		if [ "$2" = "DEEZER" ]; then
-			deemix -b $deemixQuality -p $downloadPath/incomplete "https://www.deezer.com/album/$1"
+			DeezerClientTest
+			deemix -b $deemixQuality -p $downloadPath/incomplete "https://www.deezer.com/album/$1" 1>/dev/null
 			if [ -d "/tmp/deemix-imgs" ]; then
 				rm -rf /tmp/deemix-imgs
 			fi
@@ -530,7 +531,9 @@ DownloadProcess () {
 
 		if [ "$2" = "TIDAL" ]; then
 			TidaldlStatusCheck
-			tidal-dl -o $downloadPath/incomplete -l "$1"
+			TidalClientTest
+			TidaldlStatusCheck
+			tidal-dl -o $downloadPath/incomplete -l "$1" 1>/dev/null
 		fi
 	
 		find "$downloadPath/incomplete" -type f -iname "*.flac" -newer "/temp-download" -print0 | while IFS= read -r -d '' file; do
@@ -630,7 +633,7 @@ DownloadProcess () {
 			file="${audio}"
 			filename="$(basename "$audio")"
 			foldername="$(dirname "$audio")"
-        	filenamenoext="${filename%.*}"
+        		filenamenoext="${filename%.*}"
 			if ffmpeg -loglevel warning -hide_banner -nostats -i "$file" -n -vn $options "$foldername/${filenamenoext}.$extension" < /dev/null; then
 				log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: $filename :: Conversion to $audioFormat (${audioBitrate}k) successful"
 				rm "$file"
@@ -744,7 +747,7 @@ AddReplaygainTags () {
 	# Input Data
 	# $1 Folder path to scan and add tags
 	log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Adding Replaygain Tags using r128gain"
-	r128gain -r -a "$1"
+	r128gain -r -a "$1" 1>/dev/null
 }
 
 NotifyLidarrForImport () {
@@ -803,14 +806,14 @@ DeemixClientSetup () {
 	fi
 
 	log ":: DEEZER :: Upgrade deemix to the latest..."
-	pip3 install deemix --upgrade
+	pip3 install deemix --upgrade 1>/dev/null
 
 }
 
 DeezerClientTest () {
 	log ":: DEEZER :: deemix client setup verification..."
 
-	deemix -b $deemixQuality -p $downloadPath/incomplete "https://www.deezer.com/album/197472472"
+	deemix -b $deemixQuality -p $downloadPath/incomplete "https://www.deezer.com/album/197472472" 1>/dev/null
 	if [ -d "/tmp/deemix-imgs" ]; then
 		rm -rf /tmp/deemix-imgs
 	fi
@@ -1014,17 +1017,8 @@ GetMissingCutOffList () {
 SearchProcess () {
 
 	if [ $wantedListAlbumTotal = 0 ]; then
-        log ":: No items to find, end"
-        return
-    fi
-
-	# Verify clients are working...
-	if [ "$dlClientSource" = "deezer" ] || [ "$dlClientSource" = "both" ]; then
-		DeezerClientTest
-	fi
-
-	if [ "$dlClientSource" = "tidal" ] || [ "$dlClientSource" = "both" ]; then
-		TidalClientTest
+		log ":: No items to find, end"
+		return
 	fi
 
 	processNumber=0
@@ -1756,7 +1750,7 @@ ProcessWithBeets () {
 	sleep 0.1
 
 	if [ $(find "$1" -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l) -gt 0 ]; then
-		beet -c /scripts/beets-config.yaml -l /scripts/library.blb -d "$1" import -qC "$1"
+		beet -c /scripts/beets-config.yaml -l /scripts/library.blb -d "$1" import -qC "$1" 1>/dev/null
 		if [ $(find "$1" -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" -newer "/config/beets-match" | wc -l) -gt 0 ]; then
 			log ":: $processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: SUCCESS: Matched with beets!"
 		else
