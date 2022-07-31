@@ -2,7 +2,7 @@ FROM linuxserver/lidarr:amd64-latest
 LABEL maintainer="RandomNinjaAtk"
 
 ENV dockerTitle="lidarr-extended"
-ENV dockerVersion="amd64-1.0.26"
+ENV dockerVersion="amd64-1.0.27"
 ENV LANG=en_US.UTF-8
 ENV autoStart=true
 ENV configureLidarrWithOptimalSettings=false
@@ -33,7 +33,6 @@ RUN \
 		musl-locales \
 		musl-locales-lang \
 		flac \
-		beets \
 		jq \
 		git \
 		gcc \
@@ -46,9 +45,11 @@ RUN \
 	pip install --upgrade --no-cache-dir \
 		yq \
 		pyacoustid \
+		requests \
+		beets \
 		r128gain \
 		deemix &&\
-	pip install tidal-dl==2022.3.4.2 --no-cache-dir && \
+	pip install --upgrade --no-cache-dir tidal-dl==2022.3.4.2 && \
 	echo "************ setup SMA ************" && \
 	echo "************ setup directory ************" && \
 	mkdir -p ${SMA_PATH} && \
