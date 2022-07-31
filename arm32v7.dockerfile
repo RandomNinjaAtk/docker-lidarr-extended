@@ -11,7 +11,7 @@ COPY --from=builder qemu-arm-static /usr/bin
 
 LABEL maintainer="RandomNinjaAtk"
 ENV dockerTitle="lidarr-extended"
-ENV dockerVersion="arm32v7-1.0.26"
+ENV dockerVersion="arm32v7-1.0.27"
 ENV LANG=en_US.UTF-8
 ENV autoStart=true
 ENV configureLidarrWithOptimalSettings=false
@@ -40,20 +40,23 @@ ENV enableVideoScript=true
 RUN \
 	echo "*** install packages ***" && \
 	apk add -U --upgrade --no-cache \
+		musl-locales \
+		musl-locales-lang \
 		flac \
-		beets \
 		jq \
 		git \
-		ffmpeg \
-		python3 \
-		py3-pip \
 		gcc \
+		ffmpeg \
+		python3-dev \
 		libc-dev \
+		py3-pip \
 		yt-dlp && \
 	echo "*** install python packages ***" && \
 	pip install --upgrade --no-cache-dir \
 		yq \
 		pyacoustid \
+		requests \
+		beets \
 		r128gain \
 		deemix && \
 	pip install tidal-dl==2022.3.4.2 --no-cache-dir && \
