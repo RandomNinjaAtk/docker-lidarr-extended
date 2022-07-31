@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.009"
+scriptVersion="1.0.010"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -167,6 +167,7 @@ CacheMusicbrainzRecords () {
             musibrainzVideoTitleClean="$(echo "$musibrainzVideoTitle" | sed -e "s%[^[:alpha:][:digit:]]% %g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
             musibrainzVideoArtistCredits="$(echo "$musibrainzVideoRecordingData" |  jq -r ".\"artist-credit\"[]")"
             musibrainzVideoArtistCreditsNames="$(echo "$musibrainzVideoArtistCredits" |  jq -r ".artist.name")"
+            musibrainzVideoArtistCreditId="$(echo "$musibrainzVideoArtistCredits" |  jq -r ".artist.id" | head -n1)"
             musibrainzVideoDisambiguation=""
             musibrainzVideoDisambiguation="$(echo "$musibrainzVideoRecordingData" | jq -r .disambiguation)"
             if [ ! -z "$musibrainzVideoDisambiguation" ]; then
@@ -210,6 +211,11 @@ CacheMusicbrainzRecords () {
                 continue
             fi
 
+            if [ "$musibrainzVideoArtistCreditId" != "$lidarrArtistMusicbrainzId" ]; then
+                log "$processCount of $lidarrArtistIdsCount :: MBZDB CACHE :: $lidarrArtistName :: ${musibrainzVideoTitle}${musibrainzVideoDisambiguation} :: First artist does not match album arist, skipping..."
+                continue
+            fi
+
             if [ -d "$downloadPath/incomplete" ]; then
                 rm -rf "$downloadPath/incomplete"
             fi
@@ -233,7 +239,7 @@ CacheMusicbrainzRecords () {
                 videoImageId="$(echo "$videoData" | jq -r ".imageId")"
                 videoImageIdFix="$(echo "$videoImageId" | sed "s/-/\//g")"
                 videoThumbnail="https://resources.tidal.com/images/$videoImageIdFix/750x500.jpg"
-                tidal-dl -o "$downloadPath/incomplete" -l "$videoDownloadUrl"
+                tidal-dl -o "$downloadPath/incomplete" -l "$videoDownloadUrl" 1>/dev/null
                 curl -s "$videoThumbnail" -o "$downloadPath/incomplete/${musibrainzVideoTitleClean}${plexVideoType}.jpg"
             fi
 
@@ -242,7 +248,7 @@ CacheMusicbrainzRecords () {
                 videoThumbnail="$(echo "$videoData" | jq -r .thumbnail)"
                 videoUploadDate="$(echo "$videoData" | jq -r .upload_date)"
                 videoYear="${videoUploadDate:0:4}"
-                yt-dlp -o "$downloadPath/incomplete/${musibrainzVideoTitleClean}${plexVideoType}" --embed-subs --sub-lang $youtubeSubtitleLanguage --merge-output-format mkv --remux-video mkv --no-mtime --geo-bypass "$videoDownloadUrl"
+                yt-dlp -o "$downloadPath/incomplete/${musibrainzVideoTitleClean}${plexVideoType}" --embed-subs --sub-lang $youtubeSubtitleLanguage --merge-output-format mkv --remux-video mkv --no-mtime --geo-bypass "$videoDownloadUrl" 1>/dev/null
                 curl -s "$videoThumbnail" -o "$downloadPath/incomplete/${musibrainzVideoTitleClean}${plexVideoType}.jpg"
             fi
 
@@ -424,7 +430,7 @@ TidalClientSetup () {
 TidalClientTest () { 
 	log "TIDAL :: tidal-dl client setup verification..."
     TidaldlStatusCheck
-	tidal-dl -o $downloadPath/incomplete -l "166356219"
+	tidal-dl -o $downloadPath/incomplete -l "166356219" 1>/dev/null
 	
 	downloadCount=$(find $downloadPath/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
 	if [ $downloadCount -le 0 ]; then
