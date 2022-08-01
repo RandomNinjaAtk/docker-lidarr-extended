@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.218"
+scriptVersion="1.0.219"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" = "null" ]; then
@@ -522,7 +522,7 @@ DownloadProcess () {
 
 		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Download Attempt number $downloadTry"
 		if [ "$2" = "DEEZER" ]; then
-			if [ $downloadTry = 0 ]; then
+			if [ $downloadTry = 1 ]; then
 				DeezerClientTest
 			fi
 			deemix -b $deemixQuality -p $downloadPath/incomplete "https://www.deezer.com/album/$1" 1>/dev/null
@@ -532,7 +532,7 @@ DownloadProcess () {
 		fi
 
 		if [ "$2" = "TIDAL" ]; then
-			if [ $downloadTry = 0 ]; then
+			if [ $downloadTry = 1 ]; then
 				TidaldlStatusCheck
 				TidalClientTest
 			fi
