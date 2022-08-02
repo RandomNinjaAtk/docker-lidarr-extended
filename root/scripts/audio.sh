@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.222"
+scriptVersion="1.0.223"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" = "null" ]; then
@@ -1288,22 +1288,19 @@ SearchProcess () {
 			
 				# Search Musicbrainz
 				log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Deezer :: Searching for Album ID..."
-				msuicbrainzDeezerDownloadAlbumID=$(curl -s -A "$agent" "https://musicbrainz.org/ws/2/release?release-group=$lidarrAlbumForeignAlbumId&inc=url-rels&fmt=json" | jq -r | grep "deezer.com" | grep "album" | head -n 1 | sed -e "s%[^[:digit:]]%%g")
+				musicbrainzDeezerDownloadAlbumID=$(curl -s -A "$agent" "https://musicbrainz.org/ws/2/release?release-group=$lidarrAlbumForeignAlbumId&inc=url-rels&fmt=json" | jq -r | grep "deezer.com" | grep "album" | head -n 1 | sed -e "s%[^[:digit:]]%%g")
 				
 				# Process Album ID if found
-				if [ ! -z $msuicbrainzDeezerDownloadAlbumID ]; then
+				if [ ! -z $musicbrainzDeezerDownloadAlbumID ]; then
 					log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Deezer :: FOUND!"
-					if [ -f "/config/extended/cache/deezer/${msuicbrainzDeezerDownloadAlbumID}.json" ]; then
-						deezerArtistAlbumData="$(cat "/config/extended/cache/deezer/${msuicbrainzDeezerDownloadAlbumID}.json")"
-					else
-						deezerArtistAlbumData="$(curl -s "https://api.deezer.com/album/${msuicbrainzDeezerDownloadAlbumID}")"
-					fi
+					GetDeezerAlbumInfo "${musicbrainzDeezerDownloadAlbumID}"
+					deezerArtistAlbumData=$(cat "/config/extended/cache/deezer/$musicbrainzDeezerDownloadAlbumID.json")
 					deezerAlbumTrackCount="$(echo "$deezerArtistAlbumData" | jq -r .nb_tracks)"
 					deezerAlbumTitle="$(echo "$deezerArtistAlbumData"| jq -r .title)"
 					downloadedReleaseDate="$(echo "$deezerArtistAlbumData" | jq -r .release_date)"
 					downloadedReleaseYear="${downloadedReleaseDate:0:4}"
 					log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Deezer :: Downloading $deezerAlbumTrackCount Tracks :: $deezerAlbumTitle ($downloadedReleaseYear)"
-					DownloadProcess "$msuicbrainzDeezerDownloadAlbumID" "DEEZER" "$downloadedReleaseYear" "$deezerAlbumTitle" "$deezerAlbumTrackCount"
+					DownloadProcess "$musicbrainzDeezerDownloadAlbumID" "DEEZER" "$downloadedReleaseYear" "$deezerAlbumTitle" "$deezerAlbumTrackCount"
 
 					# Verify it was successfully imported into Lidarr
 					LidarrTaskStatusCheck
@@ -1334,6 +1331,35 @@ SearchProcess () {
 		fi
 		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Search Complete..." 
 	done
+}
+
+GetDeezerAlbumInfo () {
+	until false
+	do
+		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Getting Album info..."
+		if [ ! -f "/config/extended/cache/deezer/$1.json" ]; then
+			curl -s "https://api.deezer.com/album/$1" -o "/config/extended/cache/deezer/$1.json"
+			sleep $sleepTimer
+		fi
+		if [ -f "/config/extended/cache/deezer/$1.json" ]; then
+			if jq -e . >/dev/null 2>&1 <<<"$(cat /config/extended/cache/deezer/$1.json)"; then
+				log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Album info downloaded and verified..."
+				chmod 666 /config/extended/cache/deezer/$1.json
+				chown abc:abc /config/extended/cache/deezer/$1.json	
+				albumInfoVerified=true
+				break
+			else
+				log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Error getting album information"
+				if [ -f "/config/extended/cache/deezer/$1.json" ]; then
+					rm "/config/extended/cache/deezer/$1.json"
+				fi
+				log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: Retrying..."
+			fi
+		else
+			log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: ERROR :: Download Failed"
+		fi
+	done
+
 }
 
 ArtistDeezerSearch () {
@@ -1381,14 +1407,8 @@ ArtistDeezerSearch () {
 		elif [ $characterMath -lt 0 ]; then
 			continue
 		fi
-
-		if [ -f "/config/extended/cache/deezer/$deezerAlbumID.json" ]; then
-			deezerAlbumData="$(cat "/config/extended/cache/deezer/$deezerAlbumID.json")"
-		else
-			getDeezerAlbumData="$(curl -s "https://api.deezer.com/album/$deezerAlbumID" > "/config/extended/cache/deezer/$deezerAlbumID.json")"
-			sleep $sleepTimer
-			deezerAlbumData="$(cat "/config/extended/cache/deezer/$deezerAlbumID.json")"
-		fi
+		GetDeezerAlbumInfo "${deezerAlbumID}"
+		deezerAlbumData="$(cat "/config/extended/cache/deezer/$deezerAlbumID.json")"
 		deezerAlbumTrackCount="$(echo "$deezerAlbumData" | jq -r .nb_tracks)"
 		deezerAlbumExplicitLyrics="$(echo "$deezerAlbumData" | jq -r .explicit_lyrics)"								
 		deezerAlbumTitle="$(echo "$deezerAlbumData"| jq -r .title)"
@@ -1477,14 +1497,8 @@ FuzzyDeezerSearch () {
 				continue
 			fi
 
-			if [ -f "/config/extended/cache/deezer/$deezerAlbumID.json" ]; then
-				deezerAlbumData="$(cat "/config/extended/cache/deezer/$deezerAlbumID.json")"
-			else
-				getDeezerAlbumData="$(curl -s "https://api.deezer.com/album/$deezerAlbumID" > "/config/extended/cache/deezer/$deezerAlbumID.json")"
-				sleep $sleepTimer
-				deezerAlbumData="$(cat "/config/extended/cache/deezer/$deezerAlbumID.json")"
-			fi
-
+			GetDeezerAlbumInfo "${deezerAlbumID}"
+			deezerAlbumData="$(cat "/config/extended/cache/deezer/$deezerAlbumID.json")"
 			deezerAlbumTrackCount="$(echo "$deezerAlbumData" | jq -r .nb_tracks)"
 			deezerAlbumExplicitLyrics="$(echo "$deezerAlbumData" | jq -r .explicit_lyrics)"								
 			deezerAlbumTitle="$(echo "$deezerAlbumData"| jq -r .title)"
