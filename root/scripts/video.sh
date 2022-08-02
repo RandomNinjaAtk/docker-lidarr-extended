@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.010"
+scriptVersion="1.0.011"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -239,7 +239,7 @@ CacheMusicbrainzRecords () {
                 videoImageId="$(echo "$videoData" | jq -r ".imageId")"
                 videoImageIdFix="$(echo "$videoImageId" | sed "s/-/\//g")"
                 videoThumbnail="https://resources.tidal.com/images/$videoImageIdFix/750x500.jpg"
-                tidal-dl -o "$downloadPath/incomplete" -l "$videoDownloadUrl" 1>/dev/null
+                tidal-dl -o "$downloadPath/incomplete" -l "$videoDownloadUrl" &>/dev/null
                 curl -s "$videoThumbnail" -o "$downloadPath/incomplete/${musibrainzVideoTitleClean}${plexVideoType}.jpg"
             fi
 
@@ -248,7 +248,7 @@ CacheMusicbrainzRecords () {
                 videoThumbnail="$(echo "$videoData" | jq -r .thumbnail)"
                 videoUploadDate="$(echo "$videoData" | jq -r .upload_date)"
                 videoYear="${videoUploadDate:0:4}"
-                yt-dlp -o "$downloadPath/incomplete/${musibrainzVideoTitleClean}${plexVideoType}" --embed-subs --sub-lang $youtubeSubtitleLanguage --merge-output-format mkv --remux-video mkv --no-mtime --geo-bypass "$videoDownloadUrl" 1>/dev/null
+                yt-dlp -o "$downloadPath/incomplete/${musibrainzVideoTitleClean}${plexVideoType}" --embed-subs --sub-lang $youtubeSubtitleLanguage --merge-output-format mkv --remux-video mkv --no-mtime --geo-bypass "$videoDownloadUrl" &>/dev/null
                 curl -s "$videoThumbnail" -o "$downloadPath/incomplete/${musibrainzVideoTitleClean}${plexVideoType}.jpg"
             fi
 
@@ -386,17 +386,10 @@ TidalClientSetup () {
 	TidaldlStatusCheck
 	tidal-dl -o $downloadPath/incomplete
 		
-	if [ -f /config/xdg/.tidal-dl.token.json ]; then
-		if [[ $(find "/config/xdg/.tidal-dl.token.json" -mtime +5 -print) ]]; then
-			log "TIDAL :: ERROR :: Token expired, removing..."
-			rm /config/xdg/.tidal-dl.token.json
-		fi
-	fi
-
 	if [ ! -f /config/xdg/.tidal-dl.token.json ]; then
 		TidaldlStatusCheck
 		log "TIDAL :: ERROR :: Downgrade tidal-dl for workaround..."
-		pip3 install tidal-dl==2022.3.4.2 --no-cache-dir
+		pip install tidal-dl==2022.3.4.2 --no-cache-dir &>/dev/null
 		TidaldlStatusCheck
 		log "TIDAL :: ERROR :: Loading client for required authentication, please authenticate, then exit the client..."
 		tidal-dl
@@ -423,14 +416,14 @@ TidalClientSetup () {
 	
     TidaldlStatusCheck
 	log "TIDAL :: Upgrade tidal-dl to newer version..."
-	pip3 install tidal-dl==2022.07.06.1 --no-cache-dir
+	pip install tidal-dl==2022.07.06.1 --no-cache-dir &>/dev/null
 	
 }
 
 TidalClientTest () { 
 	log "TIDAL :: tidal-dl client setup verification..."
     TidaldlStatusCheck
-	tidal-dl -o $downloadPath/incomplete -l "166356219" 1>/dev/null
+	tidal-dl -o $downloadPath/incomplete -l "166356219" &>/dev/null
 	
 	downloadCount=$(find $downloadPath/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
 	if [ $downloadCount -le 0 ]; then
