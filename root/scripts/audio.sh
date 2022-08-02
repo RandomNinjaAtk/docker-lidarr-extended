@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.221"
+scriptVersion="1.0.222"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" = "null" ]; then
@@ -143,17 +143,6 @@ Configuration () {
 		log "Replaygain Tagging Disabled"
 	fi
 	
-	if [ $enableBeetsTagging = true ]; then
-		log "Beets Tagging Enabled"
-		log "Beets Matching Threshold ${beetsMatchPercentage}%"
-		beetsMatchPercentage=$(expr 100 - $beetsMatchPercentage )
-		if cat /config/extended/scripts/beets-config.yaml | grep "strong_rec_thresh: 0.04" | read; then
-			log "Configuring Beets Matching Threshold"
-			sed -i "s/strong_rec_thresh: 0.04/strong_rec_thresh: 0.${beetsMatchPercentage}/g" /config/extended/scripts/beets-config.yaml
-		fi
-	else
-		log "Beets Tagging Disabled"
-	fi
 }
 
 DownloadFormat () {
@@ -677,13 +666,6 @@ DownloadProcess () {
     done
 	chmod -R 777 $downloadPath/complete
 	chown -R abc:abc $downloadPath/complete
-
-	if [ $enableBeetsTagging = true ]; then
-		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Processing files with beets..."
-		ProcessWithBeets "$downloadPath/complete/$downloadedAlbumFolder" "${albumquality^^}" "$2" "$1"
-	else
-		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Beets Tagging Disabled (set enableBeetsTagging=true to enable...)"
-	fi
 	
 	if [ -d "$downloadPath/complete/$downloadedAlbumFolder" ]; then
 		NotifyLidarrForImport "$downloadPath/complete/$downloadedAlbumFolder"
@@ -1710,151 +1692,6 @@ FuzzyTidalSearch () {
 	fi	
 }
 
-
-ProcessWithBeets () {
-	# Input
-	# $1 Download Folder to process
-	# $2 Detected Quality
-	# $3 Download Client Used
-	# $4 Album ID
-
-	trackcount=$(find "$1" -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
-
-	if [ -f /scripts/library.blb ]; then
-		rm /scripts/library.blb
-		sleep 0.1
-	fi
-	if [ -f /scripts/beets.log ]; then 
-		rm /scripts/beets.log
-		sleep 0.1
-	fi
-
-	if [ -f "/config/beets-match" ]; then 
-		rm "/config/beets-match"
-		sleep 0.1
-	fi
-	touch "/config/beets-match"
-	sleep 0.1
-
-	if [ $(find "$1" -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l) -gt 0 ]; then
-		beet -c /scripts/beets-config.yaml -l /scripts/library.blb -d "$1" import -qC "$1" &>/dev/null
-		if [ $(find "$1" -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" -newer "/config/beets-match" | wc -l) -gt 0 ]; then
-			log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: SUCCESS: Matched with beets!"
-		else
-			log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: ERROR :: Unable to match using beets to a musicbrainz release..."
-			touch "/config/beets-match-error"
-		fi	
-	fi
-
-	if [ -f "/config/beets-match" ]; then 
-		rm "/config/beets-match"
-		sleep 0.1
-	fi
-
-	if [ -f "/config/beets-match-error" ]; then
-		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: ERROR :: Beets could not match album, falling back to Lidarr for matching and importing..."
-		rm "/config/beets-match-error"
-        # allow lidarr import...
-		# rm -rf "$1"
-		return
-	else
-		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: BEETS MATCH FOUND!"
-	fi
-
-	GetFile=$(find "$1" -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | head -n1)
-	if [ $albumquality = opus ]; then
-		matchedTags=$(ffprobe -hide_banner -loglevel fatal -show_error -show_format -show_streams -show_programs -show_chapters -show_private_data -print_format json "$GetFile" | jq -r ".streams[].tags")
-	else
-		matchedTags=$(ffprobe -hide_banner -loglevel fatal -show_error -show_format -show_streams -show_programs -show_chapters -show_private_data -print_format json "$GetFile" | jq -r ".format.tags")
-	fi
-	if [ $albumquality = flac ] || [ $albumquality = opus ]; then
-		matchedTagsAlbumReleaseGroupId="$(echo $matchedTags | jq -r ".MUSICBRAINZ_RELEASEGROUPID")"
-		matchedTagsAlbumArtistId="$(echo $matchedTags | jq -r ".MUSICBRAINZ_ALBUMARTISTID")"
-	elif [ $albumquality = mp3 ] || [ $albumquality = m4a ]; then
-		matchedTagsAlbumReleaseGroupId="$(echo $matchedTags | jq -r '."MusicBrainz Release Group Id"')"
-		matchedLidarrAlbumArtistId="$(echo $matchedTags | jq -r '."MusicBrainz Ablum Artist Id"')"
-	fi
-	if [ $albumquality = m4a ]; then
-		if [ $audioFormat = alac ]; then
-			albumquality=alac
-		else	
-			albumquality=aac
-		fi
-	fi
-	matchedLidarrAlbumData=$(curl -s "$lidarrUrl/api/v1/search?term=lidarr%3A$matchedTagsAlbumReleaseGroupId" -H "X-Api-Key: $lidarrApiKey" | jq -r ".[].album")
-	matchedTagsAlbumTitle="$(echo $matchedLidarrAlbumData | jq -r ".title")"
-	matchedTagsAlbumTitleClean="$(echo "$matchedTagsAlbumTitle" | sed -e "s%[^[:alpha:][:digit:]._' ]% %g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
-	matchedTagsAlbumReleaseDate="$(echo $matchedLidarrAlbumData | jq -r ".releaseDate")"
-	matchedTagsAlbumYear="${matchedTagsAlbumReleaseDate:0:4}"
-	matchedLidarrAlbumArtistId="$(echo "$matchedLidarrAlbumData" | jq -r ".artist.foreignArtistId")"
-	matchedLidarrAlbumArtistName="$(echo "$matchedLidarrAlbumData" | jq -r ".artist.artistName")"
-	matchedLidarrAlbumArtistCleanName="$(echo "$matchedLidarrAlbumData" | jq -r ".artist.cleanName")"
-
-	if [ ! -d /config/extended/logs/downloaded/found ]; then
-		mkdir -p /config/extended/logs/downloaded/found
-	fi
-
-	if [ -z "$matchedLidarrAlbumData" ]; then
-		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: ERROR :: Musicbrainz Release Group ID: $matchedTagsAlbumReleaseGroupId cannot be imported, due to status issue.."
-		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: ERROR :: Correct Musicbrainz Entry to resolve error..."
-		rm -rf "$1"
-		return
-	fi
-
-	touch /config/extended/logs/downloaded/found/$matchedTagsAlbumReleaseGroupId
-	
-	CheckLidarrBeforeImport "$matchedTagsAlbumReleaseGroupId" "beets"
-	if [ $alreadyImported = true ]; then
-		rm -rf "$1"
-		return
-	fi
-
-	if [ "$matchedLidarrAlbumArtistId" = "89ad4ac3-39f7-470e-963a-56509c546377" ]; then
-		sleep 0.1
-	else
-		if [ "${matchedLidarrAlbumArtistCleanName}" != "null" ]; then
-			log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: $matchedLidarrAlbumArtistName ($matchedLidarrAlbumArtistId) found in Lidarr"
-		else
-			log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: $matchedLidarrAlbumArtistName ($matchedLidarrAlbumArtistId) NOT found in Lidarr"
-			data=$(curl -s "$lidarrUrl/api/v1/search?term=lidarr%3A$matchedLidarrAlbumArtistId" -H "X-Api-Key: $lidarrApiKey" | jq -r ".[]")
-			artistName="$(echo "$data" | jq -r ".artist.artistName")"
-			foreignId="$(echo "$data" | jq -r ".foreignId")"
-			data=$(curl -s "$lidarrUrl/api/v1/rootFolder" -H "X-Api-Key: $lidarrApiKey" | jq -r ".[]")
-			path="$(echo "$data" | jq -r ".path")"
-			qualityProfileId="$(echo "$data" | jq -r ".defaultQualityProfileId")"
-			metadataProfileId="$(echo "$data" | jq -r ".defaultMetadataProfileId")"
-			data="{
-				\"artistName\": \"$artistName\",
-				\"foreignArtistId\": \"$foreignId\",
-				\"qualityProfileId\": $qualityProfileId,
-				\"metadataProfileId\": $metadataProfileId,
-				\"monitored\":true,
-				\"monitor\":\"all\",
-				\"rootFolderPath\": \"$path\",
-				\"addOptions\":{\"searchForMissingAlbums\":false}
-				}"
-			log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Adding Missing Artist to Lidarr :: $matchedLidarrAlbumArtistName ($matchedLidarrAlbumArtistId)..."
-			lidarrAddArtist=$(curl -s "$lidarrUrl/api/v1/artist" -X POST -H 'Content-Type: application/json' -H "X-Api-Key: $lidarrApiKey" --data-raw "$data")
-			log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Allowing Lidarr Artist Update..."
-			LidarrTaskStatusCheck
-		fi
-	fi
-	matchedLidarrAlbumArtistCleanName="$(echo "$matchedLidarrAlbumArtistName" | sed -e "s%[^[:alpha:][:digit:]._()' -]% %g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
-
-
-	downloadedAlbumFolder="${matchedLidarrAlbumArtistCleanName}-${matchedTagsAlbumTitleClean} ($matchedTagsAlbumYear)-${albumquality^^}-$4-$3"
-	if [ "$1" != "$downloadPath/complete/$downloadedAlbumFolder" ];then
-		if [ -d "$downloadPath/complete/$downloadedAlbumFolder" ]; then
-			rm -rf "$downloadPath/complete/$downloadedAlbumFolder"
-			sleep 0.1
-		fi
-		if [ ! -d "$downloadPath/complete/$downloadedAlbumFolder" ]; then
-			mv "$1" "$downloadPath/complete/$downloadedAlbumFolder"
-		fi
-	fi
-	chmod -R 777 "$downloadPath/complete"
-	chown -R abc:abc "$downloadPath/complete"
-}
 
 CheckLidarrBeforeImport () {
 
