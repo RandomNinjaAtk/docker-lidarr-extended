@@ -15,7 +15,7 @@
   "padTracks": true,
   "paddingSize": "0",
   "illegalCharacterReplacer": "_",
-  "queueConcurrency": 1,
+  "queueConcurrency": 6,
   "maxBitrate": "3",
   "feelingLucky": false,
   "fallbackBitrate": true,
