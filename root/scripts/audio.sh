@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.225"
+scriptVersion="1.0.226"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" = "null" ]; then
@@ -1674,7 +1674,8 @@ FuzzyTidalSearch () {
 		tidalSearch=$(curl -s "https://api.tidal.com/v1/search/albums?query=${albumArtistNameSearch}%20${albumTitleSearch}&countryCode=${tidalCountryCode}&limit=20" -H 'x-tidal-token: CzET4vdadNUFQ5JU' | jq -r ".items | sort_by(.numberOfTracks) | sort_by(.explicit) | reverse |.[]| select(.explicit=="$2") | select((.numberOfTracks <= $lidarrAlbumReleasesMaxTrackCount) and .numberOfTracks >= $lidarrAlbumReleasesMinTrackCount)")
 	fi
 	sleep $sleepTimer
-	searchResultCount=$(echo "$tidalSearch" | jq -r "select(.title | test(\"^$lidarrAlbumReleaseTitleFirstWord\";\"i\")) | .id" | sort -u | wc -l)
+	tidalSearch=$(echo "$tidalSearch" | jq -r "select(.title | test(\"^$lidarrAlbumReleaseTitleFirstWord\";\"i\"))")
+	searchResultCount=$(echo "$tidalSearch" | jq -r ".id" | sort -u | wc -l)
 	log "$1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Tidal :: $type :: $lidarrReleaseTitle :: $searchResultCount search results found ($lidarrAlbumReleaseTitleFirstWord)"
 	if [ ! -z "$tidalSearch" ]; then
 		for tidalAlbumID in $(echo "$tidalSearch" | jq -r .id | sort -u); do
@@ -1828,37 +1829,41 @@ LidarrMissingAlbumSearch () {
 }
 
 function levenshtein {
-	if (( $# != 2 )); then
-		echo "Usage: $0 word1 word2" >&2
-	elif (( ${#1} < ${#2} )); then
-		levenshtein "$2" "$1"
+	if [ "$1" = "$2" ]; then
+		echo 0
 	else
-		local str1len=${#1}
-		local str2len=${#2}
-		local d
+		if (( $# != 2 )); then
+			echo "Usage: $0 word1 word2" >&2
+		elif (( ${#1} < ${#2} )); then
+			levenshtein "$2" "$1"
+		else
+			local str1len=${#1}
+			local str2len=${#2}
+			local d
 
-		for (( i = 0; i <= (str1len+1)*(str2len+1); i++ )); do
-			d[i]=0
-		done
-
-		for (( i = 0; i <= str1len; i++ )); do
-			d[i+0*str1len]=$i
-		done
-
-		for (( j = 0; j <= str2len; j++ )); do
-			d[0+j*(str1len+1)]=$j
-		done
-
-		for (( j = 1; j <= str2len; j++ )); do
-			for (( i = 1; i <= str1len; i++ )); do
-				[ "${1:i-1:1}" = "${2:j-1:1}" ] && local cost=0 || local cost=1
-				del=$(( d[(i-1)+str1len*j]+1 ))
-				ins=$(( d[i+str1len*(j-1)]+1 ))
-				alt=$(( d[(i-1)+str1len*(j-1)]+cost ))
-				d[i+str1len*j]=$( echo -e "$del\n$ins\n$alt" | sort -n | head -1 )
+			for (( i = 0; i <= (str1len+1)*(str2len+1); i++ )); do
+				d[i]=0
 			done
-		done
-		echo ${d[str1len+str1len*(str2len)]}
+
+			for (( i = 0; i <= str1len; i++ )); do
+				d[i+0*str1len]=$i
+			done
+
+			for (( j = 0; j <= str2len; j++ )); do
+				d[0+j*(str1len+1)]=$j
+			done
+
+			for (( j = 1; j <= str2len; j++ )); do
+				for (( i = 1; i <= str1len; i++ )); do
+					[ "${1:i-1:1}" = "${2:j-1:1}" ] && local cost=0 || local cost=1
+					del=$(( d[(i-1)+str1len*j]+1 ))
+					ins=$(( d[i+str1len*(j-1)]+1 ))
+					alt=$(( d[(i-1)+str1len*(j-1)]+cost ))
+					d[i+str1len*j]=$( echo -e "$del\n$ins\n$alt" | sort -n | head -1 )
+				done
+			done
+			echo ${d[str1len+str1len*(str2len)]}
+		fi
 	fi
 }
 
