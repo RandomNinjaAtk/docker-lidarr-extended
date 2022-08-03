@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.223"
+scriptVersion="1.0.224"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" = "null" ]; then
@@ -1037,8 +1037,8 @@ SearchProcess () {
 		tidalArtistIds="$(echo "$tidalArtistUrl" | grep -o '[[:digit:]]*' | sort -u)"
 		deezerArtistUrl=$(echo "${lidarrArtistData}" | jq -r ".links | .[] | select(.name==\"deezer\") | .url")
 		lidarrAlbumReleaseIds=$(echo "$lidarrAlbumData" | jq -r ".releases | sort_by(.trackCount) | reverse | .[].id")
-		lidarrAlbumReleasesMinTrackCount=$(echo "$lidarrAlbumData" | jq -r ".releases[].trackCount" | sort | head -n1)
-		lidarrAlbumReleasesMaxTrackCount=$(echo "$lidarrAlbumData" | jq -r ".releases[].trackCount" | sort -r | head -n1)
+		lidarrAlbumReleasesMinTrackCount=$(echo "$lidarrAlbumData" | jq -r ".releases[].trackCount" | sort -n | head -n1)
+		lidarrAlbumReleasesMaxTrackCount=$(echo "$lidarrAlbumData" | jq -r ".releases[].trackCount" | sort -n -r | head -n1)
 		lidarrAlbumReleaseDate=$(echo "$lidarrAlbumData" | jq -r .releaseDate)
 		lidarrAlbumReleaseDate=${lidarrAlbumReleaseDate:0:10}
 		lidarrAlbumReleaseDateClean="$(echo $lidarrAlbumReleaseDate | sed -e "s%[^[:digit:]]%%g")"
@@ -1124,11 +1124,28 @@ SearchProcess () {
 			endLoop=1
 		fi
 
+
+		# Get Release Titles & Disambiguation
+		if [ -f /temp-release-list ]; then
+			rm /temp-release-list 
+		fi
+		for releaseId in $(echo "$lidarrAlbumReleaseIds"); do
+			releaseTitle=$(echo "$lidarrAlbumData" | jq -r ".releases[] | select(.id==$releaseId) | .title")
+			releaseDisambiguation=$(echo "$lidarrAlbumData" | jq -r ".releases[] | select(.id==$releaseId) | .disambiguation")
+			if [ -z "$releaseDisambiguation" ]; then
+				releaseDisambiguation=""
+			else
+				releaseDisambiguation=" ($releaseDisambiguation)" 
+			fi
+			echo "${releaseTitle}${releaseDisambiguation}" >> /temp-release-list 
+			echo "$lidarrAlbumTitle" >> /temp-release-list 
+		done
+
 		# Get Release Titles
 		OLDIFS="$IFS"
 		IFS=$'\n'
-		lidarrReleaseTitles=$(echo "$lidarrAlbumTitle" && echo "$lidarrAlbumData" | jq -r ".releases[].title")
-		lidarrReleaseTitles=($(echo "$lidarrReleaseTitles" | sort -u))
+		lidarrReleaseTitles=$(cat /temp-release-list | awk '{ print length, $0 }' | sort -u -n -s -r | cut -d" " -f2-)
+		lidarrReleaseTitles=($(echo "$lidarrReleaseTitles"))
 		IFS="$OLDIFS"
 
 		loopCount=0
@@ -1657,9 +1674,8 @@ FuzzyTidalSearch () {
 		tidalSearch=$(curl -s "https://api.tidal.com/v1/search/albums?query=${albumArtistNameSearch}%20${albumTitleSearch}&countryCode=${tidalCountryCode}&limit=20" -H 'x-tidal-token: CzET4vdadNUFQ5JU' | jq -r ".items | sort_by(.numberOfTracks) | sort_by(.explicit) | reverse |.[]| select(.explicit=="$2") | select((.numberOfTracks <= $lidarrAlbumReleasesMaxTrackCount) and .numberOfTracks >= $lidarrAlbumReleasesMinTrackCount)")
 	fi
 	sleep $sleepTimer
-	
-	searchResultCount=$(echo "$tidalSearch" | jq -r .id | sort -u | wc -l)
-	log "$1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Tidal :: $type :: $lidarrReleaseTitle :: $searchResultCount search results found"
+	searchResultCount=$(echo "$tidalSearch" | jq -r "select(.title | test(\"^$lidarrAlbumReleaseTitleFirstWord\";\"i\")) | .id" | sort -u | wc -l)
+	log "$1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Tidal :: $type :: $lidarrReleaseTitle :: $searchResultCount search results found ($lidarrAlbumReleaseTitleFirstWord)"
 	if [ ! -z "$tidalSearch" ]; then
 		for tidalAlbumID in $(echo "$tidalSearch" | jq -r .id | sort -u); do
 			tidalAlbumData="$(echo "$tidalSearch" | jq -r "select(.id==$tidalAlbumID)")"
