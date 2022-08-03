@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.224"
+scriptVersion="1.0.225"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" = "null" ]; then
@@ -735,7 +735,7 @@ NotifyLidarrForImport () {
 
 NotifyPlexToScan () {
 	LidarrTaskStatusCheck
-	CheckLidarrBeforeImport "$checkLidarrAlbumId" "notbeets"
+	CheckLidarrBeforeImport "$checkLidarrAlbumId"
 	if [ $alreadyImported = true ]; then
 		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Notifying Plex to Scan :: $lidarrArtistPath"
 		bash /config/extended/scripts/PlexNotify.bash "$lidarrArtistPath"
@@ -1179,7 +1179,7 @@ SearchProcess () {
 				if [ "$lidarrArtistForeignArtistId" != "89ad4ac3-39f7-470e-963a-56509c546377" ]; then
 					# Lidarr Status Check
 					LidarrTaskStatusCheck
-					CheckLidarrBeforeImport "$checkLidarrAlbumId" "notbeets"
+					CheckLidarrBeforeImport "$checkLidarrAlbumId"
 					if [ $alreadyImported = true ]; then
 						log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
 						break 2
@@ -1195,7 +1195,7 @@ SearchProcess () {
 
 					# Lidarr Status Check
 					LidarrTaskStatusCheck
-					CheckLidarrBeforeImport "$checkLidarrAlbumId" "notbeets"
+					CheckLidarrBeforeImport "$checkLidarrAlbumId"
 					if [ $alreadyImported = true ]; then
 						log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
 						break 2
@@ -1213,7 +1213,7 @@ SearchProcess () {
 				
 				# Lidarr Status Check
 				LidarrTaskStatusCheck
-				CheckLidarrBeforeImport "$checkLidarrAlbumId" "notbeets"
+				CheckLidarrBeforeImport "$checkLidarrAlbumId"
 				if [ $alreadyImported = true ]; then
 					log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
 					break 2
@@ -1227,7 +1227,7 @@ SearchProcess () {
 
 				# Lidarr Status Check
 				LidarrTaskStatusCheck
-				CheckLidarrBeforeImport "$checkLidarrAlbumId" "notbeets"
+				CheckLidarrBeforeImport "$checkLidarrAlbumId"
 				if [ $alreadyImported = true ]; then
 					log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
 					break 2
@@ -1250,7 +1250,7 @@ SearchProcess () {
 		
 		# Lidarr Status Check
 		LidarrTaskStatusCheck
-		CheckLidarrBeforeImport "$checkLidarrAlbumId" "notbeets"
+		CheckLidarrBeforeImport "$checkLidarrAlbumId"
 		if [ $alreadyImported = true ]; then
 			log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
 			continue
@@ -1280,7 +1280,7 @@ SearchProcess () {
 
 					# Verify it was successfully imported into Lidarr
 					LidarrTaskStatusCheck
-					CheckLidarrBeforeImport "$checkLidarrAlbumId" "notbeets"
+					CheckLidarrBeforeImport "$checkLidarrAlbumId"
 					if [ $alreadyImported = true ]; then
 						log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
 						continue
@@ -1293,7 +1293,7 @@ SearchProcess () {
 		fi
 
 		LidarrTaskStatusCheck
-		CheckLidarrBeforeImport "$checkLidarrAlbumId" "notbeets"
+		CheckLidarrBeforeImport "$checkLidarrAlbumId"
 		if [ $alreadyImported = true ]; then
 			log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
 			continue
@@ -1321,7 +1321,7 @@ SearchProcess () {
 
 					# Verify it was successfully imported into Lidarr
 					LidarrTaskStatusCheck
-					CheckLidarrBeforeImport "$checkLidarrAlbumId" "notbeets"
+					CheckLidarrBeforeImport "$checkLidarrAlbumId"
 					if [ $alreadyImported = true ]; then
 						log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
 						continue
@@ -1333,7 +1333,7 @@ SearchProcess () {
 		fi
 		
 		LidarrTaskStatusCheck
-		CheckLidarrBeforeImport "$checkLidarrAlbumId" "notbeets"
+		CheckLidarrBeforeImport "$checkLidarrAlbumId"
 		if [ $alreadyImported = true ]; then
 			log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
 			continue
@@ -1456,7 +1456,7 @@ ArtistDeezerSearch () {
 
 			# Verify it was successfully imported into Lidarr
 			LidarrTaskStatusCheck
-			CheckLidarrBeforeImport "$checkLidarrAlbumId" "notbeets"
+			CheckLidarrBeforeImport "$checkLidarrAlbumId"
 			if [ $alreadyImported = true ]; then
 				break
 			fi
@@ -1548,7 +1548,7 @@ FuzzyDeezerSearch () {
 
 				# Verify it was successfully imported into Lidarr
 				LidarrTaskStatusCheck
-				CheckLidarrBeforeImport "$checkLidarrAlbumId" "notbeets"
+				CheckLidarrBeforeImport "$checkLidarrAlbumId"
 				if [ $alreadyImported = true ]; then
 					break
 				fi
@@ -1635,7 +1635,7 @@ ArtistTidalSearch () {
 
 			# Verify it was successfully imported into Lidarr
 			LidarrTaskStatusCheck
-			CheckLidarrBeforeImport "$checkLidarrAlbumId" "notbeets"
+			CheckLidarrBeforeImport "$checkLidarrAlbumId"
 			if [ $alreadyImported = true ]; then
 				break
 			fi
@@ -1707,7 +1707,7 @@ FuzzyTidalSearch () {
 				
 				# Verify it was successfully imported into Lidarr
 				LidarrTaskStatusCheck
-				CheckLidarrBeforeImport "$checkLidarrAlbumId" "notbeets"
+				CheckLidarrBeforeImport "$checkLidarrAlbumId"
 				if [ $alreadyImported = true ]; then
 					break
 				fi
@@ -1725,48 +1725,20 @@ FuzzyTidalSearch () {
 
 CheckLidarrBeforeImport () {
 
-	alreadyImported=false
-	if [ "$2" = "beets" ]; then
-		getLidarrAlbumId=$(curl -s "$lidarrUrl/api/v1/search?term=lidarr%3A$1&apikey=$lidarrApiKey" | jq -r .[].album.releases[].albumId | sort -u)
-		checkLidarrAlbumData="$(curl -s "$lidarrUrl/api/v1/album/$getLidarrAlbumId?apikey=${lidarrApiKey}")"
-		checkLidarrAlbumPercentOfTracks=$(echo "$checkLidarrAlbumData" | jq -r ".statistics.percentOfTracks")
-
-		if [ "$checkLidarrAlbumPercentOfTracks" = "null" ]; then
-			checkLidarrAlbumPercentOfTracks=0
-			return
-		fi
-		if [ ${checkLidarrAlbumPercentOfTracks%%.*} -ge 100 ]; then
-			if [ $wantedAlbumListSource = missing ]; then
-				log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: ERROR :: Already Imported Album (Missing)"
-				alreadyImported=true
-				return
-			else
-				log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Importing Album (Cutoff)"
-				return
-			fi
-		fi
+	alreadyImported=false		
+	checkLidarrAlbumData="$(curl -s "$lidarrUrl/api/v1/album/$1?apikey=${lidarrApiKey}")"
+	checkLidarrAlbumPercentOfTracks=$(echo "$checkLidarrAlbumData" | jq -r ".statistics.percentOfTracks")
+	log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Checking Lidarr for existing files"
+	log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: $checkLidarrAlbumPercentOfTracks% Tracks found"
+	if [ "$checkLidarrAlbumPercentOfTracks" = "null" ]; then
+		checkLidarrAlbumPercentOfTracks=0
+		return
 	fi
-
-	if [ "$2" = "notbeets" ]; then
-		if [ -f "/config/extended/logs/downloaded/found/$1" ]; then
-			log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: ERROR :: Previously Found, skipping..."
+	if [ ${checkLidarrAlbumPercentOfTracks%%.*} -ge 100 ]; then
+		if [ $wantedAlbumListSource = missing ]; then
+			log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported Album (Missing), skipping..."
 			alreadyImported=true
 			return
-		fi
-		
-		checkLidarrAlbumData="$(curl -s "$lidarrUrl/api/v1/album/$1?apikey=${lidarrApiKey}")"
-		checkLidarrAlbumPercentOfTracks=$(echo "$checkLidarrAlbumData" | jq -r ".statistics.percentOfTracks")
-
-		if [ "$checkLidarrAlbumPercentOfTracks" = "null" ]; then
-			checkLidarrAlbumPercentOfTracks=0
-			return
-		fi
-		if [ ${checkLidarrAlbumPercentOfTracks%%.*} -ge 100 ]; then
-			if [ $wantedAlbumListSource = missing ]; then
-				log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistNameSanitized :: $lidarrAlbumTitle :: $lidarrAlbumType :: ERROR :: Already Imported Album (Missing), skipping..."
-				alreadyImported=true
-				return
-			fi
 		fi
 	fi
 }
