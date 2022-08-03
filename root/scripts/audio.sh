@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.227"
+scriptVersion="1.0.228"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" = "null" ]; then
@@ -148,13 +148,13 @@ Configuration () {
 DownloadFormat () {
 	if [ $audioFormat = native ]; then
 		if [ $audioBitrate = lossless ]; then
-			tidal-dl -q HiFi
+			tidalQuality=HiFi
 			deemixQuality=flac
 		elif [ $audioBitrate = high ]; then
-			tidal-dl -q High
+			tidalQuality=High
 			deemixQuality=320
 		elif [ $audioBitrate = low ]; then
-			tidal-dl -q Normal
+			tidalQuality=128
 			deemixQuality=128
 		else
 			log "ERROR :: Invalid audioFormat and audioBitrate options set..."
@@ -362,7 +362,7 @@ TidalClientSetup () {
 TidalClientTest () { 
 	log "TIDAL :: tidal-dl client setup verification..."
 	TidaldlStatusCheck
-	tidal-dl -o $downloadPath/incomplete -l "166356219" &>/dev/null
+	tidal-dl -q Normal -o $downloadPath/incomplete -l "166356219" &>/dev/null
 	
 	downloadCount=$(find $downloadPath/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
 	if [ $downloadCount -le 0 ]; then
@@ -518,7 +518,7 @@ DownloadProcess () {
 				TidalClientTest
 			fi
 			TidaldlStatusCheck
-			tidal-dl -o $downloadPath/incomplete -l "$1" &>/dev/null
+			tidal-dl -q $tidalQuality -o $downloadPath/incomplete -l "$1" &>/dev/null
 		fi
 	
 		find "$downloadPath/incomplete" -type f -iname "*.flac" -newer "/temp-download" -print0 | while IFS= read -r -d '' file; do
@@ -542,7 +542,7 @@ DownloadProcess () {
 
 		if [ "$completedVerification" = "true" ]; then
 			break
-		elif [ $downloadTry = 5 ]; then
+		elif [ $downloadTry = 2 ]; then
 			if [ -d $downloadPath/incomplete ]; then
 				rm -rf $downloadPath/incomplete/*
 			fi
@@ -791,7 +791,7 @@ DeemixClientSetup () {
 DeezerClientTest () {
 	log "DEEZER :: deemix client setup verification..."
 
-	deemix -b $deemixQuality -p $downloadPath/incomplete "https://www.deezer.com/album/197472472" &>/dev/null
+	deemix -b 128 -p $downloadPath/incomplete "https://www.deezer.com/album/197472472" &>/dev/null
 	if [ -d "/tmp/deemix-imgs" ]; then
 		rm -rf /tmp/deemix-imgs
 	fi
