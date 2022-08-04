@@ -101,7 +101,6 @@ Container images are configured using parameters passed at runtime (such as thos
 | `-e audioFormat=native` | native or alac or mp3 or aac or opus :: native is the native download client file type, selected by the matching audio bitrate |
 | `-e audioBitrate=lossless` | lossless or high or low or ### :: lossless = flac files, high = 320K, low = 128k/96k, ### = the output bitrate of converted lossless files to selected audioFormat that is not native, example: 192... |
 | `-e requireQuality=true` | true = enabled :: Downloads will be required to have the requested file format |
-| `-e enableBeetsTagging=true` | true = enabled :: Downloads will be processed and tagged by Beets |
 | `-e enableReplaygainTags=true` | true = enabled :: Downloads will be tagged with Replaygain Metadata |
 | `-e audioLyricType=both` | both or explicit or clean :: both, is explicit perferred matching, explicit is explicit releases only matching and clean is clean releases only matching |
 | `-e dlClientSource=both` | deezer, tidal or both :: set to both, to use both clients, tidal requires extra steps, view logging output |
@@ -143,7 +142,6 @@ docker create \
   -e audioFormat=native \
   -e audioBitrate=lossless \
   -e requireQuality=true \
-  -e enableBeetsTagging=true \
   -e enableReplaygainTags=true \
   -e audioLyricType=both \
   -e dlClientSource=both \
@@ -191,7 +189,6 @@ services:
       - audioFormat=native
       - audioBitrate=lossless
       - requireQuality=true
-      - enableBeetsTagging=true
       - enableReplaygainTags=true
       - audioLyricType=both
       - dlClientSource=both
