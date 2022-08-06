@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.012"
+scriptVersion="1.0.013"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -330,12 +330,12 @@ VideoProcessWithSMA () {
 
         if python3 /usr/local/sma/manual.py --config "/config/extended/scripts/sma.ini" -i "$file" -nt &>/dev/null; then
             sleep 0.01
-            log "$processCount of $lidarrArtistIdsCount :: $1 :: $lidarrArtistName :: ${musicbrainzVideoTitle}${musicbrainzVideoDisambiguation} :: Processed with SMA..."
+            log "$processCount of $lidarrArtistIdsCount :: $1 :: $lidarrArtistName :: $2 :: Processed with SMA..."
             rm  /usr/local/sma/config/*log*
         else
-            log "$processCount of $lidarrArtistIdsCount :: $1 :: $lidarrArtistName :: ${musicbrainzVideoTitle}${musicbrainzVideoDisambiguation} :: ERROR: SMA Processing Error"
+            log "$processCount of $lidarrArtistIdsCount :: $1 :: $lidarrArtistName :: $2 :: ERROR: SMA Processing Error"
             rm "$video"
-            log "$processCount of $lidarrArtistIdsCount :: $1 :: $lidarrArtistName :: ${musicbrainzVideoTitle}${musicbrainzVideoDisambiguation} :: INFO: deleted: $filename"
+            log "$processCount of $lidarrArtistIdsCount :: $1 :: $lidarrArtistName :: $2 :: INFO: deleted: $filename"
         fi
     done
 }
@@ -546,7 +546,7 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
 
             DownloadVideo "$videoDownloadUrl" "$musicbrainzVideoTitleClean" "$plexVideoType" "MBZDB"
             DownloadThumb "$videoThumbnail" "$musicbrainzVideoTitleClean" "$plexVideoType" "MBZDB"
-            VideoProcessWithSMA "MBZDB"
+            VideoProcessWithSMA "MBZDB" "$musicbrainzVideoTitle"
             VideoTagProcess "$musicbrainzVideoTitleClean" "$plexVideoType" "$videoYear" "MBZDB"
             VideoNfoWriter "$musicbrainzVideoTitleClean" "$plexVideoType" "$musicbrainzVideoTitle" "" "musicbrainz" "$videoYear" "MBZDB"
                 
@@ -558,6 +558,11 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
 
             mv $downloadPath/incomplete/* "/music-videos/$lidarrArtistFolder"/
         done
+    fi
+
+    if [ -z "$artistImvdbSlug" ]; then
+        log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: No IMVDB artist link found, skipping..."
+        continue
     fi
 
     imvdbProcessCount=0
@@ -615,7 +620,7 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
         log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: ${imvdbVideoTitle} :: $videoDownloadUrl..."
         DownloadVideo "$videoDownloadUrl" "$videoTitleClean" "$plexVideoType" "IMVDB"
         DownloadThumb "$imvdbVideoImage" "$videoTitleClean" "$plexVideoType" "IMVDB"
-        VideoProcessWithSMA "IMVDB"
+        VideoProcessWithSMA "IMVDB" "$imvdbVideoTitle" 
         VideoTagProcess "$videoTitleClean" "$plexVideoType" "$videoYear" "IMVDB"
         VideoNfoWriter "$videoTitleClean" "$plexVideoType" "$imvdbVideoTitle" "" "imvdb" "$videoYear" "IMVDB"
             
@@ -628,5 +633,7 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
         mv $downloadPath/incomplete/* "/music-videos/$lidarrArtistFolder"/
     done
 done
+#CacheMusicbrainzRecords
+#ImvdbCache
 
 exit
