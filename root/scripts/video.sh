@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.015"
+scriptVersion="1.0.016"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -286,8 +286,13 @@ DownloadVideo () {
 
     if echo "$1" | grep -i "youtube" | read; then
         yt-dlp -o "$downloadPath/incomplete/${2}${3}" --embed-subs --sub-lang $youtubeSubtitleLanguage --merge-output-format mkv --remux-video mkv --no-mtime --geo-bypass "$1" &>/dev/null
-        chmod 666 "$downloadPath/incomplete/${2}${3}.mkv"
-        chown abc:abc "$downloadPath/incomplete/${2}${3}.mkv"
+        if [ -f "$downloadPath/incomplete/${2}${3}.mkv" ]; then
+            chmod 666 "$downloadPath/incomplete/${2}${3}.mkv"
+            chown abc:abc "$downloadPath/incomplete/${2}${3}.mkv"
+            downloadFailed=false
+        else
+            downloadFailed=true
+        fi
     fi
     
     if echo "$1" | grep -i "tidal" | read; then
@@ -305,8 +310,13 @@ DownloadVideo () {
             filenamenoext="${filename%.*}"
             mv "$file" "$downloadPath/incomplete/${2}${3}.mp4"
         done
-        chmod 666 "$downloadPath/incomplete/${2}${3}.mp4"
-        chown abc:abc "$downloadPath/incomplete/${2}${3}.mp4"
+        if [ -f "$downloadPath/incomplete/${2}${3}.mp4" ]; then
+            chmod 666 "$downloadPath/incomplete/${2}${3}.mp4"
+            chown abc:abc "$downloadPath/incomplete/${2}${3}.mp4"
+            downloadFailed=false
+        else
+            downloadFailed=true
+        fi
     fi
 
 }
@@ -545,6 +555,10 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
             fi
 
             DownloadVideo "$videoDownloadUrl" "$musicbrainzVideoTitleClean" "$plexVideoType" "MBZDB"
+            if [ "$downloadFailed" = "true" ]; then
+                log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: ${musicbrainzVideoTitle}${musicbrainzVideoDisambiguation} :: Download failed, skipping..."
+                continue
+            fi
             DownloadThumb "$videoThumbnail" "$musicbrainzVideoTitleClean" "$plexVideoType" "MBZDB"
             VideoProcessWithSMA "MBZDB" "$musicbrainzVideoTitle"
             VideoTagProcess "$musicbrainzVideoTitleClean" "$plexVideoType" "$videoYear" "MBZDB"
@@ -619,6 +633,10 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
         fi
         log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: ${imvdbVideoTitle} :: $videoDownloadUrl..."
         DownloadVideo "$videoDownloadUrl" "$videoTitleClean" "$plexVideoType" "IMVDB"
+        if [ "$downloadFailed" = "true" ]; then
+            log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: ${imvdbVideoTitle} :: Download failed, skipping..."
+            continue
+        fi
         DownloadThumb "$imvdbVideoImage" "$videoTitleClean" "$plexVideoType" "IMVDB"
         VideoProcessWithSMA "IMVDB" "$imvdbVideoTitle" 
         VideoTagProcess "$videoTitleClean" "$plexVideoType" "$videoYear" "IMVDB"
