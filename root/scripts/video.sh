@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.014"
+scriptVersion="1.0.015"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -481,7 +481,7 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
         for musicbrainzVideoId in $(echo "$musicbrainzArtistVideoRecordingsDataWithUrlIds"); do
             musicbrainzVideoRecordingData=$(echo "$musicbrainzArtistVideoRecordingsDataWithUrl" | jq -r "select(.id==\"$musicbrainzVideoId\")")
             musicbrainzVideoTitle="$(echo "$musicbrainzVideoRecordingData" | jq -r .title)"
-            musicbrainzVideoTitleClean="$(echo "$musicbrainzVideoTitle" | sed -e "s%[^[:alpha:][:digit:]!@#$%^&*_+=()';{},.]% %g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
+            musicbrainzVideoTitleClean="$(echo "$musicbrainzVideoTitle" | sed -e sed -e "s/[^[:alpha:][:digit:]$^&_+=()'%;{},.@#]/ /g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
             musicbrainzVideoArtistCredits="$(echo "$musicbrainzVideoRecordingData" |  jq -r ".\"artist-credit\"[]")"
             musicbrainzVideoArtistCreditsNames="$(echo "$musicbrainzVideoArtistCredits" |  jq -r ".artist.name")"
             musicbrainzVideoArtistCreditId="$(echo "$musicbrainzVideoArtistCredits" |  jq -r ".artist.id" | head -n1)"
@@ -573,7 +573,7 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
         imvdbVideoJsonUrl="https://imvdb.com/api/v1/video/$imvdbVideoId?include=sources,countries,featured,credits,bts,popularity"
         imvdbVideoData="/config/extended/cache/imvdb/$lidarrArtistMusicbrainzId--$imvdbVideoId.json"
         imvdbVideoTitle="$(cat "$imvdbVideoData" | jq -r .song_title)"
-        videoTitleClean="$(echo "$imvdbVideoTitle" | sed -e "s%[^[:alpha:][:digit:]!@#$%^&*_+=()';{},.]% %g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
+        videoTitleClean="$(echo "$imvdbVideoTitle" | sed -e "s/[^[:alpha:][:digit:]$^&_+=()'%;{},.@#]/ /g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
         imvdbVideoYear="$(cat "$imvdbVideoData" | jq -r .year)"
         imvdbVideoImage="$(cat "$imvdbVideoData" | jq -r .image.o)"
         imvdbVideoArtistsSlug="$(cat "$imvdbVideoData" | jq -r .artists[].slug)"
