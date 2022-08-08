@@ -481,7 +481,7 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
         for musicbrainzVideoId in $(echo "$musicbrainzArtistVideoRecordingsDataWithUrlIds"); do
             musicbrainzVideoRecordingData=$(echo "$musicbrainzArtistVideoRecordingsDataWithUrl" | jq -r "select(.id==\"$musicbrainzVideoId\")")
             musicbrainzVideoTitle="$(echo "$musicbrainzVideoRecordingData" | jq -r .title)"
-            musicbrainzVideoTitleClean="$(echo "$musicbrainzVideoTitle" | sed -e sed -e "s/[^[:alpha:][:digit:]$^&_+=()'%;{},.@#]/ /g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
+            musicbrainzVideoTitleClean="$(echo "$musicbrainzVideoTitle" | sed -e "s/[^[:alpha:][:digit:]$^&_+=()'%;{},.@#]/ /g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
             musicbrainzVideoArtistCredits="$(echo "$musicbrainzVideoRecordingData" |  jq -r ".\"artist-credit\"[]")"
             musicbrainzVideoArtistCreditsNames="$(echo "$musicbrainzVideoArtistCredits" |  jq -r ".artist.name")"
             musicbrainzVideoArtistCreditId="$(echo "$musicbrainzVideoArtistCredits" |  jq -r ".artist.id" | head -n1)"
