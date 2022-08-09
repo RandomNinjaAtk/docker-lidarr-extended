@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.017"
+scriptVersion="1.0.018"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -285,14 +285,6 @@ DownloadVideo () {
     fi 
 
     if echo "$1" | grep -i "youtube" | read; then
-        if find /config -type f -name "cookies.txt" | read; then
-            cookiesFile="$(find /config -type f -name "cookies.txt" | head -n1)"
-            log "$processCount of $lidarrArtistIdsCount :: $4 :: $lidarrArtistName :: Cookies File Found!"
-        else
-            log "$processCount of $lidarrArtistIdsCount :: $4 :: $lidarrArtistName :: Cookies File Not Found!"
-            cookiesFile=""
-        fi
-
         if [ ! -z "$cookiesFile" ]; then
             yt-dlp --cookies "$cookiesFile" -o "$downloadPath/incomplete/${2}${3}" --embed-subs --sub-lang $youtubeSubtitleLanguage --merge-output-format mkv --remux-video mkv --no-mtime --geo-bypass "$1" &>/dev/null
         else
@@ -560,7 +552,16 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
             fi
 
             if echo "$videoDownloadUrl" | grep -i "youtube" | read; then
-                videoData="$(yt-dlp -j "$videoDownloadUrl")"
+
+                if find /config -type f -name "cookies.txt" | read; then
+                    cookiesFile="$(find /config -type f -name "cookies.txt" | head -n1)"
+                    log "$processCount of $lidarrArtistIdsCount :: YT-DLP :: $lidarrArtistName :: Cookies File Found!"
+                    videoData="$(yt-dlp --cookies "$cookiesFile" -j "$videoDownloadUrl")"
+                else
+                    log "$processCount of $lidarrArtistIdsCount :: YT-DLP :: $lidarrArtistName :: Cookies File Not Found!"
+                    cookiesFile=""
+                    videoData="$(yt-dlp -j "$videoDownloadUrl")"
+                fi
                 videoThumbnail="$(echo "$videoData" | jq -r .thumbnail)"
                 videoUploadDate="$(echo "$videoData" | jq -r .upload_date)"
                 videoYear="${videoUploadDate:0:4}"
@@ -622,7 +623,16 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
                 continue
             fi
         fi
-        videoData="$(yt-dlp -j "$videoDownloadUrl")"
+        
+        if find /config -type f -name "cookies.txt" | read; then
+            cookiesFile="$(find /config -type f -name "cookies.txt" | head -n1)"
+            log "$processCount of $lidarrArtistIdsCount :: YT-DLP :: $lidarrArtistName :: Cookies File Found!"
+            videoData="$(yt-dlp --cookies "$cookiesFile" -j "$videoDownloadUrl")"
+        else
+            log "$processCount of $lidarrArtistIdsCount :: YT-DLP :: $lidarrArtistName :: Cookies File Not Found!"
+            cookiesFile=""
+            videoData="$(yt-dlp -j "$videoDownloadUrl")"
+        fi
         videoThumbnail="$imvdbVideoImage"   
         videoUploadDate="$(echo "$videoData" | jq -r .upload_date)"
         videoYear="${videoUploadDate:0:4}"
