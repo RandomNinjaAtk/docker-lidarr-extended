@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.021"
+scriptVersion="1.0.022"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -72,9 +72,12 @@ Configuration () {
 	
 	verifyApiAccess
 
-    downloadPath="$downloadPath/videos"
-    log "Download Location :: $downloadPath"
-    log "Subtitle Language set to: $youtubeSubtitleLanguage"
+	downloadPath="$downloadPath/videos"
+	log "CONFIG :: Download Location :: $downloadPath"
+	log "CONFIG :: Subtitle Language set to: $youtubeSubtitleLanguage"
+	log "CONFIG :: Upgrading yt-dlp to the latest version..."
+	pip install yt-dlp --upgrade --no-cache-dir &>/dev/null
+	log "CONFIG :: Complete"
 }
 
 CacheMusicbrainzRecords () {
