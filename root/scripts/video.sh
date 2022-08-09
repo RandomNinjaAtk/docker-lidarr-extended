@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.016"
+scriptVersion="1.0.017"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -285,7 +285,19 @@ DownloadVideo () {
     fi 
 
     if echo "$1" | grep -i "youtube" | read; then
-        yt-dlp -o "$downloadPath/incomplete/${2}${3}" --embed-subs --sub-lang $youtubeSubtitleLanguage --merge-output-format mkv --remux-video mkv --no-mtime --geo-bypass "$1" &>/dev/null
+        if find /config -type f -name "cookies.txt" | read; then
+            cookiesFile="$(find /config -type f -name "cookies.txt" | head -n1)"
+            log "$processCount of $lidarrArtistIdsCount :: $4 :: $lidarrArtistName :: Cookies File Found!"
+        else
+            log "$processCount of $lidarrArtistIdsCount :: $4 :: $lidarrArtistName :: Cookies File Not Found!"
+            cookiesFile=""
+        fi
+
+        if [ ! -z "$cookiesFile" ]; then
+            yt-dlp --cookies "$cookiesFile" -o "$downloadPath/incomplete/${2}${3}" --embed-subs --sub-lang $youtubeSubtitleLanguage --merge-output-format mkv --remux-video mkv --no-mtime --geo-bypass "$1" &>/dev/null
+        else
+            yt-dlp -o "$downloadPath/incomplete/${2}${3}" --embed-subs --sub-lang $youtubeSubtitleLanguage --merge-output-format mkv --remux-video mkv --no-mtime --geo-bypass "$1" &>/dev/null
+        fi
         if [ -f "$downloadPath/incomplete/${2}${3}.mkv" ]; then
             chmod 666 "$downloadPath/incomplete/${2}${3}.mkv"
             chown abc:abc "$downloadPath/incomplete/${2}${3}.mkv"
@@ -462,7 +474,7 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
 	lidarrArtistMusicbrainzId=$(echo $lidarrArtistData | jq -r .foreignArtistId)
     lidarrArtistPath="$(echo "${lidarrArtistData}" | jq -r " .path")"
     lidarrArtistFolder="$(basename "${lidarrArtistPath}")"
-    lidarrArtistFolder="$(echo "$lidarrArtistFolder" | sed "s/ (.*)$//g")" # Plex Sanitization, remove disambiguation
+    lidarrArtistFolder="$(echo "$lidarrArtistFolder" | sed "s/ (.*)$//g" | sed "s/\.$//g")" # Plex Sanitization, remove disambiguation
     lidarrArtistNameSanitized="$(echo "$lidarrArtistFolder" | sed 's% (.*)$%%g')"
     artistImvdbUrl=$(echo $lidarrArtistData | jq -r '.links[] | select(.name=="imvdb") | .url')
     artistImvdbSlug=$(basename "$artistImvdbUrl")
@@ -579,13 +591,16 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
         continue
     fi
 
+    imvdbArtistVideoCount=$(ls /config/extended/cache/imvdb/$lidarrArtistMusicbrainzId--*.json | wc -l)
+    if [ $imvdbArtistVideoCount = 0 ]; then
+        log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: No videos found, skipping..."
+        continue
+    else
+        log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: Processing $imvdbArtistVideoCount Videos!"
+    fi
     imvdbProcessCount=0
-    for imvdbVideoUrl in $(echo "$artistImvdbVideoUrls"); do
+    for imvdbVideoData in $(ls /config/extended/cache/imvdb/$lidarrArtistMusicbrainzId--*.json); do
         imvdbProcessCount=$(( $imvdbProcessCount + 1 ))
-        imvdbVideoUrlSlug=$(basename "$imvdbVideoUrl")
-        imvdbVideoId=$(curl -s "$imvdbVideoUrl" | grep "<p>ID:" | grep -o "[[:digit:]]*")
-        imvdbVideoJsonUrl="https://imvdb.com/api/v1/video/$imvdbVideoId?include=sources,countries,featured,credits,bts,popularity"
-        imvdbVideoData="/config/extended/cache/imvdb/$lidarrArtistMusicbrainzId--$imvdbVideoId.json"
         imvdbVideoTitle="$(cat "$imvdbVideoData" | jq -r .song_title)"
         videoTitleClean="$(echo "$imvdbVideoTitle" | sed -e "s/[^[:alpha:][:digit:]$^&_+=()'%;{},.@#]/ /g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
         imvdbVideoYear="$(cat "$imvdbVideoData" | jq -r .year)"
