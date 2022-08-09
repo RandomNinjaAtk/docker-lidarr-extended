@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.020"
+scriptVersion="1.0.021"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -619,7 +619,7 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
         imvdbVideoYear="$(cat "$imvdbVideoData" | jq -r .year)"
         imvdbVideoImage="$(cat "$imvdbVideoData" | jq -r .image.o)"
         imvdbVideoArtistsSlug="$(cat "$imvdbVideoData" | jq -r .artists[].slug)"
-        echo "$featuredArtistName" > /config/extended/cache/imvdb/$imvdbVideoArtistsSlug
+        echo "$lidarrArtistName" > /config/extended/cache/imvdb/$imvdbVideoArtistsSlug
         imvdbVideoFeaturedArtistsSlug="$(cat "$imvdbVideoData" | jq -r .featured_artists[].slug)"
         imvdbVideoYoutubeId="$(cat "$imvdbVideoData" | jq -r ".sources[] | select(.is_primary==true) | select(.source==\"youtube\") | .source_data")"
         #"/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json"
