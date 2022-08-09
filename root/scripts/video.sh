@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.018"
+scriptVersion="1.0.019"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -237,9 +237,8 @@ ImvdbCache () {
     for imvdbVideoUrl in $(echo "$artistImvdbVideoUrls"); do
         imvdbProcessCount=$(( $imvdbProcessCount + 1 ))
         imvdbVideoUrlSlug=$(basename "$imvdbVideoUrl")
-        imvdbVideoId=$(curl -s "$imvdbVideoUrl" | grep "<p>ID:" | grep -o "[[:digit:]]*")
-        imvdbVideoJsonUrl="https://imvdb.com/api/v1/video/$imvdbVideoId?include=sources,countries,featured,credits,bts,popularity"
-        imvdbVideoData="/config/extended/cache/imvdb/$lidarrArtistMusicbrainzId--$imvdbVideoId.json"
+        imvdbVideoData="/config/extended/cache/imvdb/$lidarrArtistMusicbrainzId--$imvdbVideoUrlSlug.json"
+        find /config/extended/cache/imvdb -type f -iname "*--[0-9]*[0-9].json" -delete
         #echo "$imvdbVideoUrl :: $imvdbVideoUrlSlug :: $imvdbVideoId"
         if [ ! -d "/config/extended/cache/imvdb" ]; then
             log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: Creating Cache Folder..."
@@ -254,6 +253,8 @@ ImvdbCache () {
                 count=$(( $count + 1 ))
                 #echo "$count"
                 if [ ! -f "$imvdbVideoData" ]; then
+                    imvdbVideoId=$(curl -s "$imvdbVideoUrl" | grep "<p>ID:" | grep -o "[[:digit:]]*")
+                    imvdbVideoJsonUrl="https://imvdb.com/api/v1/video/$imvdbVideoId?include=sources,countries,featured,credits,bts,popularity"
                     log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: $imvdbProcessCount of $artistImvdbVideoUrlsCount ::  Downloading Video data"
                     curl -s "$imvdbVideoJsonUrl" -o "$imvdbVideoData"
                     sleep 0.5
