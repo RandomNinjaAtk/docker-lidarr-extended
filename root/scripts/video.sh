@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.019"
+scriptVersion="1.0.020"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -247,6 +247,11 @@ ImvdbCache () {
             chown abc:abc "/config/extended/cache/imvdb"
         fi
         log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: $imvdbProcessCount of $artistImvdbVideoUrlsCount :: Caching video data..."
+        if [ -f "$imvdbVideoData" ]; then
+            if [ ! -s "$imvdbVideoData"  ]; then
+                rm "$imvdbVideoData"
+            fi
+        fi
         if [ ! -f "$imvdbVideoData" ]; then
             count=0
             until false; do
@@ -260,7 +265,13 @@ ImvdbCache () {
                     sleep 0.5
                 fi
                 if [ -f "$imvdbVideoData" ]; then
-                    if jq -e . >/dev/null 2>&1 <<<"$(cat "$imvdbVideoData")"; then
+                    if [ ! -s "$imvdbVideoData"  ]; then
+                        rm "$imvdbVideoData"
+                        if [ $count = 2 ]; then
+                            log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: $imvdbProcessCount of $artistImvdbVideoUrlsCount :: Download Failed, skipping..."
+                            break
+                        fi
+                    elif jq -e . >/dev/null 2>&1 <<<"$(cat "$imvdbVideoData")"; then
                         break
                     else
                         rm "$imvdbVideoData"
