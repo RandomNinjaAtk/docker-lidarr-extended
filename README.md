@@ -85,10 +85,10 @@ Container images are configured using parameters passed at runtime (such as thos
 | Parameter | Function |
 | --- | --- |
 | `-p 8686` | The port for the Lidarr webinterface |
-| `-v /config` | Configuration files for Lidarr. |
+| `-v /config` | Configuration files for Lidarr. (<strong>required path</strong>)|
 | `-v /downloads-lidarr-extended` | Path for online service downloads. (<strong>required path</strong>)|
-| `-v /music` | Path to your music folder location. (<strong>required path</strong>)|
-| `-v /music-videos` | Path to your music-videos folder location.|
+| `-v /music` | Path to your music folder location.|
+| `-v /music-videos` | Path to your music-videos folder location. (<strong>required path</strong>)|
 | `-e TZ=America/New_York` | Specify a timezone to use EST, America/New_York. |
 | `-e PUID=1000` | for UserID - see below for explanation |
 | `-e PGID=1000` | for GroupID - see below for explanation |
