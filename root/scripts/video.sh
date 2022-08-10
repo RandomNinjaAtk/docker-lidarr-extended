@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.022"
+scriptVersion="1.0.023"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -161,24 +161,11 @@ TidalClientSetup () {
 		log "TIDAL :: ERROR :: Loading client for required authentication, please authenticate, then exit the client..."
 		tidal-dl
 	fi
-
-	if [ ! -d /config/extended/cache/tidal ]; then
-		mkdir -p /config/extended/cache/tidal
-		chmod 777 /config/extended/cache/tidal
-		chown abc:abc /config/extended/cache/tidal
-	fi
-	
-	if [ -d /config/extended/cache/tidal ]; then
-		log "TIDAL :: Purging album list cache..."
-		find /config/extended/cache/tidal -type f -name "*.json" -delete
-	fi
-	
+		
 	if [ ! -d "$downloadPath/incomplete" ]; then
 		mkdir -p $downloadPath/incomplete
 		chmod 777 $downloadPath/incomplete
 		chown abc:abc $downloadPath/incomplete
-	else
-		rm -rf $downloadPath/incomplete/*
 	fi
 	
     TidaldlStatusCheck
