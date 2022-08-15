@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.025"
+scriptVersion="1.0.026"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -707,26 +707,6 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
         fi
         videoDownloadUrl="https://www.youtube.com/watch?v=$imvdbVideoYoutubeId"
         plexVideoType="-video"
-        if [ -d "/music-videos/$lidarrArtistFolder" ]; then
-            if [[ -n $(find "/music-videos/$lidarrArtistFolder" -iname "${videoTitleClean}${plexVideoType}.*") ]]; then
-                log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: ${imvdbVideoTitle} :: Previously Downloaded, skipping..."
-                continue
-            fi
-        fi
-        
-        if find /config -type f -name "cookies.txt" | read; then
-            cookiesFile="$(find /config -type f -name "cookies.txt" | head -n1)"
-            log "$processCount of $lidarrArtistIdsCount :: YT-DLP :: $lidarrArtistName :: Cookies File Found!"
-            videoData="$(yt-dlp --cookies "$cookiesFile" -j "$videoDownloadUrl")"
-        else
-            log "$processCount of $lidarrArtistIdsCount :: YT-DLP :: $lidarrArtistName :: Cookies File Not Found!"
-            cookiesFile=""
-            videoData="$(yt-dlp -j "$videoDownloadUrl")"
-        fi
-        videoThumbnail="$imvdbVideoImage"   
-        videoUploadDate="$(echo "$videoData" | jq -r .upload_date)"
-        videoYear="${videoUploadDate:0:4}"
-           
 
         if [ ! -z "$imvdbVideoFeaturedArtistsSlug" ]; then
             for featuredArtistSlug in $(echo "$imvdbVideoFeaturedArtistsSlug"); do
@@ -746,6 +726,27 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
                 fi
             done
         fi
+
+        if [ -d "/music-videos/$lidarrArtistFolder" ]; then
+            if [[ -n $(find "/music-videos/$lidarrArtistFolder" -iname "${videoTitleClean}${plexVideoType}.*") ]]; then
+                log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: ${imvdbVideoTitle} :: Previously Downloaded, skipping..."
+                continue
+            fi
+        fi
+        
+        if find /config -type f -name "cookies.txt" | read; then
+            cookiesFile="$(find /config -type f -name "cookies.txt" | head -n1)"
+            log "$processCount of $lidarrArtistIdsCount :: YT-DLP :: $lidarrArtistName :: Cookies File Found!"
+            videoData="$(yt-dlp --cookies "$cookiesFile" -j "$videoDownloadUrl")"
+        else
+            log "$processCount of $lidarrArtistIdsCount :: YT-DLP :: $lidarrArtistName :: Cookies File Not Found!"
+            cookiesFile=""
+            videoData="$(yt-dlp -j "$videoDownloadUrl")"
+        fi
+        videoThumbnail="$imvdbVideoImage"   
+        videoUploadDate="$(echo "$videoData" | jq -r .upload_date)"
+        videoYear="${videoUploadDate:0:4}"
+        
         log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: ${imvdbVideoTitle} :: $videoDownloadUrl..."
         DownloadVideo "$videoDownloadUrl" "$videoTitleClean" "$plexVideoType" "IMVDB"
         if [ "$downloadFailed" = "true" ]; then
