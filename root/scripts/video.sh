@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.023"
+scriptVersion="1.0.024"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -16,6 +16,7 @@ agent="lidarr-extended ( https://github.com/RandomNinjaAtk/docker-lidarr-extende
 musicbrainzMirror=https://musicbrainz.org
 
 # Debugging Settings
+#addFeaturedVideoArtists=true
 
 if [ "$dlClientSource" = "tidal" ] || [ "$dlClientSource" = "both" ]; then
 	sourcePreference=tidal
@@ -454,6 +455,89 @@ VideoNfoWriter () {
 
 }
 
+LidarrTaskStatusCheck () {
+	alerted=no
+	until false
+	do
+		taskCount=$(curl -s "$lidarrUrl/api/v1/command?apikey=${lidarrApiKey}" | jq -r .[].status | grep -v completed | grep -v failed | wc -l)
+		if [ "$taskCount" -ge "1" ]; then
+			if [ "$alerted" = "no" ]; then
+				alerted=yes
+				log "STATUS :: LIDARR BUSY :: Pausing/waiting for all active Lidarr tasks to end..."
+			fi
+			sleep 2
+		else
+			break
+		fi
+	done
+}
+
+AddFeaturedVideoArtists () {
+    if [ "$addFeaturedVideoArtists" != "true" ]; then
+        log "-----------------------------------------------------------------------------"
+        log "Add Featured Music Video Artists to Lidarr :: DISABLED"    
+        log "-----------------------------------------------------------------------------"
+        return
+    fi
+    log "-----------------------------------------------------------------------------"
+    log "Add Featured Music Video Artists to Lidarr :: ENABLED"    
+    log "-----------------------------------------------------------------------------"
+    lidarrArtistsData="$(curl -s "$lidarrUrl/api/v1/artist?apikey=${lidarrApiKey}" | jq -r ".[]")"
+    artistImvdbUrl=$(echo $lidarrArtistsData | jq -r '.links[] | select(.name=="imvdb") | .url')
+    videoArtists=$(ls /config/extended/cache/imvdb/ | grep -Ev ".*--.*")
+    videoArtistsCount=$(ls /config/extended/cache/imvdb/ | grep -Ev ".*--.*" | wc -l)
+    if [ "$videoArtistsCount" == "0" ]; then
+        log "$videoArtistsCount Artists found for processing, skipping..."
+        return
+    fi
+    loopCount=0
+    for slug in $(echo $videoArtists); do
+        loopCount=$(( $loopCount + 1))
+        artistName="$(cat /config/extended/cache/imvdb/$slug)"
+        if echo "$artistImvdbUrl" | grep -i "^https://imvdb.com/n/${slug}$" | read; then
+            log "$loopCount of $videoArtistsCount :: $artistName :: Already added to Lidarr, skipping..."
+            continue
+        fi
+        log "$loopCount of $videoArtistsCount :: $artistName :: Processing url :: https://imvdb.com/n/$slug"
+        query_data=$(curl -s -A "$agent" "https://musicbrainz.org/ws/2/url?query=url:%22https://imvdb.com/n/$slug%22&fmt=json")
+        count=$(echo "$query_data" | jq -r ".count")			
+        if [ "$count" != "0" ]; then
+            musicbrainzArtistId="$(echo "$query_data" | jq -r ".urls[].\"relation-list\"[].relations[].artist.id")"
+            sleep 1
+        else
+            log "$loopCount of $videoArtistsCount :: $artistName :: ERROR : Musicbrainz ID Not Found, skipping..."
+            continue
+        fi
+
+        data=$(curl -s "$lidarrUrl/api/v1/search?term=lidarr%3A$musicbrainzArtistId" -H "X-Api-Key: $lidarrApiKey" | jq -r ".[]")
+		artistName="$(echo "$data" | jq -r ".artist.artistName")"
+		foreignId="$(echo "$data" | jq -r ".foreignId")"
+		data=$(curl -s "$lidarrUrl/api/v1/rootFolder" -H "X-Api-Key: $lidarrApiKey" | jq -r ".[]")
+		path="$(echo "$data" | jq -r ".path")"
+		qualityProfileId="$(echo "$data" | jq -r ".defaultQualityProfileId")"
+		metadataProfileId="$(echo "$data" | jq -r ".defaultMetadataProfileId")"
+		data="{
+			\"artistName\": \"$artistName\",
+			\"foreignArtistId\": \"$foreignId\",
+			\"qualityProfileId\": $qualityProfileId,
+			\"metadataProfileId\": $metadataProfileId,
+			\"monitored\":true,
+			\"monitor\":\"all\",
+			\"rootFolderPath\": \"$path\",
+			\"addOptions\":{\"searchForMissingAlbums\":false}
+			}"
+
+		if echo "$lidarrArtistIds" | grep "^${musicbrainzArtistId}$" | read; then
+			log "$loopCount of $videoArtistsCount :: $artistName :: Already in Lidarr ($musicbrainzArtistId), skipping..."
+			continue
+		fi
+		log "$loopCount of $videoArtistsCount :: $artistName :: Adding $artistName to Lidarr ($musicbrainzArtistId)..."
+		LidarrTaskStatusCheck
+		lidarrAddArtist=$(curl -s "$lidarrUrl/api/v1/artist" -X POST -H 'Content-Type: application/json' -H "X-Api-Key: $lidarrApiKey" --data-raw "$data")
+    done
+
+}
+
 Configuration
 TidalClientSetup
 
@@ -678,6 +762,8 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
         mv $downloadPath/incomplete/* "/music-videos/$lidarrArtistFolder"/
     done
 done
+
+AddFeaturedVideoArtists
 #CacheMusicbrainzRecords
 #ImvdbCache
 
