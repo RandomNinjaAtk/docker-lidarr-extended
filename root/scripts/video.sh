@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.027"
+scriptVersion="1.0.028"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -689,6 +689,9 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
     else
         log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: Processing $imvdbArtistVideoCount Videos!"
     fi
+
+    find /config/extended/cache/imvdb -type f -empty -delete # delete empty files
+    
     imvdbProcessCount=0
     for imvdbVideoData in $(ls /config/extended/cache/imvdb/$lidarrArtistMusicbrainzId--*.json); do
         imvdbProcessCount=$(( $imvdbProcessCount + 1 ))
@@ -721,6 +724,7 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
                         sleep 1
                     fi
                 fi
+                find /config/extended/cache/imvdb -type f -empty -delete # delete empty files
                 if [ -z "$featuredArtistName" ]; then
                     continue
                 fi
