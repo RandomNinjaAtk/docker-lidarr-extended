@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.029"
+scriptVersion="1.0.030"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -75,6 +75,7 @@ Configuration () {
 
 	downloadPath="$downloadPath/videos"
 	log "CONFIG :: Download Location :: $downloadPath"
+	log "CONFIG :: Music Video Location :: $videoPath"
 	log "CONFIG :: Subtitle Language set to: $youtubeSubtitleLanguage"
 	log "CONFIG :: Upgrading yt-dlp to the latest version..."
 	pip install yt-dlp --upgrade --no-cache-dir &>/dev/null
@@ -570,7 +571,7 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
     if [ -d /config/extended/logs/video/complete ]; then
         find /config/extended/logs/video/complete -type f -mtime +7 -delete # Remove Files older than 7 days to allow re-processing artist for new videos
         if [ -f "/config/extended/logs/video/complete/$lidarrArtistFolder" ]; then
-            downloadedVideoCount=$(find "/music-videos/$lidarrArtistFolder" -type f -iname "*.mkv" | wc -l)
+            downloadedVideoCount=$(find "$videoPath/$lidarrArtistFolder" -type f -iname "*.mkv" | wc -l)
             log "$processCount of $lidarrArtistIdsCount :: $lidarrArtistName :: All $downloadedVideoCount Artist Music Videos previously downloaded, skipping..."
             continue
         fi
@@ -629,8 +630,8 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
                 plexVideoType="-video"
                 videoDisambiguationTitle=""
             fi
-            if [ -d "/music-videos/$lidarrArtistFolder" ]; then
-                if [[ -n $(find "/music-videos/$lidarrArtistFolder" -iname "${musicbrainzVideoTitleClean}${plexVideoType}.*") ]]; then
+            if [ -d "$videoPath/$lidarrArtistFolder" ]; then
+                if [[ -n $(find "$videoPath/$lidarrArtistFolder" -iname "${musicbrainzVideoTitleClean}${plexVideoType}.*") ]]; then
                     log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: ${musicbrainzVideoTitle}${musicbrainzVideoDisambiguation} :: Previously Downloaded, skipping..."
                     continue
                 fi
@@ -677,13 +678,13 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
             VideoTagProcess "$musicbrainzVideoTitleClean" "$plexVideoType" "$videoYear" "MBZDB"
             VideoNfoWriter "$musicbrainzVideoTitleClean" "$plexVideoType" "$musicbrainzVideoTitle" "" "musicbrainz" "$videoYear" "MBZDB"
                 
-            if [ ! -d "/music-videos/$lidarrArtistFolder" ]; then
-                mkdir -p "/music-videos/$lidarrArtistFolder"
-                chmod 777 "/music-videos/$lidarrArtistFolder"
-                chown abc:abc "/music-videos/$lidarrArtistFolder"
+            if [ ! -d "$videoPath/$lidarrArtistFolder" ]; then
+                mkdir -p "$videoPath/$lidarrArtistFolder"
+                chmod 777 "$videoPath/$lidarrArtistFolder"
+                chown abc:abc "$videoPath/$lidarrArtistFolder"
             fi
 
-            mv $downloadPath/incomplete/* "/music-videos/$lidarrArtistFolder"/
+            mv $downloadPath/incomplete/* "$videoPath/$lidarrArtistFolder"/
         done
     fi
 
@@ -741,8 +742,8 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
             done
         fi
 
-        if [ -d "/music-videos/$lidarrArtistFolder" ]; then
-            if [[ -n $(find "/music-videos/$lidarrArtistFolder" -iname "${videoTitleClean}${plexVideoType}.*") ]]; then
+        if [ -d "$videoPath/$lidarrArtistFolder" ]; then
+            if [[ -n $(find "$videoPath/$lidarrArtistFolder" -iname "${videoTitleClean}${plexVideoType}.*") ]]; then
                 log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: ${imvdbVideoTitle} :: Previously Downloaded, skipping..."
                 continue
             fi
@@ -772,13 +773,13 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
         VideoTagProcess "$videoTitleClean" "$plexVideoType" "$videoYear" "IMVDB"
         VideoNfoWriter "$videoTitleClean" "$plexVideoType" "$imvdbVideoTitle" "" "imvdb" "$videoYear" "IMVDB"
             
-        if [ ! -d "/music-videos/$lidarrArtistFolder" ]; then
-            mkdir -p "/music-videos/$lidarrArtistFolder"
-            chmod 777 "/music-videos/$lidarrArtistFolder"
-            chown abc:abc "/music-videos/$lidarrArtistFolder"
+        if [ ! -d "$videoPath/$lidarrArtistFolder" ]; then
+            mkdir -p "$videoPath/$lidarrArtistFolder"
+            chmod 777 "$videoPath/$lidarrArtistFolder"
+            chown abc:abc "$videoPath/$lidarrArtistFolder"
         fi 
 
-        mv $downloadPath/incomplete/* "/music-videos/$lidarrArtistFolder"/
+        mv $downloadPath/incomplete/* "$videoPath/$lidarrArtistFolder"/
     done
 
     if [ ! -d /config/extended/logs/video ]; then
