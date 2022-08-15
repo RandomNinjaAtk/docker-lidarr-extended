@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.026"
+scriptVersion="1.0.027"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -219,7 +219,7 @@ ImvdbCache () {
     log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: Caching Records..."
     if [ ! -f /config/extended/cache/imvdb/$artistImvdbSlug ]; then
         log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: Recording Artist Slug into cache"
-        echo "$lidarrArtistName" > /config/extended/cache/imvdb/$artistImvdbSlug
+        echo -n "$lidarrArtistName" > /config/extended/cache/imvdb/$artistImvdbSlug
     fi
     artistImvdbVideoUrls=$(curl -s "https://imvdb.com/n/$artistImvdbSlug" | grep "$artistImvdbSlug" | grep -Eoi '<a [^>]+>' |  grep -Eo 'href="[^\"]+"' | grep -Eo '(http|https)://[^"]+' |  grep -i ".com/video/$artistImvdbSlug/" | sed "s%/[0-9]$%%g" | sort -u)
     artistImvdbVideoUrlsCount=$(echo "$artistImvdbVideoUrls" | wc -l)
@@ -717,7 +717,7 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
                     count=$(echo "$query_data" | jq -r ".count")			
                     if [ "$count" != "0" ]; then
                         featuredArtistName="$(echo "$query_data" | jq -r ".urls[].\"relation-list\"[].relations[].artist.name")"
-                        echo "$featuredArtistName" > /config/extended/cache/imvdb/$featuredArtistSlug
+                        echo -n "$featuredArtistName" > /config/extended/cache/imvdb/$featuredArtistSlug
                         sleep 1
                     fi
                 fi
