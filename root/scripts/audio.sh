@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.232"
+scriptVersion="1.0.234"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" = "null" ]; then
@@ -1049,6 +1049,19 @@ SearchProcess () {
 		
 		currentDate="$(date "+%F")"
 		currentDateClean="$(echo "$currentDate" | sed -e "s%[^[:digit:]]%%g")"
+
+		if [ "$enableVideoScript" == "true" ]; then
+			if [ -d /config/extended/logs/video/complete ]; then
+				lidarrArtistVideoFolder="$(echo "$lidarrArtistFolder" | sed "s/ (.*)$//g" | sed "s/\.$//g")" # Plex Sanitization, remove disambiguation
+				if [ -f "/config/extended/logs/video/complete/$lidarrArtistVideoFolder" ]; then
+					log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Skipping until all videos are processed for the artist..."
+					continue
+				fi
+			else
+				log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Skipping until all videos are processed for the artist..."
+				continue
+			fi
+		fi
 
 		if [[ ${currentDateClean} -gt ${lidarrAlbumReleaseDateClean} ]]; then
 			log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Starting Search..."
