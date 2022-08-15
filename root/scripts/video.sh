@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.028"
+scriptVersion="1.0.029"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -560,10 +560,20 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
     lidarrArtistNameSanitized="$(echo "$lidarrArtistFolder" | sed 's% (.*)$%%g')"
     artistImvdbUrl=$(echo $lidarrArtistData | jq -r '.links[] | select(.name=="imvdb") | .url')
     artistImvdbSlug=$(basename "$artistImvdbUrl")
+    downloadedVideoCount=0
 
     if  [ "$lidarrArtistName" == "Various Artists" ]; then
-        log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: Skipping, not processed by design..."
+        log "$processCount of $lidarrArtistIdsCount :: $lidarrArtistName :: Skipping, not processed by design..."
         continue
+    fi
+
+    if [ -d /config/extended/logs/video/complete ]; then
+        find /config/extended/logs/video/complete -type f -mtime +7 -delete # Remove Files older than 7 days to allow re-processing artist for new videos
+        if [ -f "/config/extended/logs/video/complete/$lidarrArtistFolder" ]; then
+            downloadedVideoCount=$(find "/music-videos/$lidarrArtistFolder" -type f -iname "*.mkv" | wc -l)
+            log "$processCount of $lidarrArtistIdsCount :: $lidarrArtistName :: All $downloadedVideoCount Artist Music Videos previously downloaded, skipping..."
+            continue
+        fi
     fi
 
     CacheMusicbrainzRecords
@@ -770,6 +780,21 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
 
         mv $downloadPath/incomplete/* "/music-videos/$lidarrArtistFolder"/
     done
+
+    if [ ! -d /config/extended/logs/video ]; then
+        mkdir -p /config/extended/logs/video
+        chmod 777 /config/extended/logs/video
+        chown abc:abc /config/extended/logs/video
+    fi
+
+    if [ ! -d /config/extended/logs/video/complete ]; then
+        mkdir -p /config/extended/logs/video/complete 
+        chmod 777 /config/extended/logs/video/complete 
+        chown abc:abc /config/extended/logs/video/complete 
+    fi
+
+    touch "/config/extended/logs/video/complete/$lidarrArtistFolder"
+
 done
 
 #CacheMusicbrainzRecords
