@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.030"
+scriptVersion="1.0.031"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -212,12 +212,19 @@ TidaldlStatusCheck () {
 }
 
 ImvdbCache () {
-
     
     if [ -z "$artistImvdbSlug" ]; then
         return
     fi
+    if [ ! -d "/config/extended/cache/imvdb" ]; then
+        log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: Creating Cache Folder..."
+        mkdir -p "/config/extended/cache/imvdb"
+        chmod 777 "/config/extended/cache/imvdb"
+        chown abc:abc "/config/extended/cache/imvdb"
+    fi
+    
     log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: Caching Records..."
+
     if [ ! -f /config/extended/cache/imvdb/$artistImvdbSlug ]; then
         log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: Recording Artist Slug into cache"
         echo -n "$lidarrArtistName" > /config/extended/cache/imvdb/$artistImvdbSlug
@@ -232,12 +239,7 @@ ImvdbCache () {
         imvdbVideoData="/config/extended/cache/imvdb/$lidarrArtistMusicbrainzId--$imvdbVideoUrlSlug.json"
         find /config/extended/cache/imvdb -type f -iname "*--[0-9]*[0-9].json" -delete
         #echo "$imvdbVideoUrl :: $imvdbVideoUrlSlug :: $imvdbVideoId"
-        if [ ! -d "/config/extended/cache/imvdb" ]; then
-            log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: Creating Cache Folder..."
-            mkdir -p "/config/extended/cache/imvdb"
-            chmod 777 "/config/extended/cache/imvdb"
-            chown abc:abc "/config/extended/cache/imvdb"
-        fi
+        
         log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: $imvdbProcessCount of $artistImvdbVideoUrlsCount :: Caching video data..."
         if [ -f "$imvdbVideoData" ]; then
             if [ ! -s "$imvdbVideoData"  ]; then
