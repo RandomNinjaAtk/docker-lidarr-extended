@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.024"
+scriptVersion="1.0.025"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -540,7 +540,11 @@ AddFeaturedVideoArtists () {
 
 Configuration
 TidalClientSetup
+AddFeaturedVideoArtists
 
+log "-----------------------------------------------------------------------------"
+log "Finding Videos"    
+log "-----------------------------------------------------------------------------"
 lidarrArtists=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/artist?apikey=$lidarrApiKey" | jq -r .[])
 lidarrArtistIds=$(echo $lidarrArtists | jq -r .id)
 lidarrArtistIdsCount=$(echo "$lidarrArtistIds" | wc -l)
@@ -763,7 +767,6 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
     done
 done
 
-AddFeaturedVideoArtists
 #CacheMusicbrainzRecords
 #ImvdbCache
 
