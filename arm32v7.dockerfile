@@ -32,6 +32,7 @@ ENV searchSort=date
 ENV enableBeetsTagging=true
 ENV enableReplaygainTags=true
 ENV downloadPath=/downloads-lidarr-extended
+ENV videoPath=/music-videos
 ENV SMA_PATH /usr/local/sma
 ENV youtubeSubtitleLanguage=en
 ENV enableAudioScript=true
