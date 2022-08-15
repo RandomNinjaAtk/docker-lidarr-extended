@@ -2,7 +2,7 @@ FROM linuxserver/lidarr:amd64-latest
 LABEL maintainer="RandomNinjaAtk"
 
 ENV dockerTitle="lidarr-extended"
-ENV dockerVersion="amd64-1.0.27"
+ENV dockerVersion="amd64-1.0.28"
 ENV LANG=en_US.UTF-8
 ENV autoStart=true
 ENV configureLidarrWithOptimalSettings=false
@@ -22,6 +22,7 @@ ENV searchSort=date
 ENV enableBeetsTagging=true
 ENV enableReplaygainTags=true
 ENV downloadPath=/downloads-lidarr-extended
+ENV videoPath=/music-videos
 ENV SMA_PATH /usr/local/sma
 ENV youtubeSubtitleLanguage=en
 ENV enableAudioScript=true
