@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.237"
+scriptVersion="1.0.238"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" = "null" ]; then
@@ -1001,14 +1001,27 @@ SearchProcess () {
 		wantedAlbumListSource=$(echo $lidarrMissingId | sed -e "s%[^[:alpha:]]%%g")
 		lidarrAlbumData="$(curl -s "$lidarrUrl/api/v1/album/$wantedAlbumId?apikey=${lidarrApiKey}")"
 		lidarrArtistData=$(echo "${lidarrAlbumData}" | jq -r ".artist")
+		lidarrArtistName=$(echo "${lidarrArtistData}" | jq -r ".artistName")
 		lidarrArtistForeignArtistId=$(echo "${lidarrArtistData}" | jq -r ".foreignArtistId")
 		lidarrAlbumType=$(echo "$lidarrAlbumData" | jq -r ".albumType")
 		lidarrAlbumTitle=$(echo "$lidarrAlbumData" | jq -r ".title")
 		lidarrAlbumForeignAlbumId=$(echo "$lidarrAlbumData" | jq -r ".foreignAlbumId")
 				
 		if [ -f "/config/extended/logs/notfound/$wantedAlbumId--$lidarrArtistForeignArtistId--$lidarrAlbumForeignAlbumId" ]; then
-			log "$processNumber of $wantedListAlbumTotal :: $lidarrAlbumTitle :: $lidarrAlbumType :: Previously Not Found, skipping..."
+			log "$processNumber of $wantedListAlbumTotal :: $lidarrAlbumType :: $lidarrArtistName :: $lidarrAlbumTitle :: Previously Not Found, skipping..."
 			continue
+		fi
+
+		if [ "$enableVideoScript" == "true" ]; then
+			if [ -d /config/extended/logs/video/complete ]; then
+				if [ -f "/config/extended/logs/video/complete/$lidarrArtistForeignArtistId" ]; then
+					log "$processNumber of $wantedListAlbumTotal :: $lidarrAlbumType :: $lidarrArtistName :: $lidarrAlbumTitle :: Skipping until all videos are processed for the artist..."
+					continue
+				fi
+			else
+				log "$processNumber of $wantedListAlbumTotal :: $lidarrAlbumType :: $lidarrArtistName :: $lidarrAlbumTitle :: Skipping until all videos are processed for the artist..."
+				continue
+			fi
 		fi
 		
 		if [ -f "/config/extended/logs/downloaded/notfound/$lidarrAlbumForeignAlbumId" ]; then
@@ -1050,17 +1063,7 @@ SearchProcess () {
 		currentDate="$(date "+%F")"
 		currentDateClean="$(echo "$currentDate" | sed -e "s%[^[:digit:]]%%g")"
 
-		if [ "$enableVideoScript" == "true" ]; then
-			if [ -d /config/extended/logs/video/complete ]; then
-				if [ -f "/config/extended/logs/video/complete/$lidarrArtistForeignArtistId" ]; then
-					log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Skipping until all videos are processed for the artist..."
-					continue
-				fi
-			else
-				log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Skipping until all videos are processed for the artist..."
-				continue
-			fi
-		fi
+		
 
 		if [[ ${currentDateClean} -gt ${lidarrAlbumReleaseDateClean} ]]; then
 			log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Starting Search..."
