@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.238"
+scriptVersion="1.0.239"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" = "null" ]; then
@@ -1014,7 +1014,7 @@ SearchProcess () {
 
 		if [ "$enableVideoScript" == "true" ]; then
 			if [ -d /config/extended/logs/video/complete ]; then
-				if [ -f "/config/extended/logs/video/complete/$lidarrArtistForeignArtistId" ]; then
+				if [ ! -f "/config/extended/logs/video/complete/$lidarrArtistForeignArtistId" ]; then
 					log "$processNumber of $wantedListAlbumTotal :: $lidarrAlbumType :: $lidarrArtistName :: $lidarrAlbumTitle :: Skipping until all videos are processed for the artist..."
 					continue
 				fi
