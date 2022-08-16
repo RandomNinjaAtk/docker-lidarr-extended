@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.033"
+scriptVersion="1.0.034"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -77,7 +77,15 @@ Configuration () {
 	log "CONFIG :: Download Location :: $downloadPath"
 	log "CONFIG :: Music Video Location :: $videoPath"
 	log "CONFIG :: Subtitle Language set to: $youtubeSubtitleLanguage"
-	log "CONFIG :: Upgrading yt-dlp to the latest version..."
+    if find /config -type f -name "cookies.txt" | read; then
+        cookiesFile="$(find /config -type f -iname "cookies.txt" | head -n1)"
+        log "CONFIG :: Cookies File Found!"
+    else
+        log "CONFIG :: Cookies File Not Found!"
+        cookiesFile=""
+    fi
+
+    log "CONFIG :: Upgrading yt-dlp to the latest version..."
 	pip install yt-dlp --upgrade --no-cache-dir &>/dev/null
 	log "CONFIG :: Complete"
 }
@@ -750,15 +758,12 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
             fi
         fi
         
-        if find /config -type f -name "cookies.txt" | read; then
-            cookiesFile="$(find /config -type f -name "cookies.txt" | head -n1)"
-            log "$processCount of $lidarrArtistIdsCount :: YT-DLP :: $lidarrArtistName :: Cookies File Found!"
+        if [ ! -z "$cookiesFile" ]; then
             videoData="$(yt-dlp --cookies "$cookiesFile" -j "$videoDownloadUrl")"
         else
-            log "$processCount of $lidarrArtistIdsCount :: YT-DLP :: $lidarrArtistName :: Cookies File Not Found!"
-            cookiesFile=""
             videoData="$(yt-dlp -j "$videoDownloadUrl")"
         fi
+        
         videoThumbnail="$imvdbVideoImage"   
         videoUploadDate="$(echo "$videoData" | jq -r .upload_date)"
         videoYear="${videoUploadDate:0:4}"
