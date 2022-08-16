@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.032"
+scriptVersion="1.0.033"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -572,7 +572,7 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
 
     if [ -d /config/extended/logs/video/complete ]; then
         find /config/extended/logs/video/complete -type f -mtime +7 -delete # Remove Files older than 7 days to allow re-processing artist for new videos
-        if [ -f "/config/extended/logs/video/complete/$lidarrArtistFolder" ]; then
+        if [ -f "/config/extended/logs/video/complete/$lidarrArtistMusicbrainzId" ]; then
             downloadedVideoCount=$(find "$videoPath/$lidarrArtistFolder" -type f -iname "*.mkv" | wc -l)
             log "$processCount of $lidarrArtistIdsCount :: $lidarrArtistName :: All $downloadedVideoCount Artist Music Videos previously downloaded, skipping..."
             continue
@@ -699,10 +699,9 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
     if [ $imvdbArtistVideoCount = 0 ]; then
         log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: No videos found, skipping..."
         continue
-    else
-        log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: Processing $imvdbArtistVideoCount Videos!"
     fi
 
+    log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: Processing $imvdbArtistVideoCount Videos!"
     find /config/extended/cache/imvdb -type f -empty -delete # delete empty files
     
     imvdbProcessCount=0
@@ -796,7 +795,7 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
         chown abc:abc /config/extended/logs/video/complete 
     fi
 
-    touch "/config/extended/logs/video/complete/$lidarrArtistFolder"
+    touch "/config/extended/logs/video/complete/$lidarrArtistMusicbrainzId"
 
 done
 
