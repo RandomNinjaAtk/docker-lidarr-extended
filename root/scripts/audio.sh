@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.236"
+scriptVersion="1.0.237"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" = "null" ]; then
@@ -1052,8 +1052,7 @@ SearchProcess () {
 
 		if [ "$enableVideoScript" == "true" ]; then
 			if [ -d /config/extended/logs/video/complete ]; then
-				lidarrArtistVideoFolder="$(echo "$lidarrArtistFolder" | sed "s/ (.*)$//g" | sed "s/\.$//g")" # Plex Sanitization, remove disambiguation
-				if [ -f "/config/extended/logs/video/complete/$lidarrArtistVideoFolder" ]; then
+				if [ -f "/config/extended/logs/video/complete/$lidarrArtistForeignArtistId" ]; then
 					log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Skipping until all videos are processed for the artist..."
 					continue
 				fi
