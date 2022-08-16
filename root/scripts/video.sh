@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.031"
+scriptVersion="1.0.032"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -30,8 +30,8 @@ log () {
 verifyApiAccess () {
 	until false
 	do
-		lidarrTest=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/system/status?apikey=${lidarrApiKey}" | jq -r .branch)
-		if [ $lidarrTest = master ]; then
+		lidarrTest=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/system/status?apikey=${lidarrApiKey}" | jq -r .appName)
+		if [ "$lidarrTest" == "Lidarr" ]; then
 			lidarrVersion=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/system/status?apikey=${lidarrApiKey}" | jq -r .version)
 			log "Lidarr Version: $lidarrVersion"
 			break
