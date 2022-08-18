@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.035"
+scriptVersion="1.0.036"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -705,8 +705,7 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
         log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: No IMVDB artist link found, skipping..."
         
     else
-
-        imvdbArtistVideoCount=$(ls /config/extended/cache/imvdb/$lidarrArtistMusicbrainzId--*.json | wc -l)
+        imvdbArtistVideoCount=$(ls /config/extended/cache/imvdb/$lidarrArtistMusicbrainzId--*.json 2>/dev/null | wc -l)
         if [ $imvdbArtistVideoCount = 0 ]; then
             log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: No videos found, skipping..."
             
