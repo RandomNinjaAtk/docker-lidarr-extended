@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.034"
+scriptVersion="1.0.035"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -581,8 +581,11 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
     if [ -d /config/extended/logs/video/complete ]; then
         find /config/extended/logs/video/complete -type f -mtime +7 -delete # Remove Files older than 7 days to allow re-processing artist for new videos
         if [ -f "/config/extended/logs/video/complete/$lidarrArtistMusicbrainzId" ]; then
-            downloadedVideoCount=$(find "$videoPath/$lidarrArtistFolder" -type f -iname "*.mkv" | wc -l)
-            log "$processCount of $lidarrArtistIdsCount :: $lidarrArtistName :: All $downloadedVideoCount Artist Music Videos previously downloaded, skipping..."
+            downloadedVideoCount=0
+            if [ -d "$videoPath/$lidarrArtistFolder" ]; then
+                downloadedVideoCount=$(find "$videoPath/$lidarrArtistFolder" -type f -iname "*.mkv" | wc -l)
+            fi
+            log "$processCount of $lidarrArtistIdsCount :: $lidarrArtistName :: $downloadedVideoCount Artist Music Videos previously downloaded, skipping..."
             continue
         fi
     fi
@@ -596,11 +599,11 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
     log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: $musicbrainzArtistVideoRecordingsCount videos found..."
     musicbrainzArtistVideoRecordingsDataWithUrl=$(echo "$musicbrainzArtistVideoRecordings" | jq -r "select(.relations[].url)" | jq -s "." | jq -r "unique | .[] | select(.disambiguation | test(\"official\";\"i\"))")
     musicbrainzArtistVideoRecordingsDataWithUrlIds=$(echo "$musicbrainzArtistVideoRecordingsDataWithUrl" | jq -r ".id")
-    musicbrainzArtistVideoRecordingsDataWithUrlIdsCount=$(echo "$musicbrainzArtistVideoRecordingsDataWithUrlIds" | wc -l)
+    musicbrainzArtistVideoRecordingsDataWithUrlIdsCount=$(echo -n "$musicbrainzArtistVideoRecordingsDataWithUrlIds" | wc -l)
     log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: $musicbrainzArtistVideoRecordingsDataWithUrlIdsCount \"Official\" videos found with URL..."
 
     if [ $musicbrainzArtistVideoRecordingsDataWithUrlIdsCount = 0 ]; then
-        log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: ERROR :: No vidoes with URLs to process, skipping..."
+        log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: No vidoes with URLs to process, skipping..."
     else
 
         for musicbrainzVideoId in $(echo "$musicbrainzArtistVideoRecordingsDataWithUrlIds"); do
@@ -700,93 +703,97 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
 
     if [ -z "$artistImvdbSlug" ]; then
         log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: No IMVDB artist link found, skipping..."
-        continue
-    fi
+        
+    else
 
-    imvdbArtistVideoCount=$(ls /config/extended/cache/imvdb/$lidarrArtistMusicbrainzId--*.json | wc -l)
-    if [ $imvdbArtistVideoCount = 0 ]; then
-        log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: No videos found, skipping..."
-        continue
-    fi
+        imvdbArtistVideoCount=$(ls /config/extended/cache/imvdb/$lidarrArtistMusicbrainzId--*.json | wc -l)
+        if [ $imvdbArtistVideoCount = 0 ]; then
+            log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: No videos found, skipping..."
+            
+        else
 
-    log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: Processing $imvdbArtistVideoCount Videos!"
-    find /config/extended/cache/imvdb -type f -empty -delete # delete empty files
-    
-    imvdbProcessCount=0
-    for imvdbVideoData in $(ls /config/extended/cache/imvdb/$lidarrArtistMusicbrainzId--*.json); do
-        imvdbProcessCount=$(( $imvdbProcessCount + 1 ))
-        imvdbVideoTitle="$(cat "$imvdbVideoData" | jq -r .song_title)"
-        videoTitleClean="$(echo "$imvdbVideoTitle" | sed -e "s/[^[:alpha:][:digit:]$^&_+=()'%;{},.@#]/ /g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
-        imvdbVideoYear="$(cat "$imvdbVideoData" | jq -r .year)"
-        imvdbVideoImage="$(cat "$imvdbVideoData" | jq -r .image.o)"
-        imvdbVideoArtistsSlug="$(cat "$imvdbVideoData" | jq -r .artists[].slug)"
-        echo "$lidarrArtistName" > /config/extended/cache/imvdb/$imvdbVideoArtistsSlug
-        imvdbVideoFeaturedArtistsSlug="$(cat "$imvdbVideoData" | jq -r .featured_artists[].slug)"
-        imvdbVideoYoutubeId="$(cat "$imvdbVideoData" | jq -r ".sources[] | select(.is_primary==true) | select(.source==\"youtube\") | .source_data")"
-        #"/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json"
-        #echo "$imvdbVideoTitle :: $imvdbVideoYear :: $imvdbVideoYoutubeId :: $imvdbVideoArtistsSlug"
-        if [ -z "$imvdbVideoYoutubeId" ]; then
-            continue
-        fi
-        videoDownloadUrl="https://www.youtube.com/watch?v=$imvdbVideoYoutubeId"
-        plexVideoType="-video"
-
-        if [ ! -z "$imvdbVideoFeaturedArtistsSlug" ]; then
-            for featuredArtistSlug in $(echo "$imvdbVideoFeaturedArtistsSlug"); do
-                if [ -f /config/extended/cache/imvdb/$featuredArtistSlug ]; then
-                    featuredArtistName="$(cat /config/extended/cache/imvdb/$featuredArtistSlug)"
-                else
-                    query_data=$(curl -s -A "$agent" "https://musicbrainz.org/ws/2/url?query=url:%22https://imvdb.com/n/$featuredArtistSlug%22&fmt=json")
-                    count=$(echo "$query_data" | jq -r ".count")			
-                    if [ "$count" != "0" ]; then
-                        featuredArtistName="$(echo "$query_data" | jq -r ".urls[].\"relation-list\"[].relations[].artist.name")"
-                        echo -n "$featuredArtistName" > /config/extended/cache/imvdb/$featuredArtistSlug
-                        sleep 1
-                    fi
-                fi
-                find /config/extended/cache/imvdb -type f -empty -delete # delete empty files
-                if [ -z "$featuredArtistName" ]; then
+            log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: Processing $imvdbArtistVideoCount Videos!"
+            find /config/extended/cache/imvdb -type f -empty -delete # delete empty files
+            
+            imvdbProcessCount=0
+            for imvdbVideoData in $(ls /config/extended/cache/imvdb/$lidarrArtistMusicbrainzId--*.json); do
+                imvdbProcessCount=$(( $imvdbProcessCount + 1 ))
+                imvdbVideoTitle="$(cat "$imvdbVideoData" | jq -r .song_title)"
+                videoTitleClean="$(echo "$imvdbVideoTitle" | sed -e "s/[^[:alpha:][:digit:]$^&_+=()'%;{},.@#]/ /g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
+                imvdbVideoYear="$(cat "$imvdbVideoData" | jq -r .year)"
+                imvdbVideoImage="$(cat "$imvdbVideoData" | jq -r .image.o)"
+                imvdbVideoArtistsSlug="$(cat "$imvdbVideoData" | jq -r .artists[].slug)"
+                echo "$lidarrArtistName" > /config/extended/cache/imvdb/$imvdbVideoArtistsSlug
+                imvdbVideoFeaturedArtistsSlug="$(cat "$imvdbVideoData" | jq -r .featured_artists[].slug)"
+                imvdbVideoYoutubeId="$(cat "$imvdbVideoData" | jq -r ".sources[] | select(.is_primary==true) | select(.source==\"youtube\") | .source_data")"
+                #"/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json"
+                #echo "$imvdbVideoTitle :: $imvdbVideoYear :: $imvdbVideoYoutubeId :: $imvdbVideoArtistsSlug"
+                if [ -z "$imvdbVideoYoutubeId" ]; then
                     continue
                 fi
+                videoDownloadUrl="https://www.youtube.com/watch?v=$imvdbVideoYoutubeId"
+                plexVideoType="-video"
+
+                if [ ! -z "$imvdbVideoFeaturedArtistsSlug" ]; then
+                    for featuredArtistSlug in $(echo "$imvdbVideoFeaturedArtistsSlug"); do
+                        if [ -f /config/extended/cache/imvdb/$featuredArtistSlug ]; then
+                            featuredArtistName="$(cat /config/extended/cache/imvdb/$featuredArtistSlug)"
+                        else
+                            query_data=$(curl -s -A "$agent" "https://musicbrainz.org/ws/2/url?query=url:%22https://imvdb.com/n/$featuredArtistSlug%22&fmt=json")
+                            count=$(echo "$query_data" | jq -r ".count")			
+                            if [ "$count" != "0" ]; then
+                                featuredArtistName="$(echo "$query_data" | jq -r ".urls[].\"relation-list\"[].relations[].artist.name")"
+                                echo -n "$featuredArtistName" > /config/extended/cache/imvdb/$featuredArtistSlug
+                                sleep 1
+                            fi
+                        fi
+                        find /config/extended/cache/imvdb -type f -empty -delete # delete empty files
+                        if [ -z "$featuredArtistName" ]; then
+                            continue
+                        fi
+                    done
+                fi
+
+                if [ -d "$videoPath/$lidarrArtistFolder" ]; then
+                    if [[ -n $(find "$videoPath/$lidarrArtistFolder" -iname "${videoTitleClean}${plexVideoType}.*") ]]; then
+                        log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: ${imvdbVideoTitle} :: Previously Downloaded, skipping..."
+                        continue
+                    fi
+                fi
+                
+                if [ ! -z "$cookiesFile" ]; then
+                    videoData="$(yt-dlp --cookies "$cookiesFile" -j "$videoDownloadUrl")"
+                else
+                    videoData="$(yt-dlp -j "$videoDownloadUrl")"
+                fi
+                
+                videoThumbnail="$imvdbVideoImage"   
+                videoUploadDate="$(echo "$videoData" | jq -r .upload_date)"
+                videoYear="${videoUploadDate:0:4}"
+                
+                log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: ${imvdbVideoTitle} :: $videoDownloadUrl..."
+                DownloadVideo "$videoDownloadUrl" "$videoTitleClean" "$plexVideoType" "IMVDB"
+                if [ "$downloadFailed" = "true" ]; then
+                    log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: ${imvdbVideoTitle} :: Download failed, skipping..."
+                    continue
+                fi
+                DownloadThumb "$imvdbVideoImage" "$videoTitleClean" "$plexVideoType" "IMVDB"
+                VideoProcessWithSMA "IMVDB" "$imvdbVideoTitle" 
+                VideoTagProcess "$videoTitleClean" "$plexVideoType" "$videoYear" "IMVDB"
+                VideoNfoWriter "$videoTitleClean" "$plexVideoType" "$imvdbVideoTitle" "" "imvdb" "$videoYear" "IMVDB"
+                    
+                if [ ! -d "$videoPath/$lidarrArtistFolder" ]; then
+                    mkdir -p "$videoPath/$lidarrArtistFolder"
+                    chmod 777 "$videoPath/$lidarrArtistFolder"
+                    chown abc:abc "$videoPath/$lidarrArtistFolder"
+                fi 
+
+                mv $downloadPath/incomplete/* "$videoPath/$lidarrArtistFolder"/
             done
+
         fi
 
-        if [ -d "$videoPath/$lidarrArtistFolder" ]; then
-            if [[ -n $(find "$videoPath/$lidarrArtistFolder" -iname "${videoTitleClean}${plexVideoType}.*") ]]; then
-                log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: ${imvdbVideoTitle} :: Previously Downloaded, skipping..."
-                continue
-            fi
-        fi
-        
-        if [ ! -z "$cookiesFile" ]; then
-            videoData="$(yt-dlp --cookies "$cookiesFile" -j "$videoDownloadUrl")"
-        else
-            videoData="$(yt-dlp -j "$videoDownloadUrl")"
-        fi
-        
-        videoThumbnail="$imvdbVideoImage"   
-        videoUploadDate="$(echo "$videoData" | jq -r .upload_date)"
-        videoYear="${videoUploadDate:0:4}"
-        
-        log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: ${imvdbVideoTitle} :: $videoDownloadUrl..."
-        DownloadVideo "$videoDownloadUrl" "$videoTitleClean" "$plexVideoType" "IMVDB"
-        if [ "$downloadFailed" = "true" ]; then
-            log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: ${imvdbVideoTitle} :: Download failed, skipping..."
-            continue
-        fi
-        DownloadThumb "$imvdbVideoImage" "$videoTitleClean" "$plexVideoType" "IMVDB"
-        VideoProcessWithSMA "IMVDB" "$imvdbVideoTitle" 
-        VideoTagProcess "$videoTitleClean" "$plexVideoType" "$videoYear" "IMVDB"
-        VideoNfoWriter "$videoTitleClean" "$plexVideoType" "$imvdbVideoTitle" "" "imvdb" "$videoYear" "IMVDB"
-            
-        if [ ! -d "$videoPath/$lidarrArtistFolder" ]; then
-            mkdir -p "$videoPath/$lidarrArtistFolder"
-            chmod 777 "$videoPath/$lidarrArtistFolder"
-            chown abc:abc "$videoPath/$lidarrArtistFolder"
-        fi 
-
-        mv $downloadPath/incomplete/* "$videoPath/$lidarrArtistFolder"/
-    done
+    fi
 
     if [ ! -d /config/extended/logs/video ]; then
         mkdir -p /config/extended/logs/video
