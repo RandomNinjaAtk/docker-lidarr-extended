@@ -73,7 +73,7 @@ The architectures supported by this image are:
 
 | Tag | Description |
 | :----: | --- |
-| latest | Lidarr master (stable) + Extended Scripts |
+| latest | Lidarr (develop) + Extended Scripts |
 
 ## Application Setup
 
