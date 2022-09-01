@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.240"
+scriptVersion="1.0.241"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" = "null" ]; then
@@ -161,6 +161,7 @@ DownloadFormat () {
 			log "ERROR :: Invalid audioFormat and audioBitrate options set..."
 			log "ERROR :: Change audioBitrate to a low, high, or lossless..."
 			log "ERROR :: Exiting..."
+			NotifyWebhook "Error" "Invalid audioFormat and audioBitrate options set"
 			exit
 		fi
 	else
@@ -168,6 +169,7 @@ DownloadFormat () {
 			log "ERROR :: Invalid audioFormat and audioBitrate options set..."
 			log "ERROR :: Change audioBitrate to a desired bitrate number, example: 192..."
 			log "ERROR :: Exiting..."
+			NotifyWebhook "Error" "Invalid audioFormat and audioBitrate options set"
 			exit
 		else
 			tidal-dl -q HiFi
@@ -374,6 +376,7 @@ TidalClientTest () {
 		log "TIDAL :: ERROR :: You will need to re-authenticate on next script run..."
 		log "TIDAL :: ERROR :: Exiting..."
 		rm -rf $downloadPath/incomplete/*
+		NotifyWebhook "Error" "TIDAL not authenticated but configured"
 		exit
 	else
 		rm -rf $downloadPath/incomplete/*
@@ -803,6 +806,7 @@ DeezerClientTest () {
 		log "DEEZER :: ERROR :: Try updating your ARL Token to possibly resolve the issue..."
 		log "DEEZER :: ERROR :: Exiting..."
 		rm -rf $downloadPath/incomplete/*
+		NotifyWebhook "Error" "DEEZER not authenticated but configured"
 		exit
 	else
 		rm -rf $downloadPath/incomplete/*
@@ -870,6 +874,7 @@ LidarrRootFolderCheck () {
 		log "ERROR :: No root folder found"
 		log "ERROR :: Configure root folder in Lidarr to continue..."
 		log "ERROR :: Exiting..."
+		NotifyWebhook "Error" "No root folder found"
 		exit
 	fi
 }
@@ -1890,6 +1895,13 @@ audioFlacVerification () {
 	# $1 File for verification
 	verifiedFlacFile=""
 	verifiedFlacFile=$(flac --totally-silent -t "$1"; echo $?)
+}
+
+NotifyWebhook () {
+	if [ "$webHook" ]
+	then
+		curl -X POST "{$webHook}" -H 'Content-Type: application/json' -d '{"event":"'"$1"'", "message":"'"$2"'"}'
+	fi
 }
 
 Configuration

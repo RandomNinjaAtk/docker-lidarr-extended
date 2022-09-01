@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.037"
+scriptVersion="1.0.038"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -199,6 +199,7 @@ TidalClientTest () {
 		log "TIDAL :: ERROR :: You will need to re-authenticate on next script run..."
 		log "TIDAL :: ERROR :: Exiting..."
 		rm -rf $downloadPath/incomplete/*
+        NotifyWebhook "Error" "TIDAL not authenticated but configured"
 		exit
 	else
 		rm -rf $downloadPath/incomplete/*
@@ -548,6 +549,13 @@ AddFeaturedVideoArtists () {
 		lidarrAddArtist=$(curl -s "$lidarrUrl/api/v1/artist" -X POST -H 'Content-Type: application/json' -H "X-Api-Key: $lidarrApiKey" --data-raw "$data")
     done
 
+}
+
+NotifyWebhook () {
+	if [ "$webHook" ]
+	then
+		curl -X POST "{$webHook}" -H 'Content-Type: application/json' -d '{"event":"'"$1"'", "message":"'"$2"'"}'
+	fi
 }
 
 Configuration
