@@ -117,6 +117,7 @@ Container images are configured using parameters passed at runtime (such as thos
 | `-e plexUrl=http://x.x.x.x:32400` | ONLY used if PlexNotify.bash is used...|
 | `-e plexToken=` | ONLY used if PlexNotify.bash is used... |
 | `-e youtubeSubtitleLanguage=en` | Desired Language Code :: For guidence, please see yt-dlp documentation.
+| `-e webHook=https://myhook.mydomain.com` | POST's to this URL on error events which prevent the script from working. Content is JSON `{"event":"eventtype", "message":"eventmessage"}`
 
 ## Usage
 
