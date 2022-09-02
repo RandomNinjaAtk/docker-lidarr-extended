@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.242"
+scriptVersion="1.0.243"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" = "null" ]; then
@@ -364,10 +364,10 @@ TidalClientSetup () {
 
 TidalClientTest () { 
 	log "TIDAL :: tidal-dl client setup verification..."
-	TidaldlStatusCheck
 	i=0
 	while [ $i -lt 3 ]; do
 		i=$(( $i + 1 ))
+		TidaldlStatusCheck
 		tidal-dl -q Normal -o "$downloadPath"/incomplete -l "166356219" &>/dev/null
 		downloadCount=$(find "$downloadPath"/incomplete -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
 		if [ $downloadCount -le 0 ]; then
