@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.241"
+scriptVersion="1.0.242"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" = "null" ]; then
@@ -15,7 +15,7 @@ agent="lidarr-extended ( https://github.com/RandomNinjaAtk/docker-lidarr-extende
 musicbrainzMirror=https://musicbrainz.org
 
 # Debugging settings
-#dlClientSource=both
+dlClientSource=tidal
 #topLimit=3
 #addDeezerTopArtists=true
 #addDeezerTopAlbumArtists=true
@@ -365,9 +365,18 @@ TidalClientSetup () {
 TidalClientTest () { 
 	log "TIDAL :: tidal-dl client setup verification..."
 	TidaldlStatusCheck
-	tidal-dl -q Normal -o $downloadPath/incomplete -l "166356219" &>/dev/null
-	
-	downloadCount=$(find $downloadPath/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
+	i=0
+	while [ $i -lt 3 ]; do
+		i=$(( $i + 1 ))
+		tidal-dl -q Normal -o "$downloadPath"/incomplete -l "166356219" &>/dev/null
+		downloadCount=$(find "$downloadPath"/incomplete -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
+		if [ $downloadCount -le 0 ]; then
+			continue
+		else
+			break
+		fi
+	done
+
 	if [ $downloadCount -le 0 ]; then
 		if [ -f /config/xdg/.tidal-dl.token.json ]; then
 			rm /config/xdg/.tidal-dl.token.json
@@ -375,11 +384,11 @@ TidalClientTest () {
 		log "TIDAL :: ERROR :: Download failed"
 		log "TIDAL :: ERROR :: You will need to re-authenticate on next script run..."
 		log "TIDAL :: ERROR :: Exiting..."
-		rm -rf $downloadPath/incomplete/*
+		rm -rf "$downloadPath"/incomplete/*
 		NotifyWebhook "Error" "TIDAL not authenticated but configured"
 		exit
 	else
-		rm -rf $downloadPath/incomplete/*
+		rm -rf "$downloadPath"/incomplete/*
 		log "TIDAL :: Successfully Verified"
 	fi
 }
