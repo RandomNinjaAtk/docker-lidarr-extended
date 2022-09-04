@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.244"
+scriptVersion="1.0.245"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" = "null" ]; then
@@ -345,7 +345,7 @@ TidalClientSetup () {
 	
 	if [ -d /config/extended/cache/tidal ]; then
 		log "TIDAL :: Purging album list cache..."
-		find /config/extended/cache/tidal -type f -name "*.json" -delete
+		find /config/extended/cache/tidal -type f -name "*.json" -delete &>/dev/null
 	fi
 	
 	if [ ! -d "$downloadPath/incomplete" ]; then
