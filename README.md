@@ -50,6 +50,8 @@
       * Artist (Lidarr)
       * Thumbnail Image (service thumbnail image)
       * Artist Genere Tags (Lidarr)
+* Queue Cleaner Script
+  * Automatically removes downloads that have a "warning" or "failed" status that will not auto-import into Lidarr, which enables Lidarr to automatically re-search for the album
       
 
 ### Audio & Video (Plex Example)
