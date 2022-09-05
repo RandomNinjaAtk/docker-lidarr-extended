@@ -1,0 +1,20 @@
+#!/usr/bin/with-contenv bash
+if [ "$enableQueueCleaner" != "true" ]; then
+	echo "QueueCleaner Script disabled, enable by setting parameter: enableQueueCleaner=true"
+	sleep infinity
+else
+	echo "Waiting for Radarr to startup..."
+	sleep 2m
+fi
+
+echo "Starting Script...."
+for (( ; ; )); do
+	let i++
+	   
+	bash /config/extended/scripts/QueueCleaner.bash
+	
+	echo "Script sleeping for 15 minutes..."
+	sleep 15m
+done
+
+exit $?
