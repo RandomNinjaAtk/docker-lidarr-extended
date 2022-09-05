@@ -117,7 +117,8 @@ Container images are configured using parameters passed at runtime (such as thos
 | `-e plexUrl=http://x.x.x.x:32400` | ONLY used if PlexNotify.bash is used...|
 | `-e plexToken=` | ONLY used if PlexNotify.bash is used... |
 | `-e youtubeSubtitleLanguage=en` | Desired Language Code :: For guidence, please see yt-dlp documentation.
-| `-e webHook=https://myhook.mydomain.com` | POST's to this URL on error events which prevent the script from working. Content is JSON `{"event":"eventtype", "message":"eventmessage"}`
+| `-e webHook=https://myhook.mydomain.com` | POST's to this URL on error events which prevent the script from working. Content is JSON `{"event":"eventtype", "message":"eventmessage"}` |
+| `-e enableQueueCleaner=true` | true = enabled :: Enables QueueCleaner Script that automatically removes stuck downloads that cannot be automatically imported on a 15 minute interval |
 
 ## Usage
 
@@ -160,6 +161,7 @@ docker create \
   -e plexUrl=http://x.x.x.x:32400 \
   -e plexToken=Token_Goes_Here \
   -e youtubeSubtitleLanguage=en \
+  -e enableQueueCleaner=true \
   --restart unless-stopped \
   randomninjaatk/lidarr-extended:latest
 ```
@@ -208,6 +210,7 @@ services:
       - plexUrl=http://x.x.x.x:32400
       - plexToken=Token_Goes_Here
       - youtubeSubtitleLanguage=en
+      - enableQueueCleaner=true
     ports:
       - 8686:8686
     restart: unless-stopped
