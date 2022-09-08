@@ -105,7 +105,7 @@ Container images are configured using parameters passed at runtime (such as thos
 | `-e audioBitrate=lossless` | lossless or high or low or ### :: lossless = flac files, high = 320K, low = 128k/96k, ### = the output bitrate of converted lossless files to selected audioFormat that is not native, example: 192... |
 | `-e requireQuality=true` | true = enabled :: Downloads will be required to have the requested file format |
 | `-e enableReplaygainTags=true` | true = enabled :: Downloads will be tagged with Replaygain Metadata |
-| `-e audioLyricType=both` | both or explicit or clean :: both, is explicit perferred matching, explicit is explicit releases only matching and clean is clean releases only matching |
+| `-e audioLyricType=both` | both or explicit or clean :: both, is explicit preferred  matching, explicit is explicit releases only matching and clean is clean releases only matching |
 | `-e dlClientSource=both` | deezer, tidal or both :: set to both, to use both clients, tidal requires extra steps, view logging output |
 | `-e arlToken=` | User ARL token for deemix client, see wiki: [Wiki URL](https://github.com/RandomNinjaAtk/docker-lidarr-extended/wiki/Extended-Audio-Script-Information#q-how-do-i-get-my-arl-token)|
 | `-e tidalCountryCode=US` | Country Code required for tidal |
