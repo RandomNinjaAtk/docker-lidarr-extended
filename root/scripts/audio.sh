@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.245"
+scriptVersion="1.0.246"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" = "null" ]; then
@@ -1909,7 +1909,8 @@ audioFlacVerification () {
 NotifyWebhook () {
 	if [ "$webHook" ]
 	then
-		curl -X POST "{$webHook}" -H 'Content-Type: application/json' -d '{"event":"'"$1"'", "message":"'"$2"'"}'
+		content="$1: $2"
+		curl -X POST "{$webHook}" -H 'Content-Type: application/json' -d '{"event":"'"$1"'", "message":"'"$2"'", "content":"'"$content"'"}'
 	fi
 }
 
