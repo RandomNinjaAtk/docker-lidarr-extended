@@ -37,6 +37,7 @@ ENV SMA_PATH /usr/local/sma
 ENV youtubeSubtitleLanguage=en
 ENV enableAudioScript=true
 ENV enableVideoScript=true
+ENV matchDistance=5
 
 RUN \
 	echo "*** install packages ***" && \
