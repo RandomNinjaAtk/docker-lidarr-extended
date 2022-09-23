@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.041"
+scriptVersion="1.0.042"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -78,6 +78,7 @@ Configuration () {
 	log "CONFIG :: Download Location :: $downloadPath"
 	log "CONFIG :: Music Video Location :: $videoPath"
 	log "CONFIG :: Subtitle Language set to: $youtubeSubtitleLanguage"
+	log "CONFIG :: yt-dlp format: $videoFormat"
     if find /config -type f -name "cookies.txt" | read; then
         cookiesFile="$(find /config -type f -iname "cookies.txt" | head -n1)"
         log "CONFIG :: Cookies File Found!"
@@ -85,7 +86,6 @@ Configuration () {
         log "CONFIG :: Cookies File Not Found!"
         cookiesFile=""
     fi
-
     log "CONFIG :: Upgrading yt-dlp to the latest version..."
 	pip install yt-dlp --upgrade --no-cache-dir &>/dev/null
 	log "CONFIG :: Complete"
@@ -312,9 +312,9 @@ DownloadVideo () {
 
     if echo "$1" | grep -i "youtube" | read; then
         if [ ! -z "$cookiesFile" ]; then
-            yt-dlp --cookies "$cookiesFile" -o "$downloadPath/incomplete/${2}${3}" --embed-subs --sub-lang $youtubeSubtitleLanguage --merge-output-format mkv --remux-video mkv --no-mtime --geo-bypass "$1" &>/dev/null
+            yt-dlp -f "$videoFormat" --cookies "$cookiesFile" -o "$downloadPath/incomplete/${2}${3}" --embed-subs --sub-lang $youtubeSubtitleLanguage --merge-output-format mkv --remux-video mkv --no-mtime --geo-bypass "$1" &>/dev/null
         else
-            yt-dlp -o "$downloadPath/incomplete/${2}${3}" --embed-subs --sub-lang $youtubeSubtitleLanguage --merge-output-format mkv --remux-video mkv --no-mtime --geo-bypass "$1" &>/dev/null
+            yt-dlp -f "$videoFormat" -o "$downloadPath/incomplete/${2}${3}" --embed-subs --sub-lang $youtubeSubtitleLanguage --merge-output-format mkv --remux-video mkv --no-mtime --geo-bypass "$1" &>/dev/null
         fi
         if [ -f "$downloadPath/incomplete/${2}${3}.mkv" ]; then
             chmod 666 "$downloadPath/incomplete/${2}${3}.mkv"
