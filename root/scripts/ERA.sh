@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.3"
+scriptVersion="1.0.4"
 agent="ERA ( https://github.com/Makario1337/ExtendedReleaseAdder )"
 ArtistsJSON=$(jq '.artists[]' /config/artists.json)
 
@@ -65,9 +65,9 @@ AddReleaseToLidarr() {
     lidarrAlbumSearch=$(echo $lidarrAlbumSearch  |
     sed  's/"monitored": false/"monitored": true/g'| 
     sed 's/"qualityProfileId": 0/"qualityProfileId": 1/g' | 
-    sed 's/"metadataProfileId": 0/"metadataProfileId": 2/g' | 
-    sed 's/"metadataProfileId": 2/"metadataProfileId": 2,\"rootFolderPath": "\/audiobooks\/" /g'| 
-    sed 's/"metadataProfileId": 2/"metadataProfileId": 2,\"addOptions": {"monitor": "all","searchForMissingAlbums": false}/g' |
+    sed 's/"metadataProfileId": 0/"metadataProfileId": 1/g' | 
+    sed "s%\"metadataProfileId\": 1%\"metadataProfileId\": 1,\"rootFolderPath\": \"$lidarrAudiobookRootFolder/\" %g" | 
+    sed 's/"metadataProfileId": 1/"metadataProfileId": 1,\"addOptions": {"monitor": "all","searchForMissingAlbums": false}/g' |
     sed 's/"grabbed": false/"grabbed": false,\"addOptions": {"searchForNewAlbum": false}/g'|
     jq '.' |
     cut -c 2- |
