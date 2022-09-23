@@ -121,6 +121,7 @@ Container images are configured using parameters passed at runtime (such as thos
 | `-e youtubeSubtitleLanguage=en` | Desired Language Code :: For guidence, please see yt-dlp documentation.
 | `-e webHook=https://myhook.mydomain.com` | POST's to this URL on error events which prevent the script from working. Content is JSON `{"event":"eventtype", "message":"eventmessage", "content":"eventtype: eventmessage"}` |
 | `-e enableQueueCleaner=true` | true = enabled :: Enables QueueCleaner Script that automatically removes stuck downloads that cannot be automatically imported on a 15 minute interval |
+| `-e matchDistance=5` | The number of changes required to transform the searched album title into a possible found album title match... (0, requires a perfect match) |
 
 ## Usage
 
@@ -164,6 +165,7 @@ docker create \
   -e plexToken=Token_Goes_Here \
   -e youtubeSubtitleLanguage=en \
   -e enableQueueCleaner=true \
+  -e matchDistance=5 \
   --restart unless-stopped \
   randomninjaatk/lidarr-extended:latest
 ```
@@ -213,6 +215,7 @@ services:
       - plexToken=Token_Goes_Here
       - youtubeSubtitleLanguage=en
       - enableQueueCleaner=true
+      - matchDistance=5
     ports:
       - 8686:8686
     restart: unless-stopped
