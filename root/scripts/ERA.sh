@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.5"
+scriptVersion="1.0.6"
 agent="ERA ( https://github.com/Makario1337/ExtendedReleaseAdder )"
 ArtistsJSON=$(jq '.artists[]' /config/artists.json)
 
@@ -66,30 +66,32 @@ if [ -z "$lidarrAudiobookRootFolderCheck" ]; then
 fi
 
 AddReleaseToLidarr() {
-lidarrAlbumSearch=$(curl -s -X GET "$lidarrUrl/api/v1/album/lookup?term="lidarr%3A%20$1"" -H  "accept: */*" -H  "X-Api-Key: "$lidarrApiKey"" | jq '.')
-CheckIfAlreadyAdded=$(echo $lidarrAlbumSearch | tr -d ' ' | sed 's/^.*,"grabbed":*false,"id"://g' | sed 's/}]//g'  )
-if [[ $CheckIfAlreadyAdded =~ ^[0-9]+$ ]]; then
-    log "Adding :: $2 :: $3 :: Alreaddy Added, skipping...."
-else
-    lidarrAlbumSearch=$(echo $lidarrAlbumSearch  |
-    sed  's/"monitored": false/"monitored": true/g'| 
-    sed 's/"qualityProfileId": 0/"qualityProfileId": 1/g' | 
-    sed 's/"metadataProfileId": 0/"metadataProfileId": 1/g' | 
-    sed "s%\"metadataProfileId\": 1%\"metadataProfileId\": 1,\"rootFolderPath\": \"$lidarrAudiobookRootFolder/\" %g" | 
-    sed 's/"metadataProfileId": 1/"metadataProfileId": 1,\"addOptions": {"monitor": "all","searchForMissingAlbums": false}/g' |
-    sed 's/"grabbed": false/"grabbed": false,\"addOptions": {"searchForNewAlbum": false}/g'|
-    jq '.' |
-    cut -c 2- |
-    head -c -2) 
-    curl -X POST "$lidarrUrl/api/v1/album?apikey="$lidarrApiKey"" -H  "accept: text/plain" -H  "Content-Type: application/json" -d "$lidarrAlbumSearch" 
-    log "Adding :: $2 :: $3 :: Release Added..."
-fi
+	lidarrAlbumSearch=$(curl -s -X GET "$lidarrUrl/api/v1/album/lookup?term="lidarr%3A%20$1"" -H  "accept: */*" -H  "X-Api-Key: "$lidarrApiKey"" | jq '.')
+	CheckIfAlreadyAdded=$(echo $lidarrAlbumSearch | tr -d ' ' | sed 's/^.*,"grabbed":*false,"id"://g' | sed 's/}]//g'  )
+	if [[ $CheckIfAlreadyAdded =~ ^[0-9]+$ ]]; then
+	    log "Adding :: $2 :: $3 :: Alreaddy Added, skipping...."
+	else
+	    lidarrAlbumSearch=$(echo $lidarrAlbumSearch  |
+	    sed  's/"monitored": false/"monitored": true/g'| 
+	    sed 's/"qualityProfileId": 0/"qualityProfileId": 1/g' | 
+	    sed 's/"metadataProfileId": 0/"metadataProfileId": 1/g' | 
+	    sed "s%\"metadataProfileId\": 1%\"metadataProfileId\": 1,\"rootFolderPath\": \"$lidarrAudiobookRootFolder/\" %g" | 
+	    sed 's/"metadataProfileId": 1/"metadataProfileId": 1,\"addOptions": {"monitor": "all","searchForMissingAlbums": false}/g' |
+	    sed 's/"grabbed": false/"grabbed": false,\"addOptions": {"searchForNewAlbum": false}/g'|
+	    jq '.' |
+	    cut -c 2- |
+	    head -c -2) 
+	    curl -X POST "$lidarrUrl/api/v1/album?apikey="$lidarrApiKey"" -H  "accept: text/plain" -H  "Content-Type: application/json" -d "$lidarrAlbumSearch" 
+	    log "Adding :: $2 :: $3 :: Release Added..."
+	fi
 }
+
 SearchRelease(){
     ReleaseName=$(wget -U "$agent" --timeout=0 -q -O - "https://musicbrainz.org/ws/2/release-group/$1" | grep -o "<title>.*</title>" | sed 's/<title>//g' | head -c -9 | sed 's/\&amp;/\&/g' | sed 's/???/???‎/g')
     log "Adding :: $artist :: $ReleaseName"
     AddReleaseToLidarr $1 "$artist" "$ReleaseName"
 }
+
 SearchAllReleasesForArtist() {
     offset=0
     while [ $offset -le 500 ]
@@ -113,6 +115,7 @@ SearchAllReleasesForArtist() {
         fi
     done
 }
+
 ArtistLookup() {
     search=$(echo $1 | sed 's/\"//g')
     artist=$(wget -U "$agent" --timeout=0 -q -O - "https://musicbrainz.org/ws/2/artist/$search" | grep -o "<name>.*</name>" | sed 's/<name>//' | sed 's/<\/name>.*//' | sed 's/???/???‎/g' | sed 's/\&amp;/\&/g')
@@ -130,3 +133,5 @@ else
       ArtistLookup $str 
     done
 fi
+
+exit
