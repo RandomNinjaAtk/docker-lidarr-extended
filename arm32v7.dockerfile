@@ -38,6 +38,7 @@ ENV youtubeSubtitleLanguage=en
 ENV enableAudioScript=true
 ENV enableVideoScript=true
 ENV matchDistance=5
+ENV videoFormat="bestvideo+best+bestaudio --no-video-multistreams"
 
 RUN \
 	echo "*** install packages ***" && \
