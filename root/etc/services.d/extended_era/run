@@ -1,0 +1,17 @@
+#!/usr/bin/with-contenv bash
+if [ "$autoStart" = "true" ] && [ ! -z "$lidarrAudiobookRootFolder" ]; then
+	echo "Waiting for Lidarr to startup..."
+	sleep 2m
+else
+  sleep infinity
+fi
+
+echo "Starting Script...."
+for (( ; ; )); do
+	let i++
+	bash /config/extended/scripts/ERA.sh
+	echo "Script sleeping for 24 hours..."
+	sleep 24h
+done
+
+exit $?
