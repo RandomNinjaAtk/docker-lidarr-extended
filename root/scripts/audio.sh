@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.250"
+scriptVersion="1.0.251"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -1610,7 +1610,7 @@ FuzzyDeezerSearch () {
 			fi
 
 			# Reject release if less than the min track count
-			if [ "$deezerAlbumTrackCount" -lt "$lidarrAlbumReleasesMaxTrackCount" ]; then
+			if [ "$deezerAlbumTrackCount" -lt "$lidarrAlbumReleasesMinTrackCount" ]; then
 				continue
 			fi
 
