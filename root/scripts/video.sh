@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.042"
+scriptVersion="1.0.043"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -79,7 +79,7 @@ Configuration () {
 	log "CONFIG :: Music Video Location :: $videoPath"
 	log "CONFIG :: Subtitle Language set to: $youtubeSubtitleLanguage"
 	log "CONFIG :: yt-dlp format: $videoFormat"
-    if find /config -type f -name "cookies.txt" | read; then
+    if find /config -type f -iname "cookies.txt" | read; then
         cookiesFile="$(find /config -type f -iname "cookies.txt" | head -n1)"
         log "CONFIG :: Cookies File Found!"
     else
@@ -687,13 +687,9 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
 
             if echo "$videoDownloadUrl" | grep -i "youtube" | read; then
 
-                if find /config -type f -name "cookies.txt" | read; then
-                    cookiesFile="$(find /config -type f -name "cookies.txt" | head -n1)"
-                    log "$processCount of $lidarrArtistIdsCount :: YT-DLP :: $lidarrArtistName :: Cookies File Found!"
+                if [ ! -z "$cookiesFile" ]; then
                     videoData="$(yt-dlp --cookies "$cookiesFile" -j "$videoDownloadUrl")"
                 else
-                    log "$processCount of $lidarrArtistIdsCount :: YT-DLP :: $lidarrArtistName :: Cookies File Not Found!"
-                    cookiesFile=""
                     videoData="$(yt-dlp -j "$videoDownloadUrl")"
                 fi
                 videoThumbnail="$(echo "$videoData" | jq -r .thumbnail)"
