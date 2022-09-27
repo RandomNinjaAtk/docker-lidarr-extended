@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.043"
+scriptVersion="1.0.044"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -18,6 +18,7 @@ musicbrainzMirror=https://musicbrainz.org
 
 # Debugging Settings
 #addFeaturedVideoArtists=true
+#videoFormat=bestvideo+best+bestaudio
 
 if [ "$dlClientSource" = "tidal" ] || [ "$dlClientSource" = "both" ]; then
 	sourcePreference=tidal
@@ -312,9 +313,9 @@ DownloadVideo () {
 
     if echo "$1" | grep -i "youtube" | read; then
         if [ ! -z "$cookiesFile" ]; then
-            yt-dlp -f "$videoFormat" --cookies "$cookiesFile" -o "$downloadPath/incomplete/${2}${3}" --embed-subs --sub-lang $youtubeSubtitleLanguage --merge-output-format mkv --remux-video mkv --no-mtime --geo-bypass "$1" &>/dev/null
+            yt-dlp -f "$videoFormat" --no-video-multistreams --cookies "$cookiesFile" -o "$downloadPath/incomplete/${2}${3}" --embed-subs --sub-lang $youtubeSubtitleLanguage --merge-output-format mkv --remux-video mkv --no-mtime --geo-bypass "$1" &>/dev/null
         else
-            yt-dlp -f "$videoFormat" -o "$downloadPath/incomplete/${2}${3}" --embed-subs --sub-lang $youtubeSubtitleLanguage --merge-output-format mkv --remux-video mkv --no-mtime --geo-bypass "$1" &>/dev/null
+            yt-dlp -f "$videoFormat" --no-video-multistreams -o "$downloadPath/incomplete/${2}${3}" --embed-subs --sub-lang $youtubeSubtitleLanguage --merge-output-format mkv --remux-video mkv --no-mtime --geo-bypass "$1" &>/dev/null
         fi
         if [ -f "$downloadPath/incomplete/${2}${3}.mkv" ]; then
             chmod 666 "$downloadPath/incomplete/${2}${3}.mkv"
