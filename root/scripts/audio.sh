@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.252"
+scriptVersion="1.0.253"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -783,7 +783,7 @@ AddReplaygainTags () {
 	# Input Data
 	# $1 Folder path to scan and add tags
 	log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Adding Replaygain Tags using r128gain"
-	r128gain -r -a "$1" &>/dev/null
+	r128gain -r -c 1 -a "$1" &>/dev/null
 }
 
 NotifyLidarrForImport () {
