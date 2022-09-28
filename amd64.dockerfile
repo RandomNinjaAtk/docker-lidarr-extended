@@ -2,7 +2,7 @@ FROM linuxserver/lidarr:amd64-develop
 LABEL maintainer="RandomNinjaAtk"
 
 ENV dockerTitle="lidarr-extended"
-ENV dockerVersion="amd64-1.0.31"
+ENV dockerVersion="amd64-1.0.32"
 ENV LANG=en_US.UTF-8
 ENV autoStart=true
 ENV configureLidarrWithOptimalSettings=false
@@ -28,7 +28,7 @@ ENV youtubeSubtitleLanguage=en
 ENV enableAudioScript=true
 ENV enableVideoScript=true
 ENV matchDistance=5
-ENV videoFormat="bestvideo+best+bestaudio"
+ENV videoFormat="bestvideo*+bestaudio/best"
 
 RUN \
 	echo "*** install packages ***" && \
