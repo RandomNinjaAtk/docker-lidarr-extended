@@ -11,7 +11,7 @@ COPY --from=builder qemu-aarch64-static /usr/bin
 
 LABEL maintainer="RandomNinjaAtk"
 ENV dockerTitle="lidarr-extended"
-ENV dockerVersion="arm64v8-1.0.31"
+ENV dockerVersion="arm64v8-1.0.32"
 ENV LANG=en_US.UTF-8
 ENV autoStart=true
 ENV configureLidarrWithOptimalSettings=false
@@ -38,7 +38,7 @@ ENV youtubeSubtitleLanguage=en
 ENV enableAudioScript=true
 ENV enableVideoScript=true
 ENV matchDistance=5
-ENV videoFormat="bestvideo+best+bestaudio"
+ENV videoFormat="bestvideo*+bestaudio/best"
 
 RUN \
 	echo "*** install packages ***" && \
