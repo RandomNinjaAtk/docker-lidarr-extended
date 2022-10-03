@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.253"
+scriptVersion="1.0.254"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -385,7 +385,6 @@ TidalClientSetup () {
 	if [ ! -d /config/extended/cache/tidal ]; then
 		mkdir -p /config/extended/cache/tidal
 		chmod 777 /config/extended/cache/tidal
-		chown abc:abc /config/extended/cache/tidal
 	fi
 	
 	if [ -d /config/extended/cache/tidal ]; then
@@ -396,7 +395,6 @@ TidalClientSetup () {
 	if [ ! -d "$downloadPath/incomplete" ]; then
 		mkdir -p $downloadPath/incomplete
 		chmod 777 $downloadPath/incomplete
-		chown abc:abc $downloadPath/incomplete
 	else
 		rm -rf $downloadPath/incomplete/*
 	fi
@@ -466,7 +464,6 @@ DownloadProcess () {
 	if [ ! -d "$downloadPath/incomplete" ]; then
 		mkdir -p $downloadPath/incomplete
 		chmod 777 $downloadPath/incomplete
-		chown abc:abc $downloadPath/incomplete
 	else
 		rm -rf $downloadPath/incomplete/*
 	fi
@@ -474,7 +471,6 @@ DownloadProcess () {
 	if [ ! -d "$downloadPath/complete" ]; then
 		mkdir -p $downloadPath/complete
 		chmod 777 $downloadPath/complete
-		chown abc:abc $downloadPath/complete
 	else
 		rm -rf $downloadPath/complete/*
 	fi
@@ -482,37 +478,31 @@ DownloadProcess () {
 	if [ ! -d "/config/extended/logs" ]; then
 		mkdir -p /config/extended/logs
 		chmod 777 /config/extended/logs
-		chown abc:abc /config/extended/logs
 	fi
 
 	if [ ! -d "/config/extended/logs/downloaded" ]; then
 		mkdir -p /config/extended/logs/downloaded
 		chmod 777 /config/extended/logs/downloaded
-		chown abc:abc /config/extended/logs/downloaded
 	fi
 
 	if [ ! -d "/config/extended/logs/downloaded/deezer" ]; then
 		mkdir -p /config/extended/logs/downloaded/deezer
 		chmod 777 /config/extended/logs/downloaded/deezer
-		chown abc:abc /config/extended/logs/downloaded/deezer
 	fi
 
 	if [ ! -d "/config/extended/logs/downloaded/tidal" ]; then
 		mkdir -p /config/extended/logs/downloaded/tidal
 		chmod 777 /config/extended/logs/downloaded/tidal
-		chown abc:abc /config/extended/logs/downloaded/tidal
 	fi
 
 	if [ ! -d /config/extended/logs/downloaded/failed/deezer ]; then
 		mkdir -p /config/extended/logs/downloaded/failed/deezer
 		chmod 777 /config/extended/logs/downloaded/failed/deezer
-		chown abc:abc /config/extended/logs/downloaded/failed/deezer
 	fi
 
 	if [ ! -d /config/extended/logs/downloaded/failed/tidal ]; then
 		mkdir -p /config/extended/logs/downloaded/failed/tidal
 		chmod 777 /config/extended/logs/downloaded/failed/tidal
-		chown abc:abc /config/extended/logs/downloaded/failed/tidal
 	fi
 
 	downloadedAlbumTitleClean="$(echo "$4" | sed -e "s%[^[:alpha:][:digit:]._' ]% %g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
@@ -716,14 +706,12 @@ DownloadProcess () {
         if [ ! -d "$downloadPath/complete" ]; then
             mkdir -p $downloadPath/complete
             chmod 777 $downloadPath/complete
-            chown abc:abc $downloadPath/complete
         fi
         mkdir -p "$downloadPath/complete/$downloadedAlbumFolder"
         mv "$file" "$downloadPath/complete/$downloadedAlbumFolder"/
         
     done
 	chmod -R 777 $downloadPath/complete
-	chown -R abc:abc $downloadPath/complete
 	
 	if [ -d "$downloadPath/complete/$downloadedAlbumFolder" ]; then
 		NotifyLidarrForImport "$downloadPath/complete/$downloadedAlbumFolder"
@@ -836,7 +824,6 @@ DeemixClientSetup () {
 	if [ ! -d "$downloadPath/incomplete" ]; then
 		mkdir -p $downloadPath/incomplete
 		chmod 777 $downloadPath/incomplete
-		chown abc:abc $downloadPath/incomplete
 	else
 		rm -rf $downloadPath/incomplete/*
 	fi
@@ -878,7 +865,7 @@ ConfigureLidarrWithOptimalSettings () {
 	fi
 
 	log "Configuring Lidarr Media Management Settings"
-	postSettingsToLidarr=$(curl -s "$lidarrUrl/api/v1/config/mediamanagement" -X PUT -H 'Content-Type: application/json' -H "X-Api-Key: ${lidarrApiKey}" --data-raw '{"autoUnmonitorPreviouslyDownloadedTracks":false,"recycleBin":"","recycleBinCleanupDays":7,"downloadPropersAndRepacks":"preferAndUpgrade","createEmptyArtistFolders":true,"deleteEmptyFolders":true,"fileDate":"none","watchLibraryForChanges":true,"rescanAfterRefresh":"always","allowFingerprinting":"newFiles","setPermissionsLinux":true,"chmodFolder":"777","chownGroup":"abc","skipFreeSpaceCheckWhenImporting":false,"minimumFreeSpaceWhenImporting":100,"copyUsingHardlinks":true,"importExtraFiles":true,"extraFileExtensions":"jpg,png,lrc","id":1}')
+	postSettingsToLidarr=$(curl -s "$lidarrUrl/api/v1/config/mediamanagement" -X PUT -H 'Content-Type: application/json' -H "X-Api-Key: ${lidarrApiKey}" --data-raw '{"autoUnmonitorPreviouslyDownloadedTracks":false,"recycleBin":"","recycleBinCleanupDays":7,"downloadPropersAndRepacks":"preferAndUpgrade","createEmptyArtistFolders":true,"deleteEmptyFolders":true,"fileDate":"none","watchLibraryForChanges":true,"rescanAfterRefresh":"always","allowFingerprinting":"newFiles","setPermissionsLinux":true,"chmodFolder":"777","chownGroup":"","skipFreeSpaceCheckWhenImporting":false,"minimumFreeSpaceWhenImporting":100,"copyUsingHardlinks":true,"importExtraFiles":true,"extraFileExtensions":"jpg,png,lrc","id":1}')
 
 	log "Configuring Lidarr Metadata ConsumerSettings"
 	postSettingsToLidarr=$(curl -s "$lidarrUrl/api/v1/metadata/1?" -X PUT -H 'Content-Type: application/json' -H "X-Api-Key: ${lidarrApiKey}" --data-raw '{"enable":true,"name":"Kodi (XBMC) / Emby","fields":[{"name":"artistMetadata","value":true},{"name":"albumMetadata","value":true},{"name":"artistImages","value":true},{"name":"albumImages","value":true}],"implementationName":"Kodi (XBMC) / Emby","implementation":"XbmcMetadata","configContract":"XbmcMetadataSettings","infoLink":"https://wiki.servarr.com/lidarr/supported#xbmcmetadata","tags":[],"id":1}')
@@ -918,8 +905,7 @@ ConfigureLidarrWithOptimalSettings () {
 
 
 	touch /config/extended/logs/autoconfig
-	chmod 666 /config/extended/logs/autoconfig
-	chown abc:abc /config/extended/logs/autoconfig
+	chmod 777 /config/extended/logs/autoconfig
 
 }
 
@@ -948,7 +934,6 @@ GetMissingCutOffList () {
 	if [ ! -d /config/extended/logs/notfound ]; then
 		mkdir -p /config/extended/logs/notfound
 		chmod 777 /config/extended/logs/notfound
-		chown abc:abc /config/extended/logs/notfound
 	fi
 	
 	#get notfound log files list
@@ -1088,8 +1073,7 @@ SearchProcess () {
 			log "$processNumber of $wantedListAlbumTotal :: $lidarrAlbumTitle :: $lidarrAlbumType :: Previously Not Found, skipping..."
 			rm "/config/extended/logs/downloaded/notfound/$lidarrAlbumForeignAlbumId"
 			touch "/config/extended/logs/notfound/$wantedAlbumId--$lidarrArtistForeignArtistId--$lidarrAlbumForeignAlbumId"
-			chmod 666 "/config/extended/logs/notfound/$wantedAlbumId--$lidarrArtistForeignArtistId--$lidarrAlbumForeignAlbumId"
-			chown abc:abc "/config/extended/logs/notfound/$wantedAlbumId--$lidarrArtistForeignArtistId--$lidarrAlbumForeignAlbumId"
+			chmod 777 "/config/extended/logs/notfound/$wantedAlbumId--$lidarrArtistForeignArtistId--$lidarrAlbumForeignAlbumId"
 			continue
 		fi
 
@@ -1164,8 +1148,7 @@ SearchProcess () {
 					sleep 0.01
 				else
 					echo "Update Musicbrainz Relationship Page: https://musicbrainz.org/artist/$lidarrArtistForeignArtistId/relationships for \"${lidarrArtistName}\" with Deezer Artist Link" >> "/config/logs/deezer-artist-id-not-found.txt"
-					chmod 666 "/config/logs/deezer-artist-id-not-found.txt"
-					chown abc:abc "/config/logs/deezer-artist-id-not-found.txt"
+					chmod 777 "/config/logs/deezer-artist-id-not-found.txt"
 				fi
 				skipDeezer=true
 			fi
@@ -1188,8 +1171,7 @@ SearchProcess () {
 					sleep 0.01
 				else
 					echo "Update Musicbrainz Relationship Page: https://musicbrainz.org/artist/$lidarrArtistForeignArtistId/relationships for \"${lidarrArtistName}\" with Tidal Artist Link" >> "/config/logs/tidal-artist-id-not-found.txt"
-					chmod 666 "/config/logs/tidal-artist-id-not-found.txt"
-					chown abc:abc "/config/logs/tidal-artist-id-not-found.txt"
+					chmod 777 "/config/logs/tidal-artist-id-not-found.txt"
 				fi
 				skipTidal=true
 			fi
@@ -1421,8 +1403,7 @@ SearchProcess () {
 		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Marking Album as notfound"
 		if [ ! -f "/config/extended/logs/notfound/$wantedAlbumId--$lidarrArtistForeignArtistId--$lidarrAlbumForeignAlbumId" ]; then
 			touch "/config/extended/logs/notfound/$wantedAlbumId--$lidarrArtistForeignArtistId--$lidarrAlbumForeignAlbumId"
-			chmod 666 "/config/extended/logs/notfound/$wantedAlbumId--$lidarrArtistForeignArtistId--$lidarrAlbumForeignAlbumId"
-			chown abc:abc "/config/extended/logs/notfound/$wantedAlbumId--$lidarrArtistForeignArtistId--$lidarrAlbumForeignAlbumId"
+			chmod 777 "/config/extended/logs/notfound/$wantedAlbumId--$lidarrArtistForeignArtistId--$lidarrAlbumForeignAlbumId"
 		fi
 		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Search Complete..." 
 	done
@@ -1439,8 +1420,7 @@ GetDeezerAlbumInfo () {
 		if [ -f "/config/extended/cache/deezer/$1.json" ]; then
 			if jq -e . >/dev/null 2>&1 <<<"$(cat /config/extended/cache/deezer/$1.json)"; then
 				log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: Album info downloaded and verified..."
-				chmod 666 /config/extended/cache/deezer/$1.json
-				chown abc:abc /config/extended/cache/deezer/$1.json	
+				chmod 777 /config/extended/cache/deezer/$1.json
 				albumInfoVerified=true
 				break
 			else
@@ -1897,11 +1877,9 @@ LidarrMissingAlbumSearch () {
 		if [ ! -d /config/extended/logs/searched/lidarr/artist ]; then
 			mkdir -p /config/extended/logs/searched/lidarr/artist
 			chmod -R 777 /config/extended/logs/searched/lidarr/artist
-			chown -R abc:abc /config/extended/logs/searched/lidarr/artist
 		fi
 		touch /config/extended/logs/searched/lidarr/artist/$lidarrArtistMusicbrainzId
-		chmod 666 /config/extended/logs/searched/lidarr/artist/$lidarrArtistMusicbrainzId
-		chown abc:abc /config/extended/logs/searched/lidarr/artist/$lidarrArtistMusicbrainzId
+		chmod 777 /config/extended/logs/searched/lidarr/artist/$lidarrArtistMusicbrainzId
 	done
 }
 
