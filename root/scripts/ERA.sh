@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.1.1"
+scriptVersion="1.1.2"
 agent="ERA ( https://github.com/Makario1337/ExtendedReleaseAdder )"
 
 ### DEBUG ###
@@ -82,7 +82,7 @@ SearchAllArtistsByTag(){
 offset=0
 tag="audio%20drama"
 log "Collecting artists by tag :: Collecting..."
-while [ $offset -le 200 ]
+while [ $offset -le 5000 ]
 do  
     AllArtistsByTagWget=$(wget -U "$agent" --timeout=0 -q -O - "https://musicbrainz.org/ws/2/artist?query=tag:"audio%20drama"&limit=100&fmt=json&offset=$offset" | jq '.artists[].id')
     AllArtistsByTag="$AllArtistsByTag $AllArtistsByTagWget"
