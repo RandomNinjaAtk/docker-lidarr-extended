@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.1.0"
+scriptVersion="1.1.1"
 agent="ERA ( https://github.com/Makario1337/ExtendedReleaseAdder )"
 
 ### DEBUG ###
@@ -13,6 +13,19 @@ log () {
 
 ### Start ###
 start () {
+
+if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
+	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
+	if [ "$lidarrUrlBase" = "null" ]; then
+		lidarrUrlBase=""
+	else
+		lidarrUrlBase="/$(echo "$lidarrUrlBase" | sed "s/\///g")"
+	fi
+	lidarrApiKey="$(cat /config/config.xml | xq | jq -r .Config.ApiKey)"
+	lidarrPort="$(cat /config/config.xml | xq | jq -r .Config.Port)"
+	lidarrUrl="http://127.0.0.1:${lidarrPort}${lidarrUrlBase}"
+fi  
+
 if [[ $DEBUG -ne 1 ]]; then
     if [ -f "/config/logs/ExtendedReleaseAdder.txt" ]; then
     find /config/logs -type f -name "ExtendedReleaseAdder.txt" -size +1024k -delete
@@ -41,18 +54,7 @@ log "4"; sleep 1
 log "3"; sleep 1
 log "2"; sleep 1
 log "1"; sleep 1
-fi
-if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
-	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
-	if [ "$lidarrUrlBase" = "null" ]; then
-		lidarrUrlBase=""
-	else
-		lidarrUrlBase="/$(echo "$lidarrUrlBase" | sed "s/\///g")"
-	fi
-	lidarrApiKey="$(cat /config/config.xml | xq | jq -r .Config.ApiKey)"
-	lidarrPort="$(cat /config/config.xml | xq | jq -r .Config.Port)"
-	lidarrUrl="http://127.0.0.1:${lidarrPort}${lidarrUrlBase}"
-fi   
+fi 
 }
 start
 ### Start end ###
@@ -80,7 +82,7 @@ SearchAllArtistsByTag(){
 offset=0
 tag="audio%20drama"
 log "Collecting artists by tag :: Collecting..."
-while [ $offset -le 5000 ]
+while [ $offset -le 200 ]
 do  
     AllArtistsByTagWget=$(wget -U "$agent" --timeout=0 -q -O - "https://musicbrainz.org/ws/2/artist?query=tag:"audio%20drama"&limit=100&fmt=json&offset=$offset" | jq '.artists[].id')
     AllArtistsByTag="$AllArtistsByTag $AllArtistsByTagWget"
@@ -95,6 +97,8 @@ for artist in ${AllArtistsByTag[@]}; do
     ArtistInLidarr=$(curl -s -X GET "$lidarrUrl/api/v1/artist?mbId=$artist" -H  "accept: */*" -H  "X-Api-Key: "$lidarrApiKey"")
     sleep 0.1
     if [[ "$ArtistInLidarr" != "[]" ]]; then
+    LidarrArtistID=$(echo $ArtistInLidarr | jq '.[].id')
+    RefreshArtistList="$RefreshArtistList $LidarrArtistID"
     Temp=$(echo $ArtistInLidarr | jq '.[].foreignArtistId')
     ERAArtistsList="$ERAArtistsList $Temp"
     fi
@@ -129,8 +133,19 @@ for artist in ${ERAArtistsList[@]}; do
     fi
 done
 }
+
+RefreshArtists() {
+    log "Refreshing all ERA artists, so new releasegroup entrys can be added"
+    for artists in $RefreshArtistList
+    do
+    curl -s -X POST "$lidarrUrl/api/v1/command" -H  "accept: text/plain" -H  "Content-Type: application/json" -H "X-Api-Key: $lidarrApiKey" -d "{\"name\":\"RefreshArtist\",\"artistId\":$artists}"
+    sleep 1.5
+    done
+}
+
 SearchAllArtistsByTag
 CheckIfCollectedArtistsAreInLidarrInstance
 ArtistLookupAndCallAddReleaseToLidarr
+RefreshArtists
 log "DONE :: Finishing..."
 exit
