@@ -117,7 +117,7 @@ Container images are configured using parameters passed at runtime (such as thos
 | `-e numberOfRelatedArtistsToAddPerArtist=5` | 1-20 :: This will limit the number of related artists to add per artist in your library :: Minimum is 1, Maximum is 20 |
 | `-e addFeaturedVideoArtists=false` | true = enabled :: WARNING !!! WARNING !!! Enabling this can cause an endless loop of additional artists.... Enabling this will enable the extended Video script to automatically add Music Video Featured Artists to your existing Lidarr artists from IMVDB |
 | `-e plexUrl=http://x.x.x.x:32400` | ONLY used if PlexNotify.bash is used...|
-| `-e plexToken=` | ONLY used if PlexNotify.bash is used... |
+| `-e plexToken=` | ONLY used if PlexNotify.bash is used... (How to obtain token, visit: [Plex Support Article](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token)|
 | `-e youtubeSubtitleLanguage=en` | Desired Language Code :: For guidence, please see yt-dlp documentation.
 | `-e webHook=https://myhook.mydomain.com` | POST's to this URL on error events which prevent the script from working. Content is JSON `{"event":"eventtype", "message":"eventmessage", "content":"eventtype: eventmessage"}` |
 | `-e enableQueueCleaner=true` | true = enabled :: Enables QueueCleaner Script that automatically removes stuck downloads that cannot be automatically imported on a 15 minute interval |
