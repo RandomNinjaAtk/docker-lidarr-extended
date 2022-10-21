@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.255"
+scriptVersion="1.0.256"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -1109,7 +1109,7 @@ SearchProcess () {
 
 		
 
-		if [[ ${currentDateClean} -gt ${lidarrAlbumReleaseDateClean} ]]; then
+		if [[ ${currentDateClean} -ge ${lidarrAlbumReleaseDateClean} ]]; then
 			log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Starting Search..."
 		else
 			log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Album ($lidarrAlbumReleaseDate) has not been released, skipping..."
