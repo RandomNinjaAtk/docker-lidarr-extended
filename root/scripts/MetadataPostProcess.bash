@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-version=1.0.005
+version=1.0.006
 if [ -z "$lidarr_artist_path" ]; then
 	lidarr_artist_path="$1"
 	notfidedBy=Extended_Script
@@ -33,7 +33,6 @@ if [ -d "$albumFolder" ]; then
         if [ -f "$albumFolder/folder.jpg" ]; then
             log "Processing :: $albumFolder :: Album Artwork Extracted to: $albumFolder/folder.jpg"
             chmod 666 "$albumFolder/folder.jpg"
-            chown abc:abc "$albumFolder/folder.jpg"
         fi
     fi
 else
