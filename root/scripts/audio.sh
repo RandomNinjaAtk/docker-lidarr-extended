@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.260"
+scriptVersion="1.0.261"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -642,6 +642,17 @@ DownloadProcess () {
 		touch /config/extended/logs/downloaded/tidal/$1
 	fi
 
+	# Embed Lyrics into Flac files
+	find "$downloadPath/incomplete" -type f -iname "*.flac" -print0 | while IFS= read -r -d '' file; do
+		lrcFile="${file%.*}.lrc"
+		if [ -f "$lrcFile" ]; then
+			log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Embedding lyrics (lrc) into $file"
+			metaflac --remove-tag=Lyrics "$file"
+			metaflac --set-tag-from-file="Lyrics=$lrcFile" "$file"
+			rm "$lrcFile"
+		fi
+	done
+
 	if [ "$audioFormat" != "native" ]; then
 		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Converting Flac Audio to  ${audioFormat^^} ($audioBitrateText)"
 		if [ "$audioFormat" == "opus" ]; then
@@ -686,16 +697,6 @@ DownloadProcess () {
 		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Replaygain Tagging Disabled (set enableReplaygainTags=true to enable...)"
 	fi
 	
-	find "$downloadPath/incomplete" -type f -iname "*.flac" -print0 | while IFS= read -r -d '' file; do
-		lrcFile="${file%.*}.lrc"
-		if [ -f "$lrcFile" ]; then
-			log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Embedding lyrics (lrc) into $file"
-			metaflac --remove-tag=Lyrics "$file"
-			metaflac --set-tag-from-file="Lyrics=$lrcFile" "$file"
-			rm "$lrcFile"
-		fi
-	done
-
 	albumquality="$(find $downloadPath/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | head -n 1 | egrep -i -E -o "\.{1}\w*$" | sed  's/\.//g')"
 	downloadedAlbumFolder="$lidarrArtistNameSanitized-$downloadedAlbumTitleClean ($3)-${albumquality^^}-$1-$2"
 
