@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-version=1.0.004
+version=1.0.005
 if [ -z "$lidarr_artist_path" ]; then
 	lidarr_artist_path="$1"
 	notfidedBy=Extended_Script
@@ -44,13 +44,23 @@ lrcFile="${lidarr_trackfile_path%.*}.lrc"
 if [ -f "$lrcFile" ]; then
     rm "$lrcFile"
 fi
-getLyrics="$(ffprobe -loglevel 0 -print_format json -show_format -show_streams "$lidarr_trackfile_path" | jq -r ".format.tags.LYRICS")"
-if [ "$getLyrics" != "null" ]; then
+fileName=$(basename -- "$lidarr_trackfile_path")
+fileExt="${fileName##*.}"
+
+if [ "$fileExt" == "flac" ]; then
+    getLyrics="$(ffprobe -loglevel 0 -print_format json -show_format -show_streams "$lidarr_trackfile_path" | jq -r ".format.tags.LYRICS" | sed "s/null//g" | sed "/^$/d")"
+    processLyrics=true
+fi
+
+if [ "$fileExt" == "opus" ]; then
+    getLyrics="$(ffprobe -loglevel 0 -print_format json -show_format -show_streams "$lidarr_trackfile_path" | jq -r ".streams[].tags.LYRICS" | sed "s/null//g" | sed "/^$/d")"
+fi
+
+if [ ! -z "$getLyrics" ]; then
     log "Processing :: $lidarr_trackfile_path :: Extracting Lyrics..."
-    ffprobe -loglevel 0 -print_format json -show_format -show_streams "$lidarr_trackfile_path" | jq -r ".format.tags.LYRICS" > "$lrcFile"
+    echo -n "$getLyrics" > "$lrcFile"
     log "Processing :: $lidarr_trackfile_path :: Lyrics extracted to: $lrcFile"
     chmod 666 "$lrcFile"
-    chown abc:abc "$lrcFile"
 fi
 
 exit
