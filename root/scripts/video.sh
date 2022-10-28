@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.045"
+scriptVersion="1.0.046"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -105,7 +105,6 @@ CacheMusicbrainzRecords () {
         if [ ! -d /config/extended/cache/musicbrainz ]; then
             mkdir -p /config/extended/cache/musicbrainz
             chmod 777 /config/extended/cache/musicbrainz
-            chown abc:abc /config/extended/cache/musicbrainz
         fi
 
         if [ -f "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json" ]; then
@@ -163,7 +162,7 @@ TidalClientSetup () {
 
 	fi
 	TidaldlStatusCheck
-	tidal-dl -o $downloadPath/incomplete
+	tidal-dl -o "$downloadPath/incomplete"
 		
 	if [ ! -f /config/xdg/.tidal-dl.token.json ]; then
 		TidaldlStatusCheck
@@ -178,7 +177,6 @@ TidalClientSetup () {
 	if [ ! -d "$downloadPath/incomplete" ]; then
 		mkdir -p $downloadPath/incomplete
 		chmod 777 $downloadPath/incomplete
-		chown abc:abc $downloadPath/incomplete
 	fi
 	
     TidaldlStatusCheck
@@ -193,7 +191,7 @@ TidalClientTest () {
 	while [ $i -lt 3 ]; do
 		i=$(( $i + 1 ))
 		TidaldlStatusCheck
-		tidal-dl -q Normal -o "$downloadPath"/incomplete -l "166356219" &>/dev/null
+		tidal-dl -q Normal -o "$downloadPath"/incomplete -l "166356219"
 		downloadCount=$(find "$downloadPath"/incomplete -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
 		if [ $downloadCount -le 0 ]; then
 			continue
@@ -241,7 +239,6 @@ ImvdbCache () {
         log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: Creating Cache Folder..."
         mkdir -p "/config/extended/cache/imvdb"
         chmod 777 "/config/extended/cache/imvdb"
-        chown abc:abc "/config/extended/cache/imvdb"
     fi
     
     log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: Caching Records..."
@@ -308,7 +305,6 @@ DownloadVideo () {
     if [ ! -d "$downloadPath/incomplete" ]; then
         mkdir -p "$downloadPath/incomplete"
         chmod 777 "$downloadPath/incomplete"
-        chown abc:abc "$downloadPath/incomplete"
     fi 
 
     if echo "$1" | grep -i "youtube" | read; then
@@ -319,7 +315,6 @@ DownloadVideo () {
         fi
         if [ -f "$downloadPath/incomplete/${2}${3}.mkv" ]; then
             chmod 666 "$downloadPath/incomplete/${2}${3}.mkv"
-            chown abc:abc "$downloadPath/incomplete/${2}${3}.mkv"
             downloadFailed=false
         else
             downloadFailed=true
@@ -330,7 +325,7 @@ DownloadVideo () {
         TidalClientTest
         sleep 1
         TidaldlStatusCheck
-        tidal-dl -o "$downloadPath/incomplete" -l "$1" &>/dev/null
+        tidal-dl -o "$downloadPath/incomplete" -l "$1"
         find "$downloadPath/incomplete" -type f -exec mv "{}" "$downloadPath/incomplete"/ \;
         find "$downloadPath/incomplete" -mindepth 1 -type d -exec rm -rf "{}" \; &>/dev/null
         find "$downloadPath/incomplete" -type f -regex ".*/.*\.\(mkv\|mp4\)"  -print0 | while IFS= read -r -d '' video; do
@@ -343,7 +338,6 @@ DownloadVideo () {
         done
         if [ -f "$downloadPath/incomplete/${2}${3}.mp4" ]; then
             chmod 666 "$downloadPath/incomplete/${2}${3}.mp4"
-            chown abc:abc "$downloadPath/incomplete/${2}${3}.mp4"
             downloadFailed=false
         else
             downloadFailed=true
@@ -356,7 +350,6 @@ DownloadThumb () {
 
     curl -s "$1" -o "$downloadPath/incomplete/${2}${3}.jpg"
     chmod 666 "$downloadPath/incomplete/${2}${3}.jpg"
-    chown abc:abc "$downloadPath/incomplete/${2}${3}.jpg"
 
 }
 
@@ -422,7 +415,6 @@ VideoTagProcess () {
 			"$filenoext.mkv" &>/dev/null
         rm "$filenoext-temp.mkv"
         chmod 666 "$filenoext.mkv"
-        chown abc:abc "$filenoext.mkv"
     done
 }
 
@@ -474,8 +466,6 @@ VideoNfoWriter () {
     echo "	<thumb>${1}${2}.jpg</thumb>" >> "$nfo"
     echo "</musicvideo>" >> "$nfo"
     chmod 666 "$nfo"
-    chown abc:abc "$nfo"
-
 
 }
 
@@ -711,7 +701,6 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
             if [ ! -d "$videoPath/$lidarrArtistFolder" ]; then
                 mkdir -p "$videoPath/$lidarrArtistFolder"
                 chmod 777 "$videoPath/$lidarrArtistFolder"
-                chown abc:abc "$videoPath/$lidarrArtistFolder"
             fi
 
             mv $downloadPath/incomplete/* "$videoPath/$lidarrArtistFolder"/
@@ -801,7 +790,6 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
                 if [ ! -d "$videoPath/$lidarrArtistFolder" ]; then
                     mkdir -p "$videoPath/$lidarrArtistFolder"
                     chmod 777 "$videoPath/$lidarrArtistFolder"
-                    chown abc:abc "$videoPath/$lidarrArtistFolder"
                 fi 
 
                 mv $downloadPath/incomplete/* "$videoPath/$lidarrArtistFolder"/
@@ -814,13 +802,11 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
     if [ ! -d /config/extended/logs/video ]; then
         mkdir -p /config/extended/logs/video
         chmod 777 /config/extended/logs/video
-        chown abc:abc /config/extended/logs/video
     fi
 
     if [ ! -d /config/extended/logs/video/complete ]; then
         mkdir -p /config/extended/logs/video/complete 
         chmod 777 /config/extended/logs/video/complete 
-        chown abc:abc /config/extended/logs/video/complete 
     fi
 
     touch "/config/extended/logs/video/complete/$lidarrArtistMusicbrainzId"
