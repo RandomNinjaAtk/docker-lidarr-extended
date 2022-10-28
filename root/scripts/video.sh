@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.044"
+scriptVersion="1.0.045"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -167,8 +167,8 @@ TidalClientSetup () {
 		
 	if [ ! -f /config/xdg/.tidal-dl.token.json ]; then
 		TidaldlStatusCheck
-		log "TIDAL :: ERROR :: Downgrade tidal-dl for workaround..."
-		pip install tidal-dl==2022.3.4.2 --no-cache-dir &>/dev/null
+		#log "TIDAL :: ERROR :: Downgrade tidal-dl for workaround..."
+		#pip install tidal-dl==2022.3.4.2 --no-cache-dir &>/dev/null
 		TidaldlStatusCheck
 		log "TIDAL :: ERROR :: Loading client for required authentication, please authenticate, then exit the client..."
 		NotifyWebhook "Error" "TIDAL requires authentication, please authenticate now (check logs)"
@@ -182,8 +182,8 @@ TidalClientSetup () {
 	fi
 	
     TidaldlStatusCheck
-	log "TIDAL :: Upgrade tidal-dl to newer version..."
-	pip install tidal-dl==2022.07.06.1 --no-cache-dir &>/dev/null
+	#log "TIDAL :: Upgrade tidal-dl to newer version..."
+	#pip install tidal-dl==2022.07.06.1 --no-cache-dir &>/dev/null
 	
 }
 
