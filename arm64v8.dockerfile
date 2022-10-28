@@ -49,6 +49,7 @@ RUN \
 		jq \
 		git \
 		gcc \
+		opus-tools \
 		ffmpeg \
 		python3-dev \
 		libc-dev \
