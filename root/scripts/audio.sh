@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.258"
+scriptVersion="1.0.259"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -181,6 +181,8 @@ DownloadFormat () {
 	else
 		bitrateError="false"
 		audioFormatError="false"
+		tidalQuality=HiFi
+		deemixQuality=flac
 
 		case "$audioBitrate" in
 			lossless | high | low)
@@ -411,7 +413,7 @@ TidalClientTest () {
 	while [ $i -lt 3 ]; do
 		i=$(( $i + 1 ))
 		TidaldlStatusCheck
-		tidal-dl -q Normal -o "$downloadPath"/incomplete -l "166356219" &>/dev/null
+		tidal-dl -q Normal -o "$downloadPath"/incomplete -l "166356219"
 		downloadCount=$(find "$downloadPath"/incomplete -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
 		if [ "$downloadCount" -le "0" ]; then
 			continue
@@ -554,7 +556,7 @@ DownloadProcess () {
 			if [ "$downloadTry" == "1" ]; then
 				DeezerClientTest
 			fi
-			deemix -b $deemixQuality -p $downloadPath/incomplete "https://www.deezer.com/album/$1" &>/dev/null
+			deemix -b $deemixQuality -p $downloadPath/incomplete "https://www.deezer.com/album/$1"
 			if [ -d "/tmp/deemix-imgs" ]; then
 				rm -rf /tmp/deemix-imgs
 			fi
@@ -566,7 +568,7 @@ DownloadProcess () {
 				TidalClientTest
 			fi
 			TidaldlStatusCheck
-			tidal-dl -q $tidalQuality -o $downloadPath/incomplete -l "$1" &>/dev/null
+			tidal-dl -q $tidalQuality -o "$downloadPath/incomplete" -l "$1"
 		fi
 	
 		find "$downloadPath/incomplete" -type f -iname "*.flac" -newer "/temp-download" -print0 | while IFS= read -r -d '' file; do
@@ -836,7 +838,7 @@ DeemixClientSetup () {
 DeezerClientTest () {
 	log "DEEZER :: deemix client setup verification..."
 
-	deemix -b 128 -p $downloadPath/incomplete "https://www.deezer.com/album/197472472" &>/dev/null
+	deemix -b 128 -p $downloadPath/incomplete "https://www.deezer.com/album/197472472"
 	if [ -d "/tmp/deemix-imgs" ]; then
 		rm -rf /tmp/deemix-imgs
 	fi
