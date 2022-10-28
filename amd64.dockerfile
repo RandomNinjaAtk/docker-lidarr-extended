@@ -40,6 +40,7 @@ RUN \
 		git \
 		gcc \
 		ffmpeg \
+		opus-tools \
 		python3-dev \
 		libc-dev \
 		py3-pip \
