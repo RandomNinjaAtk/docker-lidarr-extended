@@ -62,8 +62,8 @@ RUN \
 		requests \
 		beets \
 		r128gain \
+		tidal-dl \
 		deemix && \
-	pip install tidal-dl==2022.3.4.2 --no-cache-dir && \
 	echo "************ setup SMA ************" && \
 	echo "************ setup directory ************" && \
 	mkdir -p ${SMA_PATH} && \
