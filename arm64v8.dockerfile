@@ -11,7 +11,7 @@ COPY --from=builder qemu-aarch64-static /usr/bin
 
 LABEL maintainer="RandomNinjaAtk"
 ENV dockerTitle="lidarr-extended"
-ENV dockerVersion="arm64v8-1.0.32"
+ENV dockerVersion="arm64v8-1.0.33"
 ENV LANG=en_US.UTF-8
 ENV autoStart=true
 ENV configureLidarrWithOptimalSettings=false
@@ -43,6 +43,7 @@ ENV videoFormat="bestvideo*+bestaudio/best"
 RUN \
 	echo "*** install packages ***" && \
 	apk add -U --upgrade --no-cache \
+		tidyhtml \
 		musl-locales \
 		musl-locales-lang \
 		flac \
