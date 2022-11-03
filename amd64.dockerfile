@@ -2,7 +2,7 @@ FROM linuxserver/lidarr:amd64-develop
 LABEL maintainer="RandomNinjaAtk"
 
 ENV dockerTitle="lidarr-extended"
-ENV dockerVersion="amd64-1.0.32"
+ENV dockerVersion="amd64-1.0.33"
 ENV LANG=en_US.UTF-8
 ENV autoStart=true
 ENV configureLidarrWithOptimalSettings=false
@@ -33,6 +33,7 @@ ENV videoFormat="bestvideo*+bestaudio/best"
 RUN \
 	echo "*** install packages ***" && \
 	apk add -U --upgrade --no-cache \
+		tidyhtml \
 		musl-locales \
 		musl-locales-lang \
 		flac \
