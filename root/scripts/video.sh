@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.049"
+scriptVersion="1.0.050"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -80,13 +80,14 @@ Configuration () {
 	log "CONFIG :: Music Video Location :: $videoPath"
 	log "CONFIG :: Subtitle Language set to: $youtubeSubtitleLanguage"
 	log "CONFIG :: yt-dlp format: $videoFormat"
-    if find /config -type f -iname "cookies.txt" | read; then
-        cookiesFile="$(find /config -type f -iname "cookies.txt" | head -n1)"
-        log "CONFIG :: Cookies File Found!"
-    else
-        log "CONFIG :: Cookies File Not Found!"
-        cookiesFile=""
-    fi
+	if [ -f "/config/cookies.txt" ]; then
+		cookiesFile="/config/cookies.txt"
+		log "CONFIG :: Cookies File Found! (/config/cookies.txt)"
+	    else
+		log "CONFIG :: ERROR :: Cookies File Not Found!"
+		log "CONFIG :: ERROR :: Add yt-dlp compatible cookies.txt to the following location: /config/cookies.txt"
+		cookiesFile=""
+	    fi
 	log "CONFIG :: Complete"
 }
 
