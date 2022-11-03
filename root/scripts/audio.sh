@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.262"
+scriptVersion="1.0.263"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -229,9 +229,9 @@ DownloadFolderCleaner () {
 	if [ -d "$downloadPath/complete" ]; then
 		log "Removing prevously completed downloads that failed to import..."
 		# check for completed downloads older than 1 day
-		if find $downloadPath/complete -mindepth 1 -type d -mtime +1 | read; then
+		if find "$downloadPath"/complete -mindepth 1 -type d -mtime +1 | read; then
 			# delete completed downloads older than 1 day, these most likely failed to import due to Lidarr failing to match
-			find $downloadPath/complete -mindepth 1 -type d -mtime +1 -exec rm -rf "{}" \; &>/dev/null
+			find "$downloadPath"/complete -mindepth 1 -type d -mtime +1 -exec rm -rf "{}" \; &>/dev/null
 		fi
 	fi
 }
@@ -371,7 +371,7 @@ TidalClientSetup () {
 	fi
 	
 	TidaldlStatusCheck
-	tidal-dl -o $downloadPath/incomplete
+	tidal-dl -o "$downloadPath"/incomplete
 	DownloadFormat
 
 	if [ ! -f /config/xdg/.tidal-dl.token.json ]; then
@@ -395,10 +395,10 @@ TidalClientSetup () {
 	fi
 	
 	if [ ! -d "$downloadPath/incomplete" ]; then
-		mkdir -p $downloadPath/incomplete
-		chmod 777 $downloadPath/incomplete
+		mkdir -p "$downloadPath"/incomplete
+		chmod 777 "$downloadPath"/incomplete
 	else
-		rm -rf $downloadPath/incomplete/*
+		rm -rf "$downloadPath"/incomplete/*
 	fi
 	
 	TidaldlStatusCheck
@@ -464,17 +464,17 @@ DownloadProcess () {
 
 	# Create Required Directories	
 	if [ ! -d "$downloadPath/incomplete" ]; then
-		mkdir -p $downloadPath/incomplete
-		chmod 777 $downloadPath/incomplete
+		mkdir -p "$downloadPath"/incomplete
+		chmod 777 "$downloadPath"/incomplete
 	else
-		rm -rf $downloadPath/incomplete/*
+		rm -rf "$downloadPath"/incomplete/*
 	fi
 	
 	if [ ! -d "$downloadPath/complete" ]; then
-		mkdir -p $downloadPath/complete
-		chmod 777 $downloadPath/complete
+		mkdir -p "$downloadPath"/complete
+		chmod 777 "$downloadPath"/complete
 	else
-		rm -rf $downloadPath/complete/*
+		rm -rf "$downloadPath"/complete/*
 	fi
 
 	if [ ! -d "/config/extended/logs" ]; then
@@ -509,7 +509,7 @@ DownloadProcess () {
 
 	downloadedAlbumTitleClean="$(echo "$4" | sed -e "s%[^[:alpha:][:digit:]._' ]% %g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
     	
-	if find $downloadPath/complete -type d -iname "$lidarrArtistNameSanitized-$downloadedAlbumTitleClean ($3)-*-$1-$2" | read; then
+	if find "$downloadPath"/complete -type d -iname "$lidarrArtistNameSanitized-$downloadedAlbumTitleClean ($3)-*-$1-$2" | read; then
 		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: ERROR :: Previously Downloaded..."
 		return
     fi
@@ -556,7 +556,7 @@ DownloadProcess () {
 			if [ "$downloadTry" == "1" ]; then
 				DeezerClientTest
 			fi
-			deemix -b $deemixQuality -p $downloadPath/incomplete "https://www.deezer.com/album/$1"
+			deemix -b $deemixQuality -p "$downloadPath"/incomplete "https://www.deezer.com/album/$1"
 			if [ -d "/tmp/deemix-imgs" ]; then
 				rm -rf /tmp/deemix-imgs
 			fi
@@ -581,7 +581,7 @@ DownloadProcess () {
 			fi
 		done
 
-		downloadCount=$(find $downloadPath/incomplete/ -type f -regex ".*/.*\.\(flac\|m4a\|mp3\)" | wc -l)
+		downloadCount=$(find "$downloadPath"/incomplete/ -type f -regex ".*/.*\.\(flac\|m4a\|mp3\)" | wc -l)
 		if [ "$downloadCount" -ne "$5" ]; then
 			log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: ERROR :: download failed, missing tracks..."
 			completedVerification="false"
@@ -593,8 +593,8 @@ DownloadProcess () {
 		if [ "$completedVerification" == "true" ]; then
 			break
 		elif [ "$downloadTry" == "2" ]; then
-			if [ -d $downloadPath/incomplete ]; then
-				rm -rf $downloadPath/incomplete/*
+			if [ -d "$downloadPath"/incomplete ]; then
+				rm -rf "$downloadPath"/incomplete/*
 			fi
 			break
 		else
@@ -606,19 +606,19 @@ DownloadProcess () {
 	# Consolidate files to a single folder
 	if [ "$2" == "TIDAL" ]; then
 		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Consolidating files to single folder"
-		find "$downloadPath/incomplete" -type f -exec mv "{}" $downloadPath/incomplete/ \;
-		if [ -d $downloadPath/incomplete/atd ]; then
-			rm -rf $downloadPath/incomplete/atd
+		find "$downloadPath/incomplete" -type f -exec mv "{}" "$downloadPath"/incomplete/ \;
+		if [ -d "$downloadPath"/incomplete/atd ]; then
+			rm -rf "$downloadPath"/incomplete/atd
 		fi
 	fi
 
-	downloadCount=$(find $downloadPath/incomplete/ -type f -regex ".*/.*\.\(flac\|m4a\|mp3\)" | wc -l)
+	downloadCount=$(find "$downloadPath"/incomplete/ -type f -regex ".*/.*\.\(flac\|m4a\|mp3\)" | wc -l)
 	if [ "$downloadCount" -gt "0" ]; then
 		# Check download for required quality (checks based on file extension)
 		DownloadQualityCheck "$downloadPath/incomplete" "$2"
 	fi
 	
-	downloadCount=$(find $downloadPath/incomplete/ -type f -regex ".*/.*\.\(flac\|m4a\|mp3\)" | wc -l)
+	downloadCount=$(find "$downloadPath"/incomplete/ -type f -regex ".*/.*\.\(flac\|m4a\|mp3\)" | wc -l)
 	if [ "$downloadCount" -ne "$5" ]; then
 		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: ERROR :: All download Attempts failed..."
 		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Logging $1 as failed download..."
@@ -697,7 +697,7 @@ DownloadProcess () {
 		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Replaygain Tagging Disabled (set enableReplaygainTags=true to enable...)"
 	fi
 	
-	albumquality="$(find $downloadPath/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | head -n 1 | egrep -i -E -o "\.{1}\w*$" | sed  's/\.//g')"
+	albumquality="$(find "$downloadPath"/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | head -n 1 | egrep -i -E -o "\.{1}\w*$" | sed  's/\.//g')"
 	downloadedAlbumFolder="$lidarrArtistNameSanitized-$downloadedAlbumTitleClean ($3)-${albumquality^^}-$1-$2"
 
 	find "$downloadPath/incomplete" -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" -print0 | while IFS= read -r -d '' audio; do
@@ -707,19 +707,19 @@ DownloadProcess () {
         extension="${filename##*.}"
         filenamenoext="${filename%.*}"
         if [ ! -d "$downloadPath/complete" ]; then
-            mkdir -p $downloadPath/complete
-            chmod 777 $downloadPath/complete
+            mkdir -p "$downloadPath"/complete
+            chmod 777 "$downloadPath"/complete
         fi
         mkdir -p "$downloadPath/complete/$downloadedAlbumFolder"
         mv "$file" "$downloadPath/complete/$downloadedAlbumFolder"/
         
     done
-	chmod -R 777 $downloadPath/complete
+	chmod -R 777 "$downloadPath"/complete
 	
 	if [ -d "$downloadPath/complete/$downloadedAlbumFolder" ]; then
 		NotifyLidarrForImport "$downloadPath/complete/$downloadedAlbumFolder"
 	fi
-	rm -rf $downloadPath/incomplete/*
+	rm -rf "$downloadPath"/incomplete/*
 
 	# NotifyPlexToScan
 }
@@ -825,10 +825,10 @@ DeemixClientSetup () {
 	fi
 	
 	if [ ! -d "$downloadPath/incomplete" ]; then
-		mkdir -p $downloadPath/incomplete
-		chmod 777 $downloadPath/incomplete
+		mkdir -p "$downloadPath"/incomplete
+		chmod 777 "$downloadPath"/incomplete
 	else
-		rm -rf $downloadPath/incomplete/*
+		rm -rf "$downloadPath"/incomplete/*
 	fi
 
 	#log "DEEZER :: Upgrade deemix to the latest..."
@@ -839,21 +839,21 @@ DeemixClientSetup () {
 DeezerClientTest () {
 	log "DEEZER :: deemix client setup verification..."
 
-	deemix -b 128 -p $downloadPath/incomplete "https://www.deezer.com/album/197472472"
+	deemix -b 128 -p "$downloadPath"/incomplete "https://www.deezer.com/album/197472472"
 	if [ -d "/tmp/deemix-imgs" ]; then
 		rm -rf /tmp/deemix-imgs
 	fi
-	downloadCount=$(find $downloadPath/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
+	downloadCount=$(find "$downloadPath"/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
 	if [ "$downloadCount" -le "0" ]; then
 		log "DEEZER :: ERROR :: Download failed"
 		log "DEEZER :: ERROR :: Please review log for errors in client"
 		log "DEEZER :: ERROR :: Try updating your ARL Token to possibly resolve the issue..."
 		log "DEEZER :: ERROR :: Exiting..."
-		rm -rf $downloadPath/incomplete/*
+		rm -rf "$downloadPath"/incomplete/*
 		NotifyWebhook "Error" "DEEZER not authenticated but configured"
 		exit
 	else
-		rm -rf $downloadPath/incomplete/*
+		rm -rf "$downloadPath"/incomplete/*
 		log "DEEZER :: Successfully Verified"
 	fi
 
