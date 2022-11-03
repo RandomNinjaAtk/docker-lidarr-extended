@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.047"
+scriptVersion="1.0.048"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -87,8 +87,6 @@ Configuration () {
         log "CONFIG :: Cookies File Not Found!"
         cookiesFile=""
     fi
-    log "CONFIG :: Upgrading yt-dlp to the latest version..."
-	pip install yt-dlp --upgrade --no-cache-dir &>/dev/null
 	log "CONFIG :: Complete"
 }
 
@@ -111,20 +109,11 @@ CacheMusicbrainzRecords () {
             if ! [[ $(find "/config/extended/cache/musicbrainz" -type f -name "$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json" -mtime +7 -print) ]]; then
                 log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: Previously cached, skipping..."
                 return
-            else
-                log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: Previously cached, data needs to be updated..."
-                rm "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json"
             fi
-            musicbrainzArtistDownloadedRecordingsCount=$(cat "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json" | jq -r .id | wc -l)
-            if [ $musicbrainzArtistRecordingsCount -ne $musicbrainzArtistDownloadedRecordingsCount  ]; then
-                log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: Previously cached, data needs to be updated..."
-                rm "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json"
-            fi
-
-            if ! cat "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json" | grep -i "artist-credit" | read; then
-                log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: Previously cached, data needs to be updated..."
-                rm "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json"
-            fi
+            
+            log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: Previously cached, data needs to be updated..."
+            rm "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json"
+            
         fi
 
         if [ ! -f "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json" ]; then
@@ -249,6 +238,13 @@ ImvdbCache () {
     fi
     artistImvdbVideoUrls=$(curl -s "https://imvdb.com/n/$artistImvdbSlug" | grep "$artistImvdbSlug" | grep -Eoi '<a [^>]+>' |  grep -Eo 'href="[^\"]+"' | grep -Eo '(http|https)://[^"]+' |  grep -i ".com/video/$artistImvdbSlug/" | sed "s%/[0-9]$%%g" | sort -u)
     artistImvdbVideoUrlsCount=$(echo "$artistImvdbVideoUrls" | wc -l)
+    cachedArtistImvdbVideoUrlsCount=$(ls /config/extended/cache/imvdb/$lidarrArtistMusicbrainzId--* 2>/dev/null | wc -l)
+
+    if [ "$artistImvdbVideoUrlsCount" ==  "$cachedArtistImvdbVideoUrlsCount" ]; then
+        log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: Chache is already up-to-date, skipping..."
+        return
+    fi
+
     sleep 0.5
     imvdbProcessCount=0
     for imvdbVideoUrl in $(echo "$artistImvdbVideoUrls"); do
