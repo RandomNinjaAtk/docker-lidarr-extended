@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.048"
+scriptVersion="1.0.049"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -305,9 +305,9 @@ DownloadVideo () {
 
     if echo "$1" | grep -i "youtube" | read; then
         if [ ! -z "$cookiesFile" ]; then
-            yt-dlp -f "$videoFormat" --no-video-multistreams --cookies "$cookiesFile" -o "$downloadPath/incomplete/${2}${3}" --embed-subs --sub-lang $youtubeSubtitleLanguage --merge-output-format mkv --remux-video mkv --no-mtime --geo-bypass "$1" &>/dev/null
+            yt-dlp -f "$videoFormat" --no-video-multistreams --cookies "$cookiesFile" -o "$downloadPath/incomplete/${2}${3}" --embed-subs --sub-lang $youtubeSubtitleLanguage --merge-output-format mkv --remux-video mkv --no-mtime --geo-bypass "$1"
         else
-            yt-dlp -f "$videoFormat" --no-video-multistreams -o "$downloadPath/incomplete/${2}${3}" --embed-subs --sub-lang $youtubeSubtitleLanguage --merge-output-format mkv --remux-video mkv --no-mtime --geo-bypass "$1" &>/dev/null
+            yt-dlp -f "$videoFormat" --no-video-multistreams -o "$downloadPath/incomplete/${2}${3}" --embed-subs --sub-lang $youtubeSubtitleLanguage --merge-output-format mkv --remux-video mkv --no-mtime --geo-bypass "$1"
         fi
         if [ -f "$downloadPath/incomplete/${2}${3}.mkv" ]; then
             chmod 666 "$downloadPath/incomplete/${2}${3}.mkv"
@@ -461,6 +461,7 @@ VideoNfoWriter () {
 	echo "	</albumArtistCredits>" >> "$nfo"
     echo "	<thumb>${1}${2}.jpg</thumb>" >> "$nfo"
     echo "</musicvideo>" >> "$nfo"
+    tidy -w 2000 -i -m -xml "$nfo" &>/dev/null
     chmod 666 "$nfo"
 
 }
