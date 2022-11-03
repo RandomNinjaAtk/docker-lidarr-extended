@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.261"
+scriptVersion="1.0.262"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -831,8 +831,8 @@ DeemixClientSetup () {
 		rm -rf $downloadPath/incomplete/*
 	fi
 
-	log "DEEZER :: Upgrade deemix to the latest..."
-	pip install deemix --upgrade &>/dev/null
+	#log "DEEZER :: Upgrade deemix to the latest..."
+	#pip install deemix --upgrade &>/dev/null
 
 }
 
