@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.046"
+scriptVersion="1.0.047"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -474,7 +474,7 @@ LidarrTaskStatusCheck () {
 	until false
 	do
 		taskCount=$(curl -s "$lidarrUrl/api/v1/command?apikey=${lidarrApiKey}" | jq -r .[].status | grep -v completed | grep -v failed | wc -l)
-		if [ "$taskCount" -ge "1" ]; then
+		if [ "$taskCount" -ge "3" ]; then
 			if [ "$alerted" = "no" ]; then
 				alerted=yes
 				log "STATUS :: LIDARR BUSY :: Pausing/waiting for all active Lidarr tasks to end..."
@@ -578,8 +578,8 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
 	lidarrArtistMusicbrainzId=$(echo $lidarrArtistData | jq -r .foreignArtistId)
     lidarrArtistPath="$(echo "${lidarrArtistData}" | jq -r " .path")"
     lidarrArtistFolder="$(basename "${lidarrArtistPath}")"
-    lidarrArtistFolder="$(echo "$lidarrArtistFolder" | sed "s/ (.*)$//g" | sed "s/\.$//g")" # Plex Sanitization, remove disambiguation
-    lidarrArtistNameSanitized="$(echo "$lidarrArtistFolder" | sed 's% (.*)$%%g')"
+    lidarrArtistFolderNoDisambig="$(echo "$lidarrArtistFolder" | sed "s/ (.*)$//g" | sed "s/\.$//g")" # Plex Sanitization, remove disambiguation
+    lidarrArtistNameSanitized="$(echo "$lidarrArtistFolderNoDisambig" | sed 's% (.*)$%%g')"
     artistImvdbUrl=$(echo $lidarrArtistData | jq -r '.links[] | select(.name=="imvdb") | .url')
     artistImvdbSlug=$(basename "$artistImvdbUrl")
     downloadedVideoCount=0
@@ -589,12 +589,25 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
         continue
     fi
 
+    # Import Artist.nfo file
+    if [ -d "$lidarrArtistPath" ]; then
+        if [ -d "$videoPath/$lidarrArtistFolderNoDisambig" ]; then
+            if [ -f "$lidarrArtistPath/artist.nfo" ]; then
+                if [ ! -f "$videoPath/$lidarrArtistFolderNoDisambig/artist.nfo" ]; then
+                    log "$processCount of $lidarrArtistIdsCount :: Copying Artist NFO to music-video artist directory"
+                    cp "$lidarrArtistPath/artist.nfo" "$videoPath/$lidarrArtistFolderNoDisambig/artist.nfo"
+                    chmod 666 "$videoPath/$lidarrArtistFolderNoDisambig/artist.nfo"
+                fi
+            fi
+        fi
+    fi
+    
     if [ -d /config/extended/logs/video/complete ]; then
         find /config/extended/logs/video/complete -type f -mtime +7 -delete # Remove Files older than 7 days to allow re-processing artist for new videos
         if [ -f "/config/extended/logs/video/complete/$lidarrArtistMusicbrainzId" ]; then
             downloadedVideoCount=0
-            if [ -d "$videoPath/$lidarrArtistFolder" ]; then
-                downloadedVideoCount=$(find "$videoPath/$lidarrArtistFolder" -type f -iname "*.mkv" | wc -l)
+            if [ -d "$videoPath/$lidarrArtistFolderNoDisambig" ]; then
+                downloadedVideoCount=$(find "$videoPath/$lidarrArtistFolderNoDisambig" -type f -iname "*.mkv" | wc -l)
             fi
             log "$processCount of $lidarrArtistIdsCount :: $lidarrArtistName :: $downloadedVideoCount Artist Music Videos previously downloaded, skipping..."
             continue
@@ -654,8 +667,8 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
                 plexVideoType="-video"
                 videoDisambiguationTitle=""
             fi
-            if [ -d "$videoPath/$lidarrArtistFolder" ]; then
-                if [[ -n $(find "$videoPath/$lidarrArtistFolder" -iname "${musicbrainzVideoTitleClean}${plexVideoType}.*") ]]; then
+            if [ -d "$videoPath/$lidarrArtistFolderNoDisambig" ]; then
+                if [[ -n $(find "$videoPath/$lidarrArtistFolderNoDisambig" -iname "${musicbrainzVideoTitleClean}${plexVideoType}.*") ]]; then
                     log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: ${musicbrainzVideoTitle}${musicbrainzVideoDisambiguation} :: Previously Downloaded, skipping..."
                     continue
                 fi
@@ -698,12 +711,12 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
             VideoTagProcess "$musicbrainzVideoTitleClean" "$plexVideoType" "$videoYear" "MBZDB"
             VideoNfoWriter "$musicbrainzVideoTitleClean" "$plexVideoType" "$musicbrainzVideoTitle" "" "musicbrainz" "$videoYear" "MBZDB"
                 
-            if [ ! -d "$videoPath/$lidarrArtistFolder" ]; then
-                mkdir -p "$videoPath/$lidarrArtistFolder"
-                chmod 777 "$videoPath/$lidarrArtistFolder"
+            if [ ! -d "$videoPath/$lidarrArtistFolderNoDisambig" ]; then
+                mkdir -p "$videoPath/$lidarrArtistFolderNoDisambig"
+                chmod 777 "$videoPath/$lidarrArtistFolderNoDisambig"
             fi
 
-            mv $downloadPath/incomplete/* "$videoPath/$lidarrArtistFolder"/
+            mv $downloadPath/incomplete/* "$videoPath/$lidarrArtistFolderNoDisambig"/
         done
     fi
 
@@ -759,8 +772,8 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
                     done
                 fi
 
-                if [ -d "$videoPath/$lidarrArtistFolder" ]; then
-                    if [[ -n $(find "$videoPath/$lidarrArtistFolder" -iname "${videoTitleClean}${plexVideoType}.*") ]]; then
+                if [ -d "$videoPath/$lidarrArtistFolderNoDisambig" ]; then
+                    if [[ -n $(find "$videoPath/$lidarrArtistFolderNoDisambig" -iname "${videoTitleClean}${plexVideoType}.*") ]]; then
                         log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: ${imvdbVideoTitle} :: Previously Downloaded, skipping..."
                         continue
                     fi
@@ -787,12 +800,12 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
                 VideoTagProcess "$videoTitleClean" "$plexVideoType" "$videoYear" "IMVDB"
                 VideoNfoWriter "$videoTitleClean" "$plexVideoType" "$imvdbVideoTitle" "" "imvdb" "$videoYear" "IMVDB"
                     
-                if [ ! -d "$videoPath/$lidarrArtistFolder" ]; then
-                    mkdir -p "$videoPath/$lidarrArtistFolder"
-                    chmod 777 "$videoPath/$lidarrArtistFolder"
+                if [ ! -d "$videoPath/$lidarrArtistFolderNoDisambig" ]; then
+                    mkdir -p "$videoPath/$lidarrArtistFolderNoDisambig"
+                    chmod 777 "$videoPath/$lidarrArtistFolderNoDisambig"
                 fi 
 
-                mv $downloadPath/incomplete/* "$videoPath/$lidarrArtistFolder"/
+                mv $downloadPath/incomplete/* "$videoPath/$lidarrArtistFolderNoDisambig"/
             done
 
         fi
@@ -811,6 +824,18 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
 
     touch "/config/extended/logs/video/complete/$lidarrArtistMusicbrainzId"
 
+    # Import Artist.nfo file
+    if [ -d "$lidarrArtistPath" ]; then
+        if [ -d "$videoPath/$lidarrArtistFolderNoDisambig" ]; then
+            if [ -f "$lidarrArtistPath/artist.nfo" ]; then
+                if [ ! -f "$videoPath/$lidarrArtistFolderNoDisambig/artist.nfo" ]; then
+                    log "$processCount of $lidarrArtistIdsCount :: Copying Artist NFO to music-video artist directory"
+                    cp "$lidarrArtistPath/artist.nfo" "$videoPath/$lidarrArtistFolderNoDisambig/artist.nfo"
+                    chmod 666 "$videoPath/$lidarrArtistFolderNoDisambig/artist.nfo"
+                fi
+            fi
+        fi
+    fi
 done
 
 #CacheMusicbrainzRecords
