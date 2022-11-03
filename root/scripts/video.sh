@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.051"
+scriptVersion="1.0.052"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -582,46 +582,28 @@ lidarrArtistIdsCount=$(echo "$lidarrArtistIds" | wc -l)
 processCount=0
 for lidarrArtistId in $(echo $lidarrArtistIds); do
 	processCount=$(( $processCount + 1))
-    lidarrArtistData=$(echo $lidarrArtists | jq -r "select(.id==$lidarrArtistId)")
+    lidarrArtistData=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/artist/$lidarrArtistId?apikey=$lidarrApiKey")
 	lidarrArtistName=$(echo $lidarrArtistData | jq -r .artistName)
 	lidarrArtistMusicbrainzId=$(echo $lidarrArtistData | jq -r .foreignArtistId)
+    
+    if  [ "$lidarrArtistName" == "Various Artists" ]; then
+        log "$processCount of $lidarrArtistIdsCount :: $lidarrArtistName :: Skipping, not processed by design..."
+        continue
+    fi
+     
+    if [ -d /config/extended/logs/video/complete ]; then
+        if [ -f "/config/extended/logs/video/complete/$lidarrArtistMusicbrainzId" ]; then
+            log "$processCount of $lidarrArtistIdsCount :: $lidarrArtistName :: Music Videos previously downloaded, skipping..."
+            continue            
+        fi
+    fi
+
     lidarrArtistPath="$(echo "${lidarrArtistData}" | jq -r " .path")"
     lidarrArtistFolder="$(basename "${lidarrArtistPath}")"
     lidarrArtistFolderNoDisambig="$(echo "$lidarrArtistFolder" | sed "s/ (.*)$//g" | sed "s/\.$//g")" # Plex Sanitization, remove disambiguation
     lidarrArtistNameSanitized="$(echo "$lidarrArtistFolderNoDisambig" | sed 's% (.*)$%%g')"
     artistImvdbUrl=$(echo $lidarrArtistData | jq -r '.links[] | select(.name=="imvdb") | .url')
     artistImvdbSlug=$(basename "$artistImvdbUrl")
-    downloadedVideoCount=0
-
-    if  [ "$lidarrArtistName" == "Various Artists" ]; then
-        log "$processCount of $lidarrArtistIdsCount :: $lidarrArtistName :: Skipping, not processed by design..."
-        continue
-    fi
-
-    # Import Artist.nfo file
-    if [ -d "$lidarrArtistPath" ]; then
-        if [ -d "$videoPath/$lidarrArtistFolderNoDisambig" ]; then
-            if [ -f "$lidarrArtistPath/artist.nfo" ]; then
-                if [ ! -f "$videoPath/$lidarrArtistFolderNoDisambig/artist.nfo" ]; then
-                    log "$processCount of $lidarrArtistIdsCount :: Copying Artist NFO to music-video artist directory"
-                    cp "$lidarrArtistPath/artist.nfo" "$videoPath/$lidarrArtistFolderNoDisambig/artist.nfo"
-                    chmod 666 "$videoPath/$lidarrArtistFolderNoDisambig/artist.nfo"
-                fi
-            fi
-        fi
-    fi
-    
-    if [ -d /config/extended/logs/video/complete ]; then
-        find /config/extended/logs/video/complete -type f -mtime +7 -delete # Remove Files older than 7 days to allow re-processing artist for new videos
-        if [ -f "/config/extended/logs/video/complete/$lidarrArtistMusicbrainzId" ]; then
-            downloadedVideoCount=0
-            if [ -d "$videoPath/$lidarrArtistFolderNoDisambig" ]; then
-                downloadedVideoCount=$(find "$videoPath/$lidarrArtistFolderNoDisambig" -type f -iname "*.mkv" | wc -l)
-            fi
-            log "$processCount of $lidarrArtistIdsCount :: $lidarrArtistName :: $downloadedVideoCount Artist Music Videos previously downloaded, skipping..."
-            continue
-        fi
-    fi
 
     CacheMusicbrainzRecords
     ImvdbCache
