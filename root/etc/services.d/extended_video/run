@@ -1,6 +1,6 @@
 #!/usr/bin/with-contenv bash
 if [ "$enableVideoScript" = "true" ]; then
-	echo "Starting Video.bash in 2 min..."
+	echo "Starting Video.sh in 2 min..."
 	sleep 2m
 	bash /config/extended/scripts/Video.sh
 else
