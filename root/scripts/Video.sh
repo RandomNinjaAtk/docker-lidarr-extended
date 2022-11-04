@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.053"
+scriptVersion="1.0.054"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -43,6 +43,15 @@ verifyApiAccess () {
 		fi
 	done
 }
+
+# auto-clean up log file to reduce space usage
+if [ -f "/config/logs/Video.txt" ]; then
+	find /config/logs -type f -name "Video.txt" -size +5000k -delete
+	sleep 0.01
+fi
+exec &> >(tee -a "/config/logs/Video.txt")
+touch "/config/logs/Video.txt"
+chmod 666 "/config/logs/Video.txt"
 
 log "-----------------------------------------------------------------------------"
 log "|~) _ ._  _| _ ._ _ |\ |o._  o _ |~|_|_|"
