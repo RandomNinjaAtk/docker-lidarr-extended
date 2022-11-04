@@ -1,23 +1,21 @@
 #!/usr/bin/env bash
-version=1.0.006
+version=1.0.007
 if [ -z "$lidarr_artist_path" ]; then
 	lidarr_artist_path="$1"
-	notfidedBy=Extended_Script
-else
-	notfidedBy=Lidarr
 fi
 
 # auto-clean up log file to reduce space usage
 if [ -f "/config/logs/MetadataPostProcess.txt" ]; then
 	find /config/logs -type f -name "MetadataPostProcess.txt" -size +1024k -delete
+	sleep 0.01
 fi
-
-exec &>> "/config/logs/MetadataPostProcess.txt"
-chmod 777 "/config/logs/MetadataPostProcess.txt"
+exec &> >(tee -a "/config/logs/MetadataPostProcess.txt")
+touch "/config/logs/MetadataPostProcess.txt"
+chmod 666 "/config/logs/MetadataPostProcess.txt"
 
 log () {
     m_time=`date "+%F %T"`
-    echo $m_time" :: $notfidedBy :: "$1
+    echo $m_time" :: MetadataPostProcess :: "$1
 }
 
 if [ "$lidarr_eventtype" == "Test" ]; then
@@ -48,7 +46,7 @@ fileExt="${fileName##*.}"
 
 if [ "$fileExt" == "flac" ]; then
     getLyrics="$(ffprobe -loglevel 0 -print_format json -show_format -show_streams "$lidarr_trackfile_path" | jq -r ".format.tags.LYRICS" | sed "s/null//g" | sed "/^$/d")"
-    processLyrics=true
+    getArtistCredit="$(ffprobe -loglevel 0 -print_format json -show_format -show_streams "$lidarr_trackfile_path" | jq -r ".format.tags.ARTIST_CREDIT" | sed "s/null//g" | sed "/^$/d")"
 fi
 
 if [ "$fileExt" == "opus" ]; then
@@ -60,6 +58,13 @@ if [ ! -z "$getLyrics" ]; then
     echo -n "$getLyrics" > "$lrcFile"
     log "Processing :: $lidarr_trackfile_path :: Lyrics extracted to: $lrcFile"
     chmod 666 "$lrcFile"
+fi
+
+if [ "$fileExt" == "flac" ]; then
+    if [ ! -z "$getArtistCredit" ]; then
+        metaflac --remove-tag=ARTIST "$lidarr_trackfile_path"
+        metaflac --set-tag=ARTIST_CREDIT="$getArtistCredit" "$lidarr_trackfile_path"
+    fi
 fi
 
 exit
