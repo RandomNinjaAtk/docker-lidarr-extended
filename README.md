@@ -96,7 +96,6 @@ Container images are configured using parameters passed at runtime (such as thos
 | `-e TZ=America/New_York` | Specify a timezone to use EST, America/New_York. |
 | `-e PUID=1000` | for UserID - see below for explanation |
 | `-e PGID=1000` | for GroupID - see below for explanation |
-| `-e autoStart=true` | true = enabled :: Runs script automatically on startup |
 | `-e scriptInterval=15m` | #s or #m or #h or #d :: s = seconds, m = minutes, h = hours, d = days :: Amount of time between each script run, when autoStart is enabled |
 | `-e enableAudioScript=true` | true = enabled :: Enables the Audio script to run with autoStart |
 | `-e enableVideoScript=true` | true = enabled :: Enables the Video script to run with autoStart |
