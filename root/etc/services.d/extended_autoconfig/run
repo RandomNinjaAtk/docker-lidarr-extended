@@ -1,0 +1,13 @@
+#!/usr/bin/with-contenv bash
+if [ "$configureLidarrWithOptimalSettings" != "true" ]; then
+	echo "AutoConfig.bash Script disabled, enable by setting parameter: configureLidarrWithOptimalSettings=true"
+	sleep infinity
+else
+	echo "Waiting for Lidarr to startup..."
+	sleep 2m
+fi
+
+echo "Starting AutoConfig.bash Script...."
+bash /config/extended/scripts/AutoConfig.bash
+sleep infinity
+exit $?
