@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-version=1.0.008
+version=1.0.009
 if [ -z "$lidarr_artist_path" ]; then
 	lidarr_artist_path="$1"
 fi
@@ -62,6 +62,7 @@ fi
 
 if [ "$fileExt" == "flac" ]; then
     if [ ! -z "$getArtistCredit" ]; then
+        log "Processing :: $lidarr_trackfile_path :: Setting ARTIST tag to match ARTIST_CREDIT tag..."
         metaflac --remove-tag=ARTIST "$lidarr_trackfile_path"
         metaflac --set-tag=ARTIST="$getArtistCredit" "$lidarr_trackfile_path"
     fi
