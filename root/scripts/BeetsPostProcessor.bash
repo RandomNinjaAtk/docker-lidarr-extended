@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-version=1.0.001
+version=1.0.002
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -38,12 +38,12 @@ getFolderPath="$(dirname "$getTrackPath")"
 ProcessWithBeets () {
 	# Input
 	# $1 Download Folder to process
-	if [ -f /scripts/library-postprocessor.blb ]; then
-		rm /scripts/library-postprocessor.blb
+	if [ -f /config/library-postprocessor.blb ]; then
+		rm /config/library-postprocessor.blb
 		sleep 0.1
 	fi
-	if [ -f /scripts/beets-postprocessor.log ]; then 
-		rm /scripts/beets-postprocessor.log
+	if [ -f /config/extended/logs/beets.log ]; then 
+		rm /config/extended/logs/beets.log
 		sleep 0.1
 	fi
 
@@ -55,7 +55,7 @@ ProcessWithBeets () {
 	sleep 0.1
 
     log "$1 :: Being matching with beets!"
-	beet -c /scripts/beets-config.yaml -l /scripts/library.blb -d "$1" import -qC "$1"
+	beet -c /config/extended/scripts/beets-config.yaml -l /config/library-postprocessor.blb -d "$1" import -qC "$1"
 	if [ $(find "$1" -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" -newer "/config/beets-postprocessor-match" | wc -l) -gt 0 ]; then
 		log "$1 :: SUCCESS: Matched with beets!"
 		find "$1" -type f -iname "*.flac" -print0 | while IFS= read -r -d '' file; do
@@ -72,6 +72,15 @@ ProcessWithBeets () {
 
 	if [ -f "/config/beets-postprocessor-match" ]; then 
 		rm "/config/beets-postprocessor-match"
+		sleep 0.1
+	fi
+
+	if [ -f /config/library-postprocessor.blb ]; then
+		rm /config/library-postprocessor.blb
+		sleep 0.1
+	fi
+	if [ -f /config/extended/logs/beets.log ]; then 
+		rm /config/extended/logs/beets.log
 		sleep 0.1
 	fi
 }
