@@ -1,10 +1,11 @@
 #!/usr/bin/with-contenv bash
-if [ "$autoStart" = "true" ] && [ "$enableVideoScript" = "true" ]; then
-	echo "Automatic Start Enabled, starting in 2 min..."
+if [ "$enableVideoScript" = "true" ]; then
+	echo "Starting Video.bash in 2 min..."
 	sleep 2m
 	bash /config/extended/scripts/Video.sh
 else
-	echo "Automatic Start Disabled, manually run using this command:"
+	echo "Automatic Start Disabled, to enable set enableVideoScript=true"
+	echo "Manually run using this command:"
 	echo "bash /config/extended/scripts/Video.sh"
 	sleep infinity
 fi
