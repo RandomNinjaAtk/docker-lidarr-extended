@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.1"
+scriptVersion="1.0.2"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -16,9 +16,10 @@ fi
 # auto-clean up log file to reduce space usage
 if [ -f "/config/logs/AutoConfig.txt" ]; then
 	find /config/logs -type f -name "AutoConfig.txt" -size +1024k -delete
+	sleep 0.01
 fi
-
-exec &>> "/config/logs/AutoConfig.txt"
+exec &> >(tee -a "/config/logs/AutoConfig.txt")
+touch "/config/logs/AutoConfig.txt"
 chmod 666 "/config/logs/AutoConfig.txt"
 
 log () {
