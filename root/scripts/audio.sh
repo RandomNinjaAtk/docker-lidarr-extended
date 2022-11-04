@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.267"
+scriptVersion="1.0.268"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -37,6 +37,14 @@ log () {
 	m_time=`date "+%F %T"`
 	echo $m_time" :: Extended Audio :: "$1
 }
+
+if [ -f "/config/logs/Audio.txt" ]; then
+	rm "/config/logs/Audio.txt"
+	sleep 0.01
+fi
+exec &> >(tee -a "/config/logs/Audio.txt")
+touch "/config/logs/Audio.txt"
+chmod 666 "/config/logs/Audio.txt"
 
 verifyApiAccess () {
 	until false
