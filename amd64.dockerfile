@@ -28,6 +28,7 @@ ENV youtubeSubtitleLanguage=en
 ENV enableAudioScript=true
 ENV enableVideoScript=true
 ENV matchDistance=5
+ENV scriptInterval=15m
 ENV videoFormat="bestvideo*+bestaudio/best"
 
 RUN \
