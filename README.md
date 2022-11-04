@@ -97,8 +97,8 @@ Container images are configured using parameters passed at runtime (such as thos
 | `-e PUID=1000` | for UserID - see below for explanation |
 | `-e PGID=1000` | for GroupID - see below for explanation |
 | `-e scriptInterval=15m` | #s or #m or #h or #d :: s = seconds, m = minutes, h = hours, d = days :: Amount of time between each script run, when autoStart is enabled |
-| `-e enableAudioScript=true` | true = enabled :: Enables the Audio script to run with autoStart |
-| `-e enableVideoScript=true` | true = enabled :: Enables the Video script to run with autoStart |
+| `-e enableAudioScript=true` | true = enabled :: Enables the Audio script to run automatically |
+| `-e enableVideoScript=true` | true = enabled :: Enables the Video script to run automatically |
 | `-e configureLidarrWithOptimalSettings=true` | true = enabled :: Automatically configures Lidarr with optimal settings |
 | `-e searchSort=date` | date or album :: Sorts the missing/cutoff list by release date (newest -> oldest) or album type (album -> single) for processing the list |
 | `-e audioFormat=native` | native or alac or mp3 or aac or opus :: native is the native download client file type, selected by the matching audio bitrate |
@@ -142,7 +142,6 @@ docker create \
   -e TZ=America/New_York \
   -e PUID=1000 \
   -e PGID=1000 \
-  -e autoStart=true \
   -e enableAudioScript=true \
   -e enableVideoScript=true \
   -e scriptInterval=15m \
@@ -168,6 +167,8 @@ docker create \
   -e youtubeSubtitleLanguage=en \
   -e enableQueueCleaner=true \
   -e matchDistance=5 \
+  -e enableBeetsTagging=true \
+  -e beetsMatchPercentage=90 \
   --restart unless-stopped \
   randomninjaatk/lidarr-extended:latest
 ```
@@ -192,7 +193,6 @@ services:
       - TZ=America/New_York
       - PUID=1000
       - PGID=1000
-      - autoStart=true
       - enableAudioScript=true
       - enableVideoScript=true
       - scriptInterval=15m
@@ -218,6 +218,8 @@ services:
       - youtubeSubtitleLanguage=en
       - enableQueueCleaner=true
       - matchDistance=5
+      - enableBeetsTagging=true
+      - beetsMatchPercentage=90
     ports:
       - 8686:8686
     restart: unless-stopped
