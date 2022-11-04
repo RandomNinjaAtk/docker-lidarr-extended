@@ -24,6 +24,7 @@
   * Can convert Downloaded FLAC files to preferred audio format and bitrate before import into Lidarr
   * Notifies Lidarr to automatically import downloaded files
   * Music is properly tagged and includes coverart before Lidarr Receives them
+  * Can pre-match and tag files using Beets
   * Can add Replaygain tags to tracks
   * Can add top artists from online services
   * Can add artists related to your artists in your existing Library
@@ -122,6 +123,8 @@ Container images are configured using parameters passed at runtime (such as thos
 | `-e webHook=https://myhook.mydomain.com` | POST's to this URL on error events which prevent the script from working. Content is JSON `{"event":"eventtype", "message":"eventmessage", "content":"eventtype: eventmessage"}` |
 | `-e enableQueueCleaner=true` | true = enabled :: Enables QueueCleaner Script that automatically removes stuck downloads that cannot be automatically imported on a 15 minute interval |
 | `-e matchDistance=5` | The number of changes required to transform the searched album title into a possible found album title match... (0, requires a perfect match) |
+| `-e enableBeetsTagging=true` | true = enabled :: Downloads will be processed and tagged by Beets |
+| `-e beetsMatchPercentage=90` | 1-100 :: Set this to the minimum percentage required for Beets to match the downloaded album to a musicbrainz release :: Lower percentage is less restrictive |
 
 ## Usage
 
