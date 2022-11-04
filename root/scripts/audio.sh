@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.264"
+scriptVersion="1.0.265"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -24,11 +24,12 @@ musicbrainzMirror=https://musicbrainz.org
 #audioBitrate="160"
 #addRelatedArtists="true"
 #numberOfRelatedArtistsToAddPerArtist="1"
-#beetsMatchPercentage="85"
+#beetsMatchPercentage="90"
 #requireQuality="true"
 #searchSort="album"
 #arlToken=""
 #matchDistance=10
+#enableBeetsTagging=true
 
 sleepTimer=0.5
 
@@ -148,6 +149,18 @@ Configuration () {
 	fi
 
 	log "Match Distance: $matchDistance"
+
+	if [ $enableBeetsTagging = true ]; then
+		log "Beets Tagging Enabled"
+		log "Beets Matching Threshold ${beetsMatchPercentage}%"
+		beetsMatchPercentage=$(expr 100 - $beetsMatchPercentage )
+		if cat /config/extended/scripts/beets-config.yaml | grep "strong_rec_thresh: 0.04" | read; then
+			log "Configuring Beets Matching Threshold"
+			sed -i "s/strong_rec_thresh: 0.04/strong_rec_thresh: 0.${beetsMatchPercentage}/g" /config/extended/scripts/beets-config.yaml
+		fi
+	else
+		log "Beets Tagging Disabled"
+	fi
 	
 }
 
@@ -634,6 +647,11 @@ DownloadProcess () {
 		touch /config/extended/logs/downloaded/tidal/$1
 	fi
 
+	if [ $enableBeetsTagging = true ]; then
+		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Processing files with beets..."
+		ProcessWithBeets "$downloadPath/incomplete"
+	fi
+
 	# Embed Lyrics into Flac files
 	find "$downloadPath/incomplete" -type f -iname "*.flac" -print0 | while IFS= read -r -d '' file; do
 		lrcFile="${file%.*}.lrc"
@@ -714,6 +732,46 @@ DownloadProcess () {
 	rm -rf "$downloadPath"/incomplete/*
 
 	# NotifyPlexToScan
+}
+
+ProcessWithBeets () {
+	# Input
+	# $1 Download Folder to process
+	if [ -f /scripts/library.blb ]; then
+		rm /scripts/library.blb
+		sleep 0.1
+	fi
+	if [ -f /scripts/beets.log ]; then 
+		rm /scripts/beets.log
+		sleep 0.1
+	fi
+
+	if [ -f "/config/beets-match" ]; then 
+		rm "/config/beets-match"
+		sleep 0.1
+	fi
+	touch "/config/beets-match"
+	sleep 0.1
+
+	beet -c /scripts/beets-config.yaml -l /scripts/library.blb -d "$1" import -qC "$1"
+	if [ $(find "$1" -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" -newer "/config/beets-match" | wc -l) -gt 0 ]; then
+		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: SUCCESS: Matched with beets!"
+		find "$downloadPath/incomplete" -type f -iname "*.flac" -print0 | while IFS= read -r -d '' file; do
+			metaflac --remove-tag=ALBUMARTIST "$file"
+			metaflac --remove-tag=ALBUMARTIST_CREDIT "$file"
+			metaflac --remove-tag=ALBUMARTISTSORT "$file"
+			metaflac --remove-tag=ALBUM_ARTIST "$file"
+			metaflac --remove-tag="ALBUM ARTIST" "$file"
+			metaflac --remove-tag=ARTISTSORT "$file"
+		done
+	else
+		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: ERROR :: Unable to match using beets to a musicbrainz release..."
+	fi	
+
+	if [ -f "/config/beets-match" ]; then 
+		rm "/config/beets-match"
+		sleep 0.1
+	fi
 }
 
 DownloadQualityCheck () {
