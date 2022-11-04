@@ -6,7 +6,7 @@ id3v23: no
 asciify_paths: true
 
 match:
-    strong_rec_thresh: 0.04 # 0.04
+    strong_rec_thresh: 0.10 # 0.04
     medium_rec_thresh: 0.25 # 0.25
     rec_gap_thresh: 0.25 # 0.25
     max_rec:
@@ -61,7 +61,7 @@ import:
     quiet_fallback: skip
     timid: no
     duplicate_action: skip
-    log: /scripts/beets.log
+    log: /config/extended/logs/beets.log
     languages: ['en']
     group_albums: no
 
