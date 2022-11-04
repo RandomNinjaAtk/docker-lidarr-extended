@@ -1,0 +1,12 @@
+#!/usr/bin/with-contenv bash
+if [ "$autoStart" = "true" ] && [ "$enableAudioScript" = "true" ]; then
+	echo "Automatic Start Enabled, starting in 2 min..."
+	sleep 2m
+	bash /config/extended/scripts/audio.sh
+else
+	echo "Automatic Start Disabled, manually run using this command:"
+	echo "bash /config/extended/scripts/audio.sh"
+	sleep infinity
+fi
+
+exit $?
