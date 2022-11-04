@@ -1,13 +1,18 @@
 #!/usr/bin/with-contenv bash
-if [ "$enableVideoScript" = "true" ]; then
-	echo "Starting Video.sh in 2 min..."
-	sleep 2m
-	bash /config/extended/scripts/Video.sh
-else
+if [ "$enableVideoScript" != "true" ]; then
 	echo "Automatic Start Disabled, to enable set enableVideoScript=true"
 	echo "Manually run using this command:"
 	echo "bash /config/extended/scripts/Video.sh"
 	sleep infinity
 fi
 
-exit $?
+echo "Starting Video.sh in 2 min..."
+sleep 2m
+for (( ; ; )); do
+	let i++
+	bash /config/extended/scripts/Video.sh
+	echo "Video.sh script sleeping for $scriptInterval..."
+	sleep $scriptInterval
+done
+
+exit
