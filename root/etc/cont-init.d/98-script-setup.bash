@@ -29,14 +29,10 @@ if [ ! -d "/config/extended/logs" ]; then
 fi
 
 # set permissions
-chmod 775 /etc/services.d/extended/run
-chmod 755 /etc/services.d/extended/run
 chmod 777 /config/extended
-chmod 777 /config/extended/cache
-chmod 777 /config/extended/logs
-chmod -R 777 /config/extended/scripts
-chown -R abc:abc /config/extended
-
+chmod 777 /config/extended/*
+chmod 777 /config/extended/scripts/*
+chmod -R 777 /root
 
 echo "Complete..."
 exit $?
