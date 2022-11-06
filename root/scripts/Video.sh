@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.054"
+scriptVersion="1.0.055"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -585,7 +585,9 @@ NotifyWebhook () {
 }
 
 Configuration
-TidalClientSetup
+if [ "$sourcePreference" == "tidal" ];
+    TidalClientSetup
+fi
 AddFeaturedVideoArtists
 
 log "-----------------------------------------------------------------------------"
@@ -654,7 +656,7 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
             fi
             musicbrainzVideoRelations="$(echo "$musicbrainzVideoRecordingData" | jq -r .relations[].url.resource)"
 
-            if [ $sourcePreference = tidal ]; then
+            if [ "$sourcePreference" == "tidal" ]; then
                 if echo "$musicbrainzVideoRelations" | grep -i "tidal" | read; then
                     videoDownloadUrl="$(echo "$musicbrainzVideoRelations" | grep -i "tidal" | head -n1)"
                 else
