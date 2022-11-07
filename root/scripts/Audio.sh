@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.271"
+scriptVersion="1.0.272"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -762,7 +762,7 @@ ProcessWithBeets () {
 	touch "/config/beets-match"
 	sleep 0.5
 
-	beet -c /config/extended/scripts/beets-config.yaml -l /config/extended/beets-library.blb-d "$1" import -qC "$1"
+	beet -c /config/extended/scripts/beets-config.yaml -l /config/extended/beets-library.blb -d "$1" import -qC "$1"
 	if [ $(find "$1" -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" -newer "/config/beets-match" | wc -l) -gt 0 ]; then
 		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: SUCCESS: Matched with beets!"
 		find "$downloadPath/incomplete" -type f -iname "*.flac" -print0 | while IFS= read -r -d '' file; do
