@@ -68,7 +68,7 @@ ProcessWithBeets () {
 			metaflac --remove-tag="ALBUM ARTIST" "$file"
 			metaflac --remove-tag=ARTISTSORT "$file"
 			metaflac --set-tag=ALBUMARTIST="$getAlbumArtist" "$file"
-        	metaflac --set-tag=ARTIST="$getArtistCredit" "$file"
+        		metaflac --set-tag=ARTIST="$getArtistCredit" "$file"
 		done
 	else
 		log "$1 :: ERROR :: Unable to match using beets to a musicbrainz release..."
