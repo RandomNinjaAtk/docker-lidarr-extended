@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-version=1.0.003
+version=1.0.004
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -14,13 +14,13 @@ fi
 
 log () {
     m_time=`date "+%F %T"`
-    echo $m_time" :: BeetsPostProcessor :: "$1
+    echo $m_time" :: BeetsPostProcessor :: $version :: "$1
 }
 
 # auto-clean up log file to reduce space usage
 if [ -f "/config/logs/BeetsPostProcessor.txt" ]; then
 	find /config/logs -type f -name "BeetsPostProcessor.txt" -size +1024k -delete
-	sleep 0.01
+	sleep 0.5
 fi
 exec &> >(tee -a "/config/logs/BeetsPostProcessor.txt")
 touch "/config/logs/BeetsPostProcessor.txt"
@@ -40,19 +40,19 @@ ProcessWithBeets () {
 	# $1 Download Folder to process
 	if [ -f /config/library-postprocessor.blb ]; then
 		rm /config/library-postprocessor.blb
-		sleep 0.1
+		sleep 0.5
 	fi
 	if [ -f /config/extended/logs/beets.log ]; then 
 		rm /config/extended/logs/beets.log
-		sleep 0.1
+		sleep 0.5
 	fi
 
 	if [ -f "/config/beets-postprocessor-match" ]; then 
 		rm "/config/beets-postprocessor-match"
-		sleep 0.1
+		sleep 0.5
 	fi
 	touch "/config/beets-postprocessor-match"
-	sleep 0.1
+	sleep 0.5
 
     log "$1 :: Being matching with beets!"
 	beet -c /config/extended/scripts/beets-config.yaml -l /config/library-postprocessor.blb -d "$1" import -qC "$1"
@@ -74,16 +74,16 @@ ProcessWithBeets () {
 
 	if [ -f "/config/beets-postprocessor-match" ]; then 
 		rm "/config/beets-postprocessor-match"
-		sleep 0.1
+		sleep 0.5
 	fi
 
 	if [ -f /config/library-postprocessor.blb ]; then
 		rm /config/library-postprocessor.blb
-		sleep 0.1
+		sleep 0.5
 	fi
 	if [ -f /config/extended/logs/beets.log ]; then 
 		rm /config/extended/logs/beets.log
-		sleep 0.1
+		sleep 0.5
 	fi
 }
 
