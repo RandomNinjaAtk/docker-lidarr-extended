@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-version=1.0.004
+version=1.0.005
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -59,6 +59,8 @@ ProcessWithBeets () {
 	if [ $(find "$1" -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" -newer "/config/beets-postprocessor-match" | wc -l) -gt 0 ]; then
 		log "$1 :: SUCCESS: Matched with beets!"
 		find "$1" -type f -iname "*.flac" -print0 | while IFS= read -r -d '' file; do
+			getArtistCredit="$(ffprobe -loglevel 0 -print_format json -show_format -show_streams "$file" | jq -r ".format.tags.ARTIST_CREDIT" | sed "s/null//g" | sed "/^$/d")"
+			metaflac --remove-tag=ARTIST "$file"
 			metaflac --remove-tag=ALBUMARTIST "$file"
 			metaflac --remove-tag=ALBUMARTIST_CREDIT "$file"
 			metaflac --remove-tag=ALBUMARTISTSORT "$file"
@@ -66,7 +68,7 @@ ProcessWithBeets () {
 			metaflac --remove-tag="ALBUM ARTIST" "$file"
 			metaflac --remove-tag=ARTISTSORT "$file"
 			metaflac --set-tag=ALBUMARTIST="$getAlbumArtist" "$file"
-			
+        	metaflac --set-tag=ARTIST="$getArtistCredit" "$file"
 		done
 	else
 		log "$1 :: ERROR :: Unable to match using beets to a musicbrainz release..."
