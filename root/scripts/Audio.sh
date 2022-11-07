@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.272"
+scriptVersion="1.0.273"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -774,7 +774,8 @@ ProcessWithBeets () {
 			metaflac --remove-tag="ALBUM ARTIST" "$file"
 			metaflac --remove-tag=ARTISTSORT "$file"
 			metaflac --remove-tag=ARTIST "$file"
-			metaflac --set-tag=ARTIST="$getArtistCredit" "$file"
+			metaflac --set-tag=ARTIST="$lidarrArtistName" "$file"
+			metaflac --set-tag=ALBUMARTIST="$lidarrArtistName" "$file"
 		done
 	else
 		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: ERROR :: Unable to match using beets to a musicbrainz release..."
