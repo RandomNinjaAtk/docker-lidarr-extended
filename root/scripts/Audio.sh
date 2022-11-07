@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.270"
+scriptVersion="1.0.271"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -35,7 +35,7 @@ sleepTimer=0.5
 
 log () {
 	m_time=`date "+%F %T"`
-	echo $m_time" :: Extended Audio :: "$1
+	echo $m_time" :: Extended Audio :: $scriptVersion :: "$1
 }
 
 # auto-clean up log file to reduce space usage
@@ -656,7 +656,7 @@ DownloadProcess () {
 		touch /config/extended/logs/downloaded/tidal/$1
 	fi
 
-	if [ $enableBeetsTagging = true ]; then
+	if [ "$enableBeetsTagging" == "true" ]; then
 		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Processing files with beets..."
 		ProcessWithBeets "$downloadPath/incomplete"
 	fi
@@ -748,30 +748,33 @@ ProcessWithBeets () {
 	# $1 Download Folder to process
 	if [ -f /config/extended/beets-library.blb ]; then
 		rm /config/extended/beets-library.blb
-		sleep 0.1
+		sleep 0.5
 	fi
 	if [ -f /config/extended/logs/beets.log ]; then 
 		rm /config/extended/logs/beets.log
-		sleep 0.1
+		sleep 0.5
 	fi
 
 	if [ -f "/config/beets-match" ]; then 
 		rm "/config/beets-match"
-		sleep 0.1
+		sleep 0.5
 	fi
 	touch "/config/beets-match"
-	sleep 0.1
+	sleep 0.5
 
 	beet -c /config/extended/scripts/beets-config.yaml -l /config/extended/beets-library.blb-d "$1" import -qC "$1"
 	if [ $(find "$1" -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" -newer "/config/beets-match" | wc -l) -gt 0 ]; then
 		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: SUCCESS: Matched with beets!"
 		find "$downloadPath/incomplete" -type f -iname "*.flac" -print0 | while IFS= read -r -d '' file; do
+			getArtistCredit="$(ffprobe -loglevel 0 -print_format json -show_format -show_streams "$file" | jq -r ".format.tags.ARTIST_CREDIT" | sed "s/null//g" | sed "/^$/d")"
 			metaflac --remove-tag=ALBUMARTIST "$file"
 			metaflac --remove-tag=ALBUMARTIST_CREDIT "$file"
 			metaflac --remove-tag=ALBUMARTISTSORT "$file"
 			metaflac --remove-tag=ALBUM_ARTIST "$file"
 			metaflac --remove-tag="ALBUM ARTIST" "$file"
 			metaflac --remove-tag=ARTISTSORT "$file"
+			metaflac --remove-tag=ARTIST "$file"
+			metaflac --set-tag=ARTIST="$getArtistCredit" "$file"
 		done
 	else
 		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: ERROR :: Unable to match using beets to a musicbrainz release..."
