@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.055"
+scriptVersion="1.0.056"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -26,7 +26,7 @@ fi
 
 log () {
 	m_time=`date "+%F %T"`
-	echo $m_time" :: Extended Video :: "$1
+	echo $m_time" :: Extended Video :: $scriptVersion :: "$1
 }
 
 verifyApiAccess () {
@@ -585,7 +585,7 @@ NotifyWebhook () {
 }
 
 Configuration
-if [ "$sourcePreference" == "tidal" ];
+if [ "$sourcePreference" == "tidal" ]; then
     TidalClientSetup
 fi
 AddFeaturedVideoArtists
