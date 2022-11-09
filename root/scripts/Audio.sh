@@ -43,8 +43,8 @@ if [ -f "/config/logs/Audio.txt" ]; then
 	find /config/logs -type f -name "Audio.txt" -size +5000k -delete
 	sleep 0.01
 fi
-exec &> >(tee -a "/config/logs/Audio.txt")
 touch "/config/logs/Audio.txt"
+exec &> >(tee -a "/config/logs/Audio.txt")
 chmod 666 "/config/logs/Audio.txt"
 
 verifyApiAccess () {
