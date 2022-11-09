@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.056"
+scriptVersion="1.0.057"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -26,7 +26,7 @@ fi
 
 log () {
 	m_time=`date "+%F %T"`
-	echo $m_time" :: Extended Video :: $scriptVersion :: "$1
+	echo $m_time" :: Video :: $scriptVersion :: "$1
 }
 
 verifyApiAccess () {
