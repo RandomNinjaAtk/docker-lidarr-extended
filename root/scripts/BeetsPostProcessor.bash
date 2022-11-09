@@ -22,8 +22,8 @@ if [ -f "/config/logs/BeetsPostProcessor.txt" ]; then
 	find /config/logs -type f -name "BeetsPostProcessor.txt" -size +1024k -delete
 	sleep 0.5
 fi
-exec &> >(tee -a "/config/logs/BeetsPostProcessor.txt")
 touch "/config/logs/BeetsPostProcessor.txt"
+exec &> >(tee -a "/config/logs/BeetsPostProcessor.txt")
 chmod 666 "/config/logs/BeetsPostProcessor.txt"
 
 if [ "$lidarr_eventtype" == "Test" ]; then
