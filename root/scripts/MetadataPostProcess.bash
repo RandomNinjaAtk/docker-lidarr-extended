@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-version=1.0.009
+scriptVersion=1.0.010
 if [ -z "$lidarr_artist_path" ]; then
 	lidarr_artist_path="$1"
 fi
@@ -15,7 +15,7 @@ chmod 666 "/config/logs/MetadataPostProcess.txt"
 
 log () {
     m_time=`date "+%F %T"`
-    echo $m_time" :: MetadataPostProcess :: "$1
+    echo $m_time" :: MetadataPostProcess :: $scriptVersion :: "$1
 }
 
 if [ "$lidarr_eventtype" == "Test" ]; then
