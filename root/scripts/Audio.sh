@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.273"
+scriptVersion="1.0.274"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -35,7 +35,7 @@ sleepTimer=0.5
 
 log () {
 	m_time=`date "+%F %T"`
-	echo $m_time" :: Extended Audio :: $scriptVersion :: "$1
+	echo $m_time" :: Audio :: $scriptVersion :: "$1
 }
 
 # auto-clean up log file to reduce space usage
