@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-version=1.0.4
+scriptVersion=1.0.5
 if [ -z "$lidarr_artist_path" ]; then
 	lidarr_artist_path="$1"
 	notfidedBy=Extended_Script
@@ -13,12 +13,12 @@ if [ -f "/config/logs/PlexNotify.txt" ]; then
 	find /config/logs -type f -name "PlexNotify.txt" -size +1024k -delete
 fi
 
-exec &>> "/config/logs/PlexNotify.txt"
-chmod 777 "/config/logs/PlexNotify.txt"
+exec &> >(tee -a "/config/logs/PlexNotify.txt")
+chmod 666 "/config/logs/PlexNotify.txt"
 
 log () {
     m_time=`date "+%F %T"`
-    echo $m_time" :: "$1
+    echo $m_time" :: PlexNotify :: $scriptVersion :: "$1
 }
 
 if [ "$lidarr_eventtype" == "Test" ]; then
