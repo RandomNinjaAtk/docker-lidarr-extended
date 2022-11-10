@@ -2,12 +2,11 @@
 if [ "$enableQueueCleaner" != "true" ]; then
 	echo "QueueCleaner Script disabled, enable by setting parameter: enableQueueCleaner=true"
 	sleep infinity
-else
-	echo "Waiting for Radarr to startup..."
-	sleep 2m
 fi
 
-echo "Starting Script...."
+echo "Waiting for Lidarr to startup..."
+sleep 2m
+echo "Starting QueueCleaner Script...."
 for (( ; ; )); do
 	let i++
 	   
@@ -17,4 +16,4 @@ for (( ; ; )); do
 	sleep 15m
 done
 
-exit $?
+exit
