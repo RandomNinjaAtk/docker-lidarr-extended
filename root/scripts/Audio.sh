@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.275"
+scriptVersion="1.0.276"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -674,6 +674,7 @@ DownloadProcess () {
 
 	# Correct Artist/albumartist Flac files
 	find "$downloadPath/incomplete" -type f -iname "*.flac" -print0 | while IFS= read -r -d '' file; do
+		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Setting ARTIST/ALBUMARTIST tag to \"$lidarrArtistName\" :: $file"
 		metaflac --remove-tag=ALBUMARTIST "$file"
 		metaflac --remove-tag=ARTIST "$file"
 		metaflac --set-tag=ALBUMARTIST="$lidarrArtistName" "$file"
