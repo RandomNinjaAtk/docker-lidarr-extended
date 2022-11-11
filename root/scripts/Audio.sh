@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.276"
+scriptVersion="1.0.277"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -656,6 +656,16 @@ DownloadProcess () {
 		touch /config/extended/logs/downloaded/tidal/$1
 	fi
 
+	# Correct Artist/albumartist Flac files
+	find "$downloadPath/incomplete" -type f -iname "*.flac" -print0 | while IFS= read -r -d '' file; do
+		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Setting ARTIST/ALBUMARTIST tag to \"$lidarrArtistName\" :: $file"
+		metaflac --remove-tag=ALBUMARTIST "$file"
+		metaflac --remove-tag=ARTIST "$file"
+		metaflac --set-tag=ALBUMARTIST="$lidarrArtistName" "$file"
+		metaflac --set-tag=ARTIST="$lidarrArtistName" "$file"
+	done
+
+	# Tag with beets
 	if [ "$enableBeetsTagging" == "true" ]; then
 		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Processing files with beets..."
 		ProcessWithBeets "$downloadPath/incomplete"
@@ -671,16 +681,7 @@ DownloadProcess () {
 			rm "$lrcFile"
 		fi
 	done
-
-	# Correct Artist/albumartist Flac files
-	find "$downloadPath/incomplete" -type f -iname "*.flac" -print0 | while IFS= read -r -d '' file; do
-		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Setting ARTIST/ALBUMARTIST tag to \"$lidarrArtistName\" :: $file"
-		metaflac --remove-tag=ALBUMARTIST "$file"
-		metaflac --remove-tag=ARTIST "$file"
-		metaflac --set-tag=ALBUMARTIST="$lidarrArtistName" "$file"
-		metaflac --set-tag=ARTIST="$lidarrArtistName" "$file"
-	done
-
+	
 	if [ "$audioFormat" != "native" ]; then
 		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Converting Flac Audio to  ${audioFormat^^} ($audioBitrateText)"
 		if [ "$audioFormat" == "opus" ]; then
