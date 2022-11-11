@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.274"
+scriptVersion="1.0.275"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -672,6 +672,14 @@ DownloadProcess () {
 		fi
 	done
 
+	# Correct Artist/albumartist Flac files
+	find "$downloadPath/incomplete" -type f -iname "*.flac" -print0 | while IFS= read -r -d '' file; do
+		metaflac --remove-tag=ALBUMARTIST "$file"
+		metaflac --remove-tag=ARTIST "$file"
+		metaflac --set-tag=ALBUMARTIST="$lidarrArtistName" "$file"
+		metaflac --set-tag=ARTIST="$lidarrArtistName" "$file"
+	done
+
 	if [ "$audioFormat" != "native" ]; then
 		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Converting Flac Audio to  ${audioFormat^^} ($audioBitrateText)"
 		if [ "$audioFormat" == "opus" ]; then
@@ -699,6 +707,17 @@ DownloadProcess () {
 			filename="$(basename "$audio")"
 			foldername="$(dirname "$audio")"
         	filenamenoext="${filename%.*}"
+			if [ "$audioFormat" == "opus" ]; then
+				if opusenc --bitrate ${audioBitrate} --vbr --music "$file" "$foldername/${filenamenoext}.$extension"; then
+					log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: $filename :: Conversion to $audioFormat ($audioBitrateText) successful"
+					rm "$file"
+				else
+					log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: $filename :: ERROR :: Conversion Failed"
+					rm "$foldername/${filenamenoext}.$extension"
+				fi
+				continue
+			fi
+			
 			if ffmpeg -loglevel warning -hide_banner -nostats -i "$file" -n -vn $options "$foldername/${filenamenoext}.$extension" < /dev/null; then
 				log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: $filename :: Conversion to $audioFormat ($audioBitrateText) successful"
 				rm "$file"
