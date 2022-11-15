@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-version=1.0.006
+version=1.0.007
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -101,6 +101,15 @@ ProcessWithBeets () {
 	fi
 }
 
-ProcessWithBeets "$getFolderPath"
+NotifyPlex () {
+	# Process item with PlexNotify.bash if plexToken is configured
+	if [ ! -z "$plexToken" ]; then
+		# update plex
+		log "$1 :: Using PlexNotify.bash to update Plex...."
+		bash /config/extended/scripts/PlexNotify.bash "$2"
+	fi
+}
 
+ProcessWithBeets "$getFolderPath"
+NotifyPlex "$getAlbumArtist" "$getAlbumArtistPath"
 exit
