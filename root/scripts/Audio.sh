@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.280"
+scriptVersion="1.0.281"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -841,11 +841,30 @@ ProcessWithBeets () {
 	if [ ! -f "/config/extended/logs/downloaded/musicbrainz_matched/$matchedTagsAlbumReleaseGroupId" ]; then
 		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Marking MusicBrainz Release Group ($matchedTagsAlbumReleaseGroupId) as succesfully downloaded..."
 		touch "/config/extended/logs/downloaded/musicbrainz_matched/$matchedTagsAlbumReleaseGroupId"
-	else
-		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: ERROR :: MusicBrainz Release Group previously Downloaded ($matchedTagsAlbumReleaseGroupId) :: Removing and skipping to prevent duplicate import..."
-		rm -rf "$downloadPath/incomplete"/*
-		touch /config/extended/beets-error
+
 	fi
+
+	getLidarrAlbumId=$(curl -s "$lidarrUrl/api/v1/search?term=lidarr%3A${matchedTagsAlbumReleaseGroupId}&apikey=$lidarrApiKey" | jq -r .[].album.releases[].albumId | sort -u)
+	checkLidarrAlbumData="$(curl -s "$lidarrUrl/api/v1/album/$getLidarrAlbumId?apikey=${lidarrApiKey}")"
+	checkLidarrAlbumPercentOfTracks=$(echo "$checkLidarrAlbumData" | jq -r ".statistics.percentOfTracks")
+
+	if [ "$checkLidarrAlbumPercentOfTracks" = "null" ]; then
+		checkLidarrAlbumPercentOfTracks=0
+		return
+	fi
+
+	if [ ${checkLidarrAlbumPercentOfTracks%%.*} -ge 100 ]; then
+		if [ "$wantedAlbumListSource" == "missing" ]; then
+			log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: ERROR :: Already Imported Album (Missing)"
+			rm -rf "$downloadPath/incomplete"/*
+			touch /config/extended/beets-error
+			return
+		else
+			log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Importing Album (Cutoff)"
+			return
+		fi
+	fi
+	
 	
 }
 
