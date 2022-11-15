@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.277"
+scriptVersion="1.0.278"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -1013,6 +1013,8 @@ GetMissingCutOffList () {
 		amountPerPull="10000"
 	fi
 
+	log "$lidarrMissingTotalRecords Missing Albums Found!"
+	log "Getting Missing Album IDs"
 	if [ "$lidarrMissingTotalRecords" -ge "1" ]; then
 		offsetcount=$(( $lidarrMissingTotalRecords / $amountPerPull ))
 		for ((i=0;i<=$offsetcount;i++)); do
@@ -1032,13 +1034,16 @@ GetMissingCutOffList () {
 			done
 		done
 	fi
+	log "Filtering Missing Album IDs by removing previously searched Album IDs (/config/extended/notfound/<files>)"
 	lidarrMissingTotalRecords=$(find /config/extended/cache/lidarr/list -type f -iname "*-missing" | wc -l)
-	log "${lidarrMissingTotalRecords} MISSING ALBUMS FOUND"
+	log "${lidarrMissingTotalRecords} missing albums found to process!"
 
 	# Get cutoff album list
 	lidarrCutoffTotalRecords=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/wanted/cutoff?page=1&pagesize=1&sortKey=$searchOrder&sortDirection=$searchDirection&apikey=${lidarrApiKey}" | jq -r .totalRecords)
 	log "FINDING CUTOFF ALBUMS sorted by $searchSort"
 
+	log "$lidarrCutoffTotalRecords CutOff Albums Found Found!"
+	log "Getting CutOff Album IDs"
 	if [ "$lidarrCutoffTotalRecords" -ge "1" ]; then
 		offsetcount=$(( $lidarrCutoffTotalRecords / $amountPerPull ))
 		for ((i=0;i<=$offsetcount;i++)); do
@@ -1059,7 +1064,8 @@ GetMissingCutOffList () {
 	fi
 
 	lidarrCutoffTotalRecords=$(find /config/extended/cache/lidarr/list -type f -iname "*-cutoff" | wc -l)
-	log "${lidarrCutoffTotalRecords} CUTOFF ALBUMS FOUND"
+	log "Filtering CutOff Album IDs by removing previously searched Album IDs (/config/extended/notfound/<files>)"
+	log "${lidarrCutoffTotalRecords} CutOff ablums found to process!"
 	
 	wantedListAlbumTotal=$(( $lidarrMissingTotalRecords + $lidarrCutoffTotalRecords ))
     
