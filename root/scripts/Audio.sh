@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.279"
+scriptVersion="1.0.280"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -815,17 +815,9 @@ ProcessWithBeets () {
 		sleep 0.1
 	fi
 
-	# get file extension
-	find "$downloadPath/incomplete" -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" -print0 | while IFS= read -r -d '' audio; do
-        file="${audio}"
-        filenoext="${file%.*}"
-		filename="$(basename "$audio")"
-        extension="${filename##*.}"
-		breaK
-	done
-
 	# Get file metadata
 	GetFile=$(find "$downloadPath/incomplete" -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | head -n1)
+	extension="${GetFile##*.}"
 	if [ "$extension" == "opus" ]; then
 		matchedTags=$(ffprobe -hide_banner -loglevel fatal -show_error -show_format -show_streams -show_programs -show_chapters -show_private_data -print_format json "$GetFile" | jq -r ".streams[].tags")
 	else
@@ -847,6 +839,7 @@ ProcessWithBeets () {
 	fi	
 
 	if [ ! -f "/config/extended/logs/downloaded/musicbrainz_matched/$matchedTagsAlbumReleaseGroupId" ]; then
+		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Marking MusicBrainz Release Group ($matchedTagsAlbumReleaseGroupId) as succesfully downloaded..."
 		touch "/config/extended/logs/downloaded/musicbrainz_matched/$matchedTagsAlbumReleaseGroupId"
 	else
 		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: ERROR :: MusicBrainz Release Group previously Downloaded ($matchedTagsAlbumReleaseGroupId) :: Removing and skipping to prevent duplicate import..."
