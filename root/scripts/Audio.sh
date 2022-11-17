@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.281"
+scriptVersion="1.0.282"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -765,9 +765,40 @@ DownloadProcess () {
 	
 	if [ -d "$downloadPath/complete/$downloadedAlbumFolder" ]; then
 		NotifyLidarrForImport "$downloadPath/complete/$downloadedAlbumFolder"
+		
+		LidarrTaskStatusCheck
+		CheckLidarrBeforeImport "$checkLidarrAlbumId"
+		if [ "$alreadyImported" == "true" ]; then
+			log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
+			rm -rf "$downloadPath"/incomplete/*
+		fi
 	fi
-	rm -rf "$downloadPath"/incomplete/*
+	
+	if [ -d "$downloadPath/complete/$downloadedAlbumFolder" ]; then
+		NotifyLidarrForImport "$downloadPath/complete/$downloadedAlbumFolder"
+		
+		LidarrTaskStatusCheck
+		CheckLidarrBeforeImport "$checkLidarrAlbumId"
+		if [ "$alreadyImported" == "true" ]; then
+			log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
+			rm -rf "$downloadPath"/incomplete/*
+		fi
+	fi
+	
+	if [ -d "$downloadPath/complete/$downloadedAlbumFolder" ]; then
+		NotifyLidarrForImport "$downloadPath/complete/$downloadedAlbumFolder"
+		
+		LidarrTaskStatusCheck
+		CheckLidarrBeforeImport "$checkLidarrAlbumId"
+		if [ "$alreadyImported" == "true" ]; then
+			log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
+			rm -rf "$downloadPath"/incomplete/*
+		fi
+	fi
 
+	if [ -d "$downloadPath/complete/$downloadedAlbumFolder" ]; then
+		rm -rf "$downloadPath"/incomplete/*
+	fi
 	# NotifyPlexToScan
 }
 
