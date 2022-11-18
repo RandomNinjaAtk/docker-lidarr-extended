@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.286"
+scriptVersion="1.0.287"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -1184,7 +1184,7 @@ SearchProcess () {
 		lidarrAlbumType=$(echo "$lidarrAlbumData" | jq -r ".albumType")
 		lidarrAlbumTitle=$(echo "$lidarrAlbumData" | jq -r ".title")
 		lidarrAlbumForeignAlbumId=$(echo "$lidarrAlbumData" | jq -r ".foreignAlbumId")
-		cutoffNotify="true"
+		cutoffNotify="false"
 				
 		if [ -f "/config/extended/logs/notfound/$wantedAlbumId--$lidarrArtistForeignArtistId--$lidarrAlbumForeignAlbumId" ]; then
 			log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrAlbumType :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: Previously Not Found, skipping..."
@@ -1933,10 +1933,10 @@ CheckLidarrBeforeImport () {
 			return
 		fi
 		if [ "$wantedAlbumListSource" == "cutoff" ]; then
-			if [ "$cutoffNotify" == "false" ]; then
+			if [ "$cutoffNotify" == "true" ]; then
 				log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported Album (CutOff), skipping..."
 				alreadyImported=true
-				cutoffNotiy="true"
+				cutoffNotiy="false"
 				return
 			fi
 		fi
