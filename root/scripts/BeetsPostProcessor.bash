@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-version=1.0.011
+version=1.0.012
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -81,6 +81,7 @@ ProcessWithBeets () {
 		fixed=0
 		find "$1" -type f -iname "*.flac" -print0 | while IFS= read -r -d '' file; do
 			if [ $fixed == 0 ]; then
+				fixed=$(( $fixed + 1 ))
 				log "$1 :: Fixing Flac Tags..."
 			fi
 			getArtistCredit="$(ffprobe -loglevel 0 -print_format json -show_format -show_streams "$file" | jq -r ".format.tags.ARTIST_CREDIT" | sed "s/null//g" | sed "/^$/d")"
@@ -104,6 +105,7 @@ ProcessWithBeets () {
 		fixed=0
 		find "$1" -type f -iname "*.opus" -print0 | while IFS= read -r -d '' file; do
 			if [ $fixed == 0 ]; then
+				fixed=$(( $fixed + 1 ))
 				log "$1 :: Fixing OPUS Tags..."
 			fi
         		getArtistCredit="$(ffprobe -loglevel 0 -print_format json -show_format -show_streams "$file" | jq -r ".streams[].tags.ARTIST_CREDIT" 2>/dev/null | sed "s/null//g" | sed "/^$/d")"
