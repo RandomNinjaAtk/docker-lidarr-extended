@@ -42,6 +42,10 @@ try:
     audio.pop('ARTISTSORT')
 except:
     pass
+try:
+    audio.pop('COMPOSERSORT')
+except:
+    pass
 
 audio['ARTIST'] = [artist]
 audio['ALBUMARTIST'] = [albumartist]
