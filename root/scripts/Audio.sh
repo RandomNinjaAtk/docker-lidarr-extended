@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.283"
+scriptVersion="1.0.284"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -523,7 +523,7 @@ DownloadProcess () {
 
 	downloadedAlbumTitleClean="$(echo "$4" | sed -e "s%[^[:alpha:][:digit:]._' ]% %g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
     	
-	if find "$downloadPath"/complete -type d -iname "$wantedAlbumListSource :: $lidarrArtistNameSanitized-$downloadedAlbumTitleClean ($3)-*-$1-$2" | read; then
+	if find "$downloadPath"/complete -type d -iname "$lidarrArtistNameSanitized-$downloadedAlbumTitleClean ($3)-*-$1-$2" | read; then
 		log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: ERROR :: Previously Downloaded..."
 		return
     fi
@@ -658,11 +658,11 @@ DownloadProcess () {
 
 	# Correct Artist/albumartist Flac files
 	find "$downloadPath/incomplete" -type f -iname "*.flac" -print0 | while IFS= read -r -d '' file; do
-		log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Setting ARTIST/ALBUMARTIST tag to \"$wantedAlbumListSource :: $lidarrArtistName\" :: $file"
+		log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Setting ARTIST/ALBUMARTIST tag to \"$lidarrArtistName\" :: $file"
 		metaflac --remove-tag=ALBUMARTIST "$file"
 		metaflac --remove-tag=ARTIST "$file"
-		metaflac --set-tag=ALBUMARTIST="$wantedAlbumListSource :: $lidarrArtistName" "$file"
-		metaflac --set-tag=ARTIST="$wantedAlbumListSource :: $lidarrArtistName" "$file"
+		metaflac --set-tag=ALBUMARTIST="$lidarrArtistName" "$file"
+		metaflac --set-tag=ARTIST="$lidarrArtistName" "$file"
 	done
 
 	# Tag with beets
@@ -745,7 +745,7 @@ DownloadProcess () {
 	fi
 	
 	albumquality="$(find "$downloadPath"/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | head -n 1 | egrep -i -E -o "\.{1}\w*$" | sed  's/\.//g')"
-	downloadedAlbumFolder="$wantedAlbumListSource :: $lidarrArtistNameSanitized-$downloadedAlbumTitleClean ($3)-${albumquality^^}-$1-$2"
+	downloadedAlbumFolder="$lidarrArtistNameSanitized-$downloadedAlbumTitleClean ($3)-${albumquality^^}-$1-$2"
 
 	find "$downloadPath/incomplete" -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" -print0 | while IFS= read -r -d '' audio; do
         file="${audio}"
@@ -833,8 +833,8 @@ ProcessWithBeets () {
 			metaflac --remove-tag="ALBUM ARTIST" "$file"
 			metaflac --remove-tag=ARTISTSORT "$file"
 			metaflac --remove-tag=ARTIST "$file"
-			metaflac --set-tag=ARTIST="$wantedAlbumListSource :: $lidarrArtistName" "$file"
-			metaflac --set-tag=ALBUMARTIST="$wantedAlbumListSource :: $lidarrArtistName" "$file"
+			metaflac --set-tag=ARTIST="$lidarrArtistName" "$file"
+			metaflac --set-tag=ALBUMARTIST="$lidarrArtistName" "$file"
 		done
 	else
 		log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: ERROR :: Unable to match using beets to a musicbrainz release..."
@@ -1222,7 +1222,7 @@ SearchProcess () {
 		lidarrArtistFolder="$(basename "${lidarrArtistPath}")"
 		lidarrArtistName=$(echo "${lidarrArtistData}" | jq -r ".artistName")
 		lidarrArtistNameSanitized="$(basename "${lidarrArtistPath}" | sed 's% (.*)$%%g' | sed 's/-/ /g')"
-		lidarrArtistNameSearchSanitized="$(echo "$wantedAlbumListSource :: $lidarrArtistName" | sed -e "s%[^[:alpha:][:digit:]]% %g" -e "s/  */ /g")"
+		lidarrArtistNameSearchSanitized="$(echo "$lidarrArtistName" | sed -e "s%[^[:alpha:][:digit:]]% %g" -e "s/  */ /g")"
 		albumArtistNameSearch="$(jq -R -r @uri <<<"${lidarrArtistNameSearchSanitized}")"
 		lidarrArtistForeignArtistId=$(echo "${lidarrArtistData}" | jq -r ".foreignArtistId")
 		tidalArtistUrl=$(echo "${lidarrArtistData}" | jq -r ".links | .[] | select(.name==\"tidal\") | .url")
@@ -1964,7 +1964,7 @@ AddRelatedArtists () {
 			sleep $sleepTimer
 			getDeezerArtistsIds=($(echo $deezerRelatedArtistData | jq -r .id))
 			getDeezerArtistsIdsCount=$(echo $deezerRelatedArtistData | jq -r .id | wc -l)
-			description="$wantedAlbumListSource :: $lidarrArtistName Related Artists"
+			description="$lidarrArtistName Related Artists"
 			AddDeezerArtistToLidarr			
 		done
 	done
@@ -2000,11 +2000,11 @@ LidarrMissingAlbumSearch () {
 		lidarrArtistMusicbrainzId=$(echo $lidarrArtistData | jq -r .foreignArtistId)
 		if [ -d /config/extended/logs/searched/lidarr/artist ]; then
 			if [ -f /config/extended/logs/searched/lidarr/artist/$lidarrArtistMusicbrainzId ]; then
-				log "$processCount of $lidarrArtistIdsCount :: Previously Notified Lidarr to search for \"$wantedAlbumListSource :: $lidarrArtistName\" :: Skipping..."
+				log "$processCount of $lidarrArtistIdsCount :: Previously Notified Lidarr to search for \"$lidarrArtistName\" :: Skipping..."
 				continue
 			fi
 		fi
-		log "$processCount of $lidarrArtistIdsCount :: Notified Lidarr to search for \"$wantedAlbumListSource :: $lidarrArtistName\""
+		log "$processCount of $lidarrArtistIdsCount :: Notified Lidarr to search for \"$lidarrArtistName\""
 		startLidarrArtistSearch=$(curl -s "$lidarrUrl/api/v1/command" -X POST -H "Content-Type: application/json" -H "X-Api-Key: $lidarrApiKey"  --data-raw "{\"name\":\"ArtistSearch\",\"artistId\":$lidarrArtistId}")
 		if [ ! -d /config/extended/logs/searched/lidarr/artist ]; then
 			mkdir -p /config/extended/logs/searched/lidarr/artist
