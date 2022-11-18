@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion=1.0.011
+scriptVersion=1.0.012
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -46,6 +46,11 @@ else
 	exit
 fi
 
+if ls "$getFolderPath" | grep "lrc" | read; then
+    log "Removing existing lrc files"
+    find "$getFolderPath" -type f -iname "*.lrc" -delete
+fi
+
 find "$getFolderPath" -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" -print0 | while IFS= read -r -d '' file; do
     fileName=$(basename -- "$file")
     fileExt="${fileName##*.}"
@@ -56,11 +61,6 @@ find "$getFolderPath" -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" -print0 |
             log "Processing :: $getFolderPath :: Album Artwork Extracted to: $getFolderPath/folder.jpg"
             chmod 666 "$getFolderPath/folder.jpg"
         fi
-    fi
-
-    if ls "$getFolderPath" | grep "lrc" | read; then
-        log "Removing existing lrc files"
-        find "$getFolderPath" -type f -iname "*.lrc" -delete
     fi
 
     if [ "$fileExt" == "flac" ]; then
