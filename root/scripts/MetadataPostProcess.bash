@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion=1.0.013
+scriptVersion=1.0.014
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -71,14 +71,16 @@ find "$getFolderPath" -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" -print0 |
 
     if [ "$fileExt" == "flac" ]; then
         log "Processing :: $getAlbumFolderName :: $fileName :: Getting Lyrics from embedded metadata"
-        getLyrics="$(ffprobe -loglevel 0 -print_format json -show_format -show_streams "$file" | jq -r ".format.tags.LYRICS" | sed "s/null//g" | sed "/^$/d")"
+        getLyrics="$(ffprobe -loglevel 0 -print_format json -show_format -show_streams "$file" | jq -r ".format.tags.LYRICS" 2>/dev/null | sed "s/null//g" | sed "/^$/d")"
         log "Processing :: $getAlbumFolderName :: $fileName :: Getting ARTIST_CREDIT from embedded metadata"
-        getArtistCredit="$(ffprobe -loglevel 0 -print_format json -show_format -show_streams "$file" | jq -r ".format.tags.ARTIST_CREDIT" | sed "s/null//g" | sed "/^$/d")"
+        getArtistCredit="$(ffprobe -loglevel 0 -print_format json -show_format -show_streams "$file" | jq -r ".format.tags.ARTIST_CREDIT" 2>/dev/null | sed "s/null//g" | sed "/^$/d")"
     fi
 
     if [ "$fileExt" == "opus" ]; then
         log "Processing :: $getAlbumFolderName :: $fileName :: Getting Lyrics from embedded metadata"
-        getLyrics="$(ffprobe -loglevel 0 -print_format json -show_format -show_streams "$file" | jq -r ".streams[].tags.LYRICS" | sed "s/null//g" | sed "/^$/d")"
+        getLyrics="$(ffprobe -loglevel 0 -print_format json -show_format -show_streams "$file" | jq -r ".streams[].tags.LYRICS" 2>/dev/null | sed "s/null//g" | sed "/^$/d")"
+        log "Processing :: $getAlbumFolderName :: $fileName :: Getting ARTIST_CREDIT from embedded metadata"
+        getArtistCredit="$(ffprobe -loglevel 0 -print_format json -show_format -show_streams "$file" | jq -r ".streams[].tags.ARTIST_CREDIT" 2>/dev/null | sed "s/null//g" | sed "/^$/d")"
     fi
 
     if [ ! -z "$getLyrics" ]; then
@@ -93,10 +95,28 @@ find "$getFolderPath" -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" -print0 |
 
     if [ "$fileExt" == "flac" ]; then
         if [ ! -z "$getArtistCredit" ]; then
-            log "Processing :: $getAlbumFolderName :: $fileName :: Setting ARTIST tag to match ARTIST_CREDIT tag..."
+            log "Processing :: $getAlbumFolderName :: $fileName :: Setting ARTIST tag to match ARTIST_CREDIT ($getArtistCredit) tag..."
             metaflac --remove-tag=ARTIST "$file"
+            metaflac --remove-tag=ALBUMARTIST "$file"
             metaflac --set-tag=ARTIST="$getArtistCredit" "$file"
+            metaflac --set-tag=ALBUMARTIST="$getAlbumArtist" "$file"
         else
+            log "Processing :: $getAlbumFolderName :: $fileName :: ARTIST_CREDIT not found..."
+            metaflac --remove-tag=ARTIST "$file"
+            metaflac --remove-tag=ALBUMARTIST "$file"
+            metaflac --set-tag=ARTIST="$getAlbumArtist" "$file"
+            metaflac --set-tag=ALBUMARTIST="$getAlbumArtist" "$file"
+        fi
+    fi
+
+    if [ "$fileExt" == "opus" ]; then
+        if [ ! -z "$getArtistCredit" ]; then
+            log "Processing :: $getAlbumFolderName :: $fileName :: Setting ARTIST tag to match ARTIST_CREDIT ($getArtistCredit) tag..."            
+            python3 "/config/extended/scripts/tag_opus.py" --file "$file" --songartist "$getArtistCredit" --songalbumartist "$getAlbumArtist"
+            log "Processing :: $getAlbumFolderName :: $fileName :: Done!"
+
+        else
+            python3 "/config/extended/scripts/tag_opus.py" --file "$file" --songartist "$getAlbumArtist" --songalbumartist "$getAlbumArtist"
             log "Processing :: $getAlbumFolderName :: $fileName :: ARTIST_CREDIT not found..."
         fi
     fi
