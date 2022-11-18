@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-version=1.0.009
+version=1.0.010
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -31,23 +31,27 @@ if [ "$lidarr_eventtype" == "Test" ]; then
 	exit 0	
 fi
 
-getAlbumArtist="$(curl -s "$lidarrUrl/api/v1/album/$lidarr_album_id" -H "X-Api-Key: ${lidarrApiKey}" | jq -r .artist.artistName)"
-getAlbumArtistPath="$(curl -s "$lidarrUrl/api/v1/album/$lidarr_album_id" -H "X-Api-Key: ${lidarrApiKey}" | jq -r .artist.path)"
-getTrackPath="$(curl -s "$lidarrUrl/api/v1/trackFile?albumId=$lidarr_album_id" -H "X-Api-Key: ${lidarrApiKey}" | jq -r .[].path | head -n1)"
-getFolderPath="$(dirname "$getTrackPath")"
-
-if echo "$getFolderPath" | grep "$getAlbumArtistPath" | read; then
-	if [ -d "$getFolderPath" ]; then
-		sleep 0.01
-	else
-		log "ERROR :: \"$getFolderPath\" Folder is missing :: Exiting..."
-	fi
-else 
-	log "ERROR :: $getAlbumArtistPath not found within \"$getFolderPath\" :: Exiting..."
-	exit
-fi
 
 ProcessWithBeets () {
+
+	SECONDS=0
+	log "$1 :: Start Processing..."
+	getAlbumArtist="$(curl -s "$lidarrUrl/api/v1/album/$lidarr_album_id" -H "X-Api-Key: ${lidarrApiKey}" | jq -r .artist.artistName)"
+	getAlbumArtistPath="$(curl -s "$lidarrUrl/api/v1/album/$lidarr_album_id" -H "X-Api-Key: ${lidarrApiKey}" | jq -r .artist.path)"
+	getTrackPath="$(curl -s "$lidarrUrl/api/v1/trackFile?albumId=$lidarr_album_id" -H "X-Api-Key: ${lidarrApiKey}" | jq -r .[].path | head -n1)"
+	getFolderPath="$(dirname "$getTrackPath")"
+
+	if echo "$getFolderPath" | grep "$getAlbumArtistPath" | read; then
+		if [ -d "$getFolderPath" ]; then
+			sleep 0.01
+		else
+			log "ERROR :: \"$getFolderPath\" Folder is missing :: Exiting..."
+		fi
+	else 
+		log "ERROR :: $getAlbumArtistPath not found within \"$getFolderPath\" :: Exiting..."
+		exit
+	fi
+
 	# Input
 	# $1 Download Folder to process
 	if [ -f /config/library-postprocessor.blb ]; then
@@ -129,6 +133,9 @@ ProcessWithBeets () {
 		rm /config/extended/logs/beets.log
 		sleep 0.5
 	fi
+
+	duration=$SECONDS
+	log "$1 :: Finished in $(($duration / 60 )) minutes and $(($duration % 60 )) seconds!"
 }
 
 NotifyPlex () {
