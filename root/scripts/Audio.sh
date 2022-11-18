@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.282"
+scriptVersion="1.0.283"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -523,19 +523,19 @@ DownloadProcess () {
 
 	downloadedAlbumTitleClean="$(echo "$4" | sed -e "s%[^[:alpha:][:digit:]._' ]% %g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
     	
-	if find "$downloadPath"/complete -type d -iname "$lidarrArtistNameSanitized-$downloadedAlbumTitleClean ($3)-*-$1-$2" | read; then
-		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: ERROR :: Previously Downloaded..."
+	if find "$downloadPath"/complete -type d -iname "$wantedAlbumListSource :: $lidarrArtistNameSanitized-$downloadedAlbumTitleClean ($3)-*-$1-$2" | read; then
+		log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: ERROR :: Previously Downloaded..."
 		return
     fi
 
 	# check for log file
 	if [ "$2" == "DEEZER" ]; then
 		if [ -f /config/extended/logs/downloaded/deezer/$1 ]; then
-			log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: ERROR :: Previously Downloaded ($1)..."
+			log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: ERROR :: Previously Downloaded ($1)..."
 			return
 		fi
 		if [ -f /config/extended/logs/downloaded/failed/deezer/$1 ]; then
-			log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: ERROR :: Previously Attempted Download ($1)..."
+			log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: ERROR :: Previously Attempted Download ($1)..."
 			return
 		fi
 	fi
@@ -543,11 +543,11 @@ DownloadProcess () {
 	# check for log file
 	if [ "$2" == "TIDAL" ]; then
 		if [ -f /config/extended/logs/downloaded/tidal/$1 ]; then
-			log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: ERROR :: Previously Downloaded ($1)..."
+			log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: ERROR :: Previously Downloaded ($1)..."
 			return
 		fi
 		if [ -f /config/extended/logs/downloaded/failed/tidal/$1 ]; then
-			log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: ERROR :: Previously Attempted Download ($1)..."
+			log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: ERROR :: Previously Attempted Download ($1)..."
 			return
 		fi
 	fi
@@ -565,7 +565,7 @@ DownloadProcess () {
 		touch /temp-download 
 		sleep 0.1
 
-		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Download Attempt number $downloadTry"
+		log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Download Attempt number $downloadTry"
 		if [ "$2" == "DEEZER" ]; then
 			if [ "$downloadTry" == "1" ]; then
 				DeezerClientTest
@@ -588,19 +588,19 @@ DownloadProcess () {
 		find "$downloadPath/incomplete" -type f -iname "*.flac" -newer "/temp-download" -print0 | while IFS= read -r -d '' file; do
 			audioFlacVerification "$file"
 			if [ "$verifiedFlacFile" == "0" ]; then
-				log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Flac Verification :: $file :: Verified"
+				log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Flac Verification :: $file :: Verified"
 			else
-				log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Flac Verification :: $file :: ERROR :: Failed Verification"
+				log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Flac Verification :: $file :: ERROR :: Failed Verification"
 				rm "$file"
 			fi
 		done
 
 		downloadCount=$(find "$downloadPath"/incomplete/ -type f -regex ".*/.*\.\(flac\|m4a\|mp3\)" | wc -l)
 		if [ "$downloadCount" -ne "$5" ]; then
-			log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: ERROR :: download failed, missing tracks..."
+			log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: ERROR :: download failed, missing tracks..."
 			completedVerification="false"
 		else
-			log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Success"
+			log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Success"
 			completedVerification="true"
 		fi
 
@@ -612,14 +612,14 @@ DownloadProcess () {
 			fi
 			break
 		else
-			log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Retry Download in 1 second fix errors..."
+			log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Retry Download in 1 second fix errors..."
 			sleep 1
 		fi
 	done   
 
 	# Consolidate files to a single folder
 	if [ "$2" == "TIDAL" ]; then
-		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Consolidating files to single folder"
+		log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Consolidating files to single folder"
 		find "$downloadPath/incomplete" -type f -exec mv "{}" "$downloadPath"/incomplete/ \;
 		if [ -d "$downloadPath"/incomplete/atd ]; then
 			rm -rf "$downloadPath"/incomplete/atd
@@ -634,8 +634,8 @@ DownloadProcess () {
 	
 	downloadCount=$(find "$downloadPath"/incomplete/ -type f -regex ".*/.*\.\(flac\|m4a\|mp3\)" | wc -l)
 	if [ "$downloadCount" -ne "$5" ]; then
-		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: ERROR :: All download Attempts failed..."
-		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Logging $1 as failed download..."
+		log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: ERROR :: All download Attempts failed..."
+		log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Logging $1 as failed download..."
 
 
 		if [ "$2" == "DEEZER" ]; then
@@ -648,7 +648,7 @@ DownloadProcess () {
 	fi
 
 	# Log Completed Download
-	log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Logging $1 as successfully downloaded..."
+	log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Logging $1 as successfully downloaded..."
 	if [ "$2" == "DEEZER" ]; then
 		touch /config/extended/logs/downloaded/deezer/$1
 	fi
@@ -658,11 +658,11 @@ DownloadProcess () {
 
 	# Correct Artist/albumartist Flac files
 	find "$downloadPath/incomplete" -type f -iname "*.flac" -print0 | while IFS= read -r -d '' file; do
-		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Setting ARTIST/ALBUMARTIST tag to \"$lidarrArtistName\" :: $file"
+		log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Setting ARTIST/ALBUMARTIST tag to \"$wantedAlbumListSource :: $lidarrArtistName\" :: $file"
 		metaflac --remove-tag=ALBUMARTIST "$file"
 		metaflac --remove-tag=ARTIST "$file"
-		metaflac --set-tag=ALBUMARTIST="$lidarrArtistName" "$file"
-		metaflac --set-tag=ARTIST="$lidarrArtistName" "$file"
+		metaflac --set-tag=ALBUMARTIST="$wantedAlbumListSource :: $lidarrArtistName" "$file"
+		metaflac --set-tag=ARTIST="$wantedAlbumListSource :: $lidarrArtistName" "$file"
 	done
 
 	# Tag with beets
@@ -670,7 +670,7 @@ DownloadProcess () {
 		if [ -f /config/extended/beets-error ]; then
 			rm /config/extended/beets-error
 		fi
-		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Processing files with beets..."
+		log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Processing files with beets..."
 		ProcessWithBeets "$downloadPath/incomplete"
 
 		if [ -f /config/extended/beets-error ]; then
@@ -682,7 +682,7 @@ DownloadProcess () {
 	find "$downloadPath/incomplete" -type f -iname "*.flac" -print0 | while IFS= read -r -d '' file; do
 		lrcFile="${file%.*}.lrc"
 		if [ -f "$lrcFile" ]; then
-			log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Embedding lyrics (lrc) into $file"
+			log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Embedding lyrics (lrc) into $file"
 			metaflac --remove-tag=Lyrics "$file"
 			metaflac --set-tag-from-file="Lyrics=$lrcFile" "$file"
 			rm "$lrcFile"
@@ -690,7 +690,7 @@ DownloadProcess () {
 	done
 	
 	if [ "$audioFormat" != "native" ]; then
-		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Converting Flac Audio to  ${audioFormat^^} ($audioBitrateText)"
+		log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Converting Flac Audio to  ${audioFormat^^} ($audioBitrateText)"
 		if [ "$audioFormat" == "opus" ]; then
 			options="-c:a libopus -b:a ${audioBitrate}k -application audio -vbr off"
 		    extension="opus"
@@ -718,20 +718,20 @@ DownloadProcess () {
         	filenamenoext="${filename%.*}"
 			if [ "$audioFormat" == "opus" ]; then
 				if opusenc --bitrate ${audioBitrate} --vbr --music "$file" "$foldername/${filenamenoext}.$extension"; then
-					log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: $filename :: Conversion to $audioFormat ($audioBitrateText) successful"
+					log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: $filename :: Conversion to $audioFormat ($audioBitrateText) successful"
 					rm "$file"
 				else
-					log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: $filename :: ERROR :: Conversion Failed"
+					log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: $filename :: ERROR :: Conversion Failed"
 					rm "$foldername/${filenamenoext}.$extension"
 				fi
 				continue
 			fi
 			
 			if ffmpeg -loglevel warning -hide_banner -nostats -i "$file" -n -vn $options "$foldername/${filenamenoext}.$extension" < /dev/null; then
-				log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: $filename :: Conversion to $audioFormat ($audioBitrateText) successful"
+				log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: $filename :: Conversion to $audioFormat ($audioBitrateText) successful"
 				rm "$file"
 			else
-				log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: $filename :: ERROR :: Conversion Failed"
+				log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: $filename :: ERROR :: Conversion Failed"
 				rm "$foldername/${filenamenoext}.$extension"
 			fi
 		done
@@ -741,11 +741,11 @@ DownloadProcess () {
 	if [ "$enableReplaygainTags" == "true" ]; then
 		AddReplaygainTags "$downloadPath/incomplete"
 	else
-		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Replaygain Tagging Disabled (set enableReplaygainTags=true to enable...)"
+		log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Replaygain Tagging Disabled (set enableReplaygainTags=true to enable...)"
 	fi
 	
 	albumquality="$(find "$downloadPath"/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | head -n 1 | egrep -i -E -o "\.{1}\w*$" | sed  's/\.//g')"
-	downloadedAlbumFolder="$lidarrArtistNameSanitized-$downloadedAlbumTitleClean ($3)-${albumquality^^}-$1-$2"
+	downloadedAlbumFolder="$wantedAlbumListSource :: $lidarrArtistNameSanitized-$downloadedAlbumTitleClean ($3)-${albumquality^^}-$1-$2"
 
 	find "$downloadPath/incomplete" -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" -print0 | while IFS= read -r -d '' audio; do
         file="${audio}"
@@ -769,7 +769,7 @@ DownloadProcess () {
 		LidarrTaskStatusCheck
 		CheckLidarrBeforeImport "$checkLidarrAlbumId"
 		if [ "$alreadyImported" == "true" ]; then
-			log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
+			log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
 			rm -rf "$downloadPath"/incomplete/*
 		fi
 	fi
@@ -780,7 +780,7 @@ DownloadProcess () {
 		LidarrTaskStatusCheck
 		CheckLidarrBeforeImport "$checkLidarrAlbumId"
 		if [ "$alreadyImported" == "true" ]; then
-			log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
+			log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
 			rm -rf "$downloadPath"/incomplete/*
 		fi
 	fi
@@ -791,7 +791,7 @@ DownloadProcess () {
 		LidarrTaskStatusCheck
 		CheckLidarrBeforeImport "$checkLidarrAlbumId"
 		if [ "$alreadyImported" == "true" ]; then
-			log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
+			log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
 			rm -rf "$downloadPath"/incomplete/*
 		fi
 	fi
@@ -823,7 +823,7 @@ ProcessWithBeets () {
 
 	beet -c /config/extended/scripts/beets-config.yaml -l /config/extended/beets-library.blb -d "$1" import -qC "$1"
 	if [ $(find "$1" -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" -newer "/config/beets-match" | wc -l) -gt 0 ]; then
-		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: SUCCESS: Matched with beets!"
+		log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: SUCCESS: Matched with beets!"
 		find "$downloadPath/incomplete" -type f -iname "*.flac" -print0 | while IFS= read -r -d '' file; do
 			getArtistCredit="$(ffprobe -loglevel 0 -print_format json -show_format -show_streams "$file" | jq -r ".format.tags.ARTIST_CREDIT" | sed "s/null//g" | sed "/^$/d")"
 			metaflac --remove-tag=ALBUMARTIST "$file"
@@ -833,11 +833,11 @@ ProcessWithBeets () {
 			metaflac --remove-tag="ALBUM ARTIST" "$file"
 			metaflac --remove-tag=ARTISTSORT "$file"
 			metaflac --remove-tag=ARTIST "$file"
-			metaflac --set-tag=ARTIST="$lidarrArtistName" "$file"
-			metaflac --set-tag=ALBUMARTIST="$lidarrArtistName" "$file"
+			metaflac --set-tag=ARTIST="$wantedAlbumListSource :: $lidarrArtistName" "$file"
+			metaflac --set-tag=ALBUMARTIST="$wantedAlbumListSource :: $lidarrArtistName" "$file"
 		done
 	else
-		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: ERROR :: Unable to match using beets to a musicbrainz release..."
+		log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: ERROR :: Unable to match using beets to a musicbrainz release..."
 		return
 	fi	
 
@@ -870,7 +870,7 @@ ProcessWithBeets () {
 	fi	
 
 	if [ ! -f "/config/extended/logs/downloaded/musicbrainz_matched/$matchedTagsAlbumReleaseGroupId" ]; then
-		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Marking MusicBrainz Release Group ($matchedTagsAlbumReleaseGroupId) as succesfully downloaded..."
+		log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Marking MusicBrainz Release Group ($matchedTagsAlbumReleaseGroupId) as succesfully downloaded..."
 		touch "/config/extended/logs/downloaded/musicbrainz_matched/$matchedTagsAlbumReleaseGroupId"
 
 	fi
@@ -886,12 +886,12 @@ ProcessWithBeets () {
 
 	if [ ${checkLidarrAlbumPercentOfTracks%%.*} -ge 100 ]; then
 		if [ "$wantedAlbumListSource" == "missing" ]; then
-			log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: ERROR :: Already Imported Album (Missing)"
+			log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: ERROR :: Already Imported Album (Missing)"
 			rm -rf "$downloadPath/incomplete"/*
 			touch /config/extended/beets-error
 			return
 		else
-			log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Importing Album (Cutoff)"
+			log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Importing Album (Cutoff)"
 			return
 		fi
 	fi
@@ -902,66 +902,66 @@ ProcessWithBeets () {
 DownloadQualityCheck () {
 
 	if [ "$requireQuality" == "true" ]; then
-		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Checking for unwanted files"
+		log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Checking for unwanted files"
 
 		if [ "$audioFormat" != "native" ]; then
 			if find "$1" -type f -regex ".*/.*\.\(opus\|m4a\|mp3\)"| read; then
-				log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Unwanted files found!"
-				log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Performing cleanup..."
+				log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Unwanted files found!"
+				log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Performing cleanup..."
 				rm "$1"/*
 			else
-				log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: No unwanted files found!"
+				log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: No unwanted files found!"
 			fi
 		fi
 		if [ "$audioFormat" == "native" ]; then
 			if [ "$audioBitrate" == "lossless" ]; then
 				if find "$1" -type f -regex ".*/.*\.\(opus\|m4a\|mp3\)"| read; then
-					log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Unwanted files found!"
-					log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Performing cleanup..."
+					log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Unwanted files found!"
+					log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Performing cleanup..."
 					rm "$1"/*
 				else
-					log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: No unwanted files found!"
+					log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: No unwanted files found!"
 				fi
 			elif [ "$2" == "DEEZER" ]; then
 				if find "$1" -type f -regex ".*/.*\.\(opus\|m4a\|flac\)"| read; then
-					log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Unwanted files found!"
-					log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Performing cleanup..."
+					log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Unwanted files found!"
+					log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Performing cleanup..."
 					rm "$1"/*
 				else
-					log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: No unwanted files found!"
+					log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: No unwanted files found!"
 				fi
 			elif [ "$2" == "TIDAL" ]; then
 				if find "$1" -type f -regex ".*/.*\.\(opus\|flac\|mp3\)"| read; then
-					log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Unwanted files found!"
-					log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Performing cleanup..."
+					log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Unwanted files found!"
+					log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Performing cleanup..."
 					rm "$1"/*
 				else
-					log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: No unwanted files found!"
+					log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: No unwanted files found!"
 				fi
 			fi
 		fi
 	else
-		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType ::  Skipping download quality check... (enable by setting: requireQuality=true)"
+		log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType ::  Skipping download quality check... (enable by setting: requireQuality=true)"
 	fi
 }
 
 AddReplaygainTags () {
 	# Input Data
 	# $1 Folder path to scan and add tags
-	log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Adding Replaygain Tags using r128gain"
+	log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Adding Replaygain Tags using r128gain"
 	r128gain -r -c 1 -a "$1" &>/dev/null
 }
 
 NotifyLidarrForImport () {
 	LidarrProcessIt=$(curl -s "$lidarrUrl/api/v1/command" --header "X-Api-Key:"${lidarrApiKey} -H "Content-Type: application/json" --data "{\"name\":\"DownloadedAlbumsScan\", \"path\":\"$1\"}")
-	log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: LIDARR IMPORT NOTIFICATION SENT! :: $1"
+	log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: LIDARR IMPORT NOTIFICATION SENT! :: $1"
 }
 
 NotifyPlexToScan () {
 	LidarrTaskStatusCheck
 	CheckLidarrBeforeImport "$checkLidarrAlbumId"
 	if [ "$alreadyImported" == "true" ]; then
-		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Notifying Plex to Scan :: $lidarrArtistPath"
+		log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Notifying Plex to Scan :: $lidarrArtistPath"
 		bash /config/extended/scripts/PlexNotify.bash "$lidarrArtistPath"
 	fi
 }
@@ -1185,18 +1185,18 @@ SearchProcess () {
 		lidarrAlbumForeignAlbumId=$(echo "$lidarrAlbumData" | jq -r ".foreignAlbumId")
 				
 		if [ -f "/config/extended/logs/notfound/$wantedAlbumId--$lidarrArtistForeignArtistId--$lidarrAlbumForeignAlbumId" ]; then
-			log "$processNumber of $wantedListAlbumTotal :: $lidarrAlbumType :: $lidarrArtistName :: $lidarrAlbumTitle :: Previously Not Found, skipping..."
+			log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrAlbumType :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: Previously Not Found, skipping..."
 			continue
 		fi
 
 		if [ "$enableVideoScript" == "true" ]; then
 			if [ -d /config/extended/logs/video/complete ]; then
 				if [ ! -f "/config/extended/logs/video/complete/$lidarrArtistForeignArtistId" ]; then
-					log "$processNumber of $wantedListAlbumTotal :: $lidarrAlbumType :: $lidarrArtistName :: $lidarrAlbumTitle :: Skipping until all videos are processed for the artist..."
+					log "$processNumber of $wantedListAlbumTotal :: $lidarrAlbumType :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: Skipping until all videos are processed for the artist..."
 					continue
 				fi
 			else
-				log "$processNumber of $wantedListAlbumTotal :: $lidarrAlbumType :: $lidarrArtistName :: $lidarrAlbumTitle :: Skipping until all videos are processed for the artist..."
+				log "$processNumber of $wantedListAlbumTotal :: $lidarrAlbumType :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: Skipping until all videos are processed for the artist..."
 				continue
 			fi
 		fi
@@ -1222,7 +1222,7 @@ SearchProcess () {
 		lidarrArtistFolder="$(basename "${lidarrArtistPath}")"
 		lidarrArtistName=$(echo "${lidarrArtistData}" | jq -r ".artistName")
 		lidarrArtistNameSanitized="$(basename "${lidarrArtistPath}" | sed 's% (.*)$%%g' | sed 's/-/ /g')"
-		lidarrArtistNameSearchSanitized="$(echo "$lidarrArtistName" | sed -e "s%[^[:alpha:][:digit:]]% %g" -e "s/  */ /g")"
+		lidarrArtistNameSearchSanitized="$(echo "$wantedAlbumListSource :: $lidarrArtistName" | sed -e "s%[^[:alpha:][:digit:]]% %g" -e "s/  */ /g")"
 		albumArtistNameSearch="$(jq -R -r @uri <<<"${lidarrArtistNameSearchSanitized}")"
 		lidarrArtistForeignArtistId=$(echo "${lidarrArtistData}" | jq -r ".foreignArtistId")
 		tidalArtistUrl=$(echo "${lidarrArtistData}" | jq -r ".links | .[] | select(.name==\"tidal\") | .url")
@@ -1242,9 +1242,9 @@ SearchProcess () {
 		
 
 		if [[ ${currentDateClean} -ge ${lidarrAlbumReleaseDateClean} ]]; then
-			log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Starting Search..."
+			log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Starting Search..."
 		else
-			log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Album ($lidarrAlbumReleaseDate) has not been released, skipping..."
+			log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Album ($lidarrAlbumReleaseDate) has not been released, skipping..."
 			continue
 		fi
 
@@ -1267,14 +1267,14 @@ SearchProcess () {
 
 			# fallback to musicbrainz db for link
 			if [ -z "$deezerArtistUrl" ]; then
-				log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: DEEZER :: Fallback to musicbrainz for Deezer ID"
+				log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: DEEZER :: Fallback to musicbrainz for Deezer ID"
 				musicbrainzArtistData=$(curl -s -A "$agent" "https://musicbrainz.org/ws/2/artist/${lidarrArtistForeignArtistId}?inc=url-rels&fmt=json")
 				deezerArtistUrl=$(echo "$musicbrainzArtistData" | jq -r '.relations | .[] | .url | select(.resource | contains("deezer")) | .resource')
 			fi
 
 			if [ -z "$deezerArtistUrl" ]; then 
 				sleep 1.5
-				log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: DEEZER :: ERROR :: musicbrainz id: $lidarrArtistForeignArtistId is missing Deezer link, see: \"/config/logs/deezer-artist-id-not-found.txt\" for more detail..."
+				log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: DEEZER :: ERROR :: musicbrainz id: $lidarrArtistForeignArtistId is missing Deezer link, see: \"/config/logs/deezer-artist-id-not-found.txt\" for more detail..."
 				touch "/config/logs/deezer-artist-id-not-found.txt"
 				if cat "/config/logs/deezer-artist-id-not-found.txt" | grep "https://musicbrainz.org/artist/$lidarrArtistForeignArtistId/edit" | read; then
 					sleep 0.01
@@ -1290,14 +1290,14 @@ SearchProcess () {
         if [ "$skipTidal" == "false" ]; then
 			# fallback to musicbrainz db for link
 			if [ -z "$tidalArtistUrl" ]; then
-				log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: TIDAL :: Fallback to musicbrainz for Tidal ID"
+				log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: TIDAL :: Fallback to musicbrainz for Tidal ID"
 				musicbrainzArtistData=$(curl -s -A "$agent" "https://musicbrainz.org/ws/2/artist/${lidarrArtistForeignArtistId}?inc=url-rels&fmt=json")
 				tidalArtistUrl=$(echo "$musicbrainzArtistData" | jq -r '.relations | .[] | .url | select(.resource | contains("tidal")) | .resource')
 			fi
 
 			if [ -z "$tidalArtistUrl" ]; then 
 				sleep 1.5
-				log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: TIDAL :: ERROR :: musicbrainz id: $lidarrArtistForeignArtistId is missing Tidal link, see: \"/config/logs/tidal-artist-id-not-found.txt\" for more detail..."
+				log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: TIDAL :: ERROR :: musicbrainz id: $lidarrArtistForeignArtistId is missing Tidal link, see: \"/config/logs/tidal-artist-id-not-found.txt\" for more detail..."
 				touch "/config/logs/tidal-artist-id-not-found.txt" 
 				if cat "/config/logs/tidal-artist-id-not-found.txt" | grep "https://musicbrainz.org/artist/$lidarrArtistForeignArtistId/edit" | read; then
 					sleep 0.01
@@ -1373,7 +1373,7 @@ SearchProcess () {
 					LidarrTaskStatusCheck
 					CheckLidarrBeforeImport "$checkLidarrAlbumId"
 					if [ "$alreadyImported" == "true" ]; then
-						log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
+						log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
 						break 2
 					fi
 						
@@ -1389,7 +1389,7 @@ SearchProcess () {
 					LidarrTaskStatusCheck
 					CheckLidarrBeforeImport "$checkLidarrAlbumId"
 					if [ "$alreadyImported" == "true" ]; then
-						log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
+						log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
 						break 2
 					fi
 
@@ -1407,7 +1407,7 @@ SearchProcess () {
 				LidarrTaskStatusCheck
 				CheckLidarrBeforeImport "$checkLidarrAlbumId"
 				if [ "$alreadyImported" == "true" ]; then
-					log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
+					log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
 					break 2
 				fi
 
@@ -1421,7 +1421,7 @@ SearchProcess () {
 				LidarrTaskStatusCheck
 				CheckLidarrBeforeImport "$checkLidarrAlbumId"
 				if [ "$alreadyImported" == "true" ]; then
-					log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
+					log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
 					break 2
 				fi
 
@@ -1444,7 +1444,7 @@ SearchProcess () {
 		LidarrTaskStatusCheck
 		CheckLidarrBeforeImport "$checkLidarrAlbumId"
 		if [ "$alreadyImported" == "true" ]; then
-			log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
+			log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
 			continue
 		fi
 
@@ -1453,12 +1453,12 @@ SearchProcess () {
 			if [ "$skipTidal" == "false" ]; then
 				
 				# Search Musicbrainz
-				log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Tidal :: Searching for Album ID..."
+				log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Tidal :: Searching for Album ID..."
 				msuicbrainzTidalDownloadAlbumID=$(curl -s -A "$agent" "https://musicbrainz.org/ws/2/release?release-group=$lidarrAlbumForeignAlbumId&inc=url-rels&fmt=json" | jq -r | grep "tidal.com" | head -n 1 | sed -e "s%[^[:digit:]]%%g")
 
 				# Process Album ID if found
 				if [ ! -z $msuicbrainzTidalDownloadAlbumID ]; then
-					log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Tidal ::: FOUND!"
+					log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Tidal ::: FOUND!"
 					tidalArtistAlbumData="$(curl -s "https://api.tidal.com/v1/albums/${msuicbrainzTidalDownloadAlbumID}?countryCode=$tidalCountryCode" -H 'x-tidal-token: CzET4vdadNUFQ5JU')"
 					tidalAlbumTrackCount="$(echo "$tidalArtistAlbumData" | jq -r .numberOfTracks)"
 					downloadedAlbumTitle="$(echo "${tidalArtistAlbumData}" | jq -r .title)"
@@ -1467,19 +1467,19 @@ SearchProcess () {
 						downloadedReleaseDate=$(echo "$tidalArtistAlbumData" | jq -r '.streamStartDate')
 					fi
 					downloadedReleaseYear="${downloadedReleaseDate:0:4}"
-					log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Tidal :: Downloading $tidalAlbumTrackCount Tracks :: $downloadedAlbumTitle ($downloadedReleaseYear)"
+					log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Tidal :: Downloading $tidalAlbumTrackCount Tracks :: $downloadedAlbumTitle ($downloadedReleaseYear)"
 					DownloadProcess "$msuicbrainzTidalDownloadAlbumID" "TIDAL" "$downloadedReleaseYear" "$downloadedAlbumTitle" "$tidalAlbumTrackCount"
 
 					# Verify it was successfully imported into Lidarr
 					LidarrTaskStatusCheck
 					CheckLidarrBeforeImport "$checkLidarrAlbumId"
 					if [ "$alreadyImported" == "true" ]; then
-						log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
+						log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
 						continue
 					fi
 				else
 					sleep 1.5
-					log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Tidal :: NOT FOUND!"
+					log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Tidal :: NOT FOUND!"
 				fi
 			fi
 		fi
@@ -1487,7 +1487,7 @@ SearchProcess () {
 		LidarrTaskStatusCheck
 		CheckLidarrBeforeImport "$checkLidarrAlbumId"
 		if [ "$alreadyImported" == "true" ]; then
-			log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
+			log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
 			continue
 		fi
 
@@ -1496,30 +1496,30 @@ SearchProcess () {
 			if [ "$skipDeezer" == "false" ]; then
 			
 				# Search Musicbrainz
-				log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Deezer :: Searching for Album ID..."
+				log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Deezer :: Searching for Album ID..."
 				musicbrainzDeezerDownloadAlbumID=$(curl -s -A "$agent" "https://musicbrainz.org/ws/2/release?release-group=$lidarrAlbumForeignAlbumId&inc=url-rels&fmt=json" | jq -r | grep "deezer.com" | grep "album" | head -n 1 | sed -e "s%[^[:digit:]]%%g")
 				
 				# Process Album ID if found
 				if [ ! -z $musicbrainzDeezerDownloadAlbumID ]; then
-					log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Deezer :: FOUND!"
+					log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Deezer :: FOUND!"
 					GetDeezerAlbumInfo "${musicbrainzDeezerDownloadAlbumID}"
 					deezerArtistAlbumData=$(cat "/config/extended/cache/deezer/$musicbrainzDeezerDownloadAlbumID.json")
 					deezerAlbumTrackCount="$(echo "$deezerArtistAlbumData" | jq -r .nb_tracks)"
 					deezerAlbumTitle="$(echo "$deezerArtistAlbumData"| jq -r .title)"
 					downloadedReleaseDate="$(echo "$deezerArtistAlbumData" | jq -r .release_date)"
 					downloadedReleaseYear="${downloadedReleaseDate:0:4}"
-					log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Deezer :: Downloading $deezerAlbumTrackCount Tracks :: $deezerAlbumTitle ($downloadedReleaseYear)"
+					log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Deezer :: Downloading $deezerAlbumTrackCount Tracks :: $deezerAlbumTitle ($downloadedReleaseYear)"
 					DownloadProcess "$musicbrainzDeezerDownloadAlbumID" "DEEZER" "$downloadedReleaseYear" "$deezerAlbumTitle" "$deezerAlbumTrackCount"
 
 					# Verify it was successfully imported into Lidarr
 					LidarrTaskStatusCheck
 					CheckLidarrBeforeImport "$checkLidarrAlbumId"
 					if [ "$alreadyImported" == "true" ]; then
-						log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
+						log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
 						continue
 					fi
 				else
-					log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Deezer :: NOT FOUND!"
+					log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Deezer :: NOT FOUND!"
 				fi
 			fi
 		fi
@@ -1527,43 +1527,43 @@ SearchProcess () {
 		LidarrTaskStatusCheck
 		CheckLidarrBeforeImport "$checkLidarrAlbumId"
 		if [ "$alreadyImported" == "true" ]; then
-			log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
+			log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
 			continue
 		fi
 				
-		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Album Not found"
-		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Marking Album as notfound"
+		log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Album Not found"
+		log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Marking Album as notfound"
 		if [ ! -f "/config/extended/logs/notfound/$wantedAlbumId--$lidarrArtistForeignArtistId--$lidarrAlbumForeignAlbumId" ]; then
 			touch "/config/extended/logs/notfound/$wantedAlbumId--$lidarrArtistForeignArtistId--$lidarrAlbumForeignAlbumId"
 			chmod 777 "/config/extended/logs/notfound/$wantedAlbumId--$lidarrArtistForeignArtistId--$lidarrAlbumForeignAlbumId"
 		fi
-		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Search Complete..." 
+		log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Search Complete..." 
 	done
 }
 
 GetDeezerAlbumInfo () {
 	until false
 	do
-		log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: Getting Album info..."
+		log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: Getting Album info..."
 		if [ ! -f "/config/extended/cache/deezer/$1.json" ]; then
 			curl -s "https://api.deezer.com/album/$1" -o "/config/extended/cache/deezer/$1.json"
 			sleep $sleepTimer
 		fi
 		if [ -f "/config/extended/cache/deezer/$1.json" ]; then
 			if jq -e . >/dev/null 2>&1 <<<"$(cat /config/extended/cache/deezer/$1.json)"; then
-				log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: Album info downloaded and verified..."
+				log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: Album info downloaded and verified..."
 				chmod 777 /config/extended/cache/deezer/$1.json
 				albumInfoVerified=true
 				break
 			else
-				log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: Error getting album information"
+				log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: Error getting album information"
 				if [ -f "/config/extended/cache/deezer/$1.json" ]; then
 					rm "/config/extended/cache/deezer/$1.json"
 				fi
-				log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: Retrying..."
+				log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: Retrying..."
 			fi
 		else
-			log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: ERROR :: Download Failed"
+			log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: ERROR :: Download Failed"
 		fi
 	done
 
@@ -1595,13 +1595,13 @@ ArtistDeezerSearch () {
 		type="Clean"
 	fi
 	
-	log "$1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Deezer :: $type :: $lidarrReleaseTitle :: Searching $2... (Track Count: $lidarrAlbumReleasesMinTrackCount-$lidarrAlbumReleasesMaxTrackCount)..."		
-	log "$1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Deezer :: $type :: $lidarrReleaseTitle :: Filtering results by lyric type and \"$lidarrAlbumReleaseTitleFirstWord\"..."
+	log "$1 :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Deezer :: $type :: $lidarrReleaseTitle :: Searching $2... (Track Count: $lidarrAlbumReleasesMinTrackCount-$lidarrAlbumReleasesMaxTrackCount)..."		
+	log "$1 :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Deezer :: $type :: $lidarrReleaseTitle :: Filtering results by lyric type and \"$lidarrAlbumReleaseTitleFirstWord\"..."
 	deezerArtistAlbumsData=$(cat "/config/extended/cache/deezer/$2-albums.json" | jq -r .data[])
 	deezerArtistAlbumsIds=$(echo "${deezerArtistAlbumsData}" | jq -r "select(.explicit_lyrics=="$3") | select(.title | test(\"^$lidarrAlbumReleaseTitleFirstWord\";\"i\")) | .id")
 
 	resultsCount=$(echo "$deezerArtistAlbumsIds" | wc -l)
-	log "$1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Deezer :: $type :: $lidarrReleaseTitle :: $resultsCount search results found"
+	log "$1 :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Deezer :: $type :: $lidarrReleaseTitle :: $resultsCount search results found"
 	for deezerAlbumID in $(echo "$deezerArtistAlbumsIds"); do
 		deezerAlbumData="$(echo "$deezerArtistAlbumsData" | jq -r "select(.id==$deezerAlbumID)")"
 		deezerAlbumTitle="$(echo "$deezerAlbumData" | jq -r ".title")"
@@ -1632,14 +1632,14 @@ ArtistDeezerSearch () {
 			continue
 		fi
 		
-		log "$1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Deezer :: $type :: $lidarrReleaseTitle :: $lidarrAlbumReleaseTitleClean vs $deezerAlbumTitleClean :: Checking for Match..."
-		log "$1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Deezer :: $type :: $lidarrReleaseTitle :: $lidarrAlbumReleaseTitleClean vs $deezerAlbumTitleClean :: Calculating Similarity..."
+		log "$1 :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Deezer :: $type :: $lidarrReleaseTitle :: $lidarrAlbumReleaseTitleClean vs $deezerAlbumTitleClean :: Checking for Match..."
+		log "$1 :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Deezer :: $type :: $lidarrReleaseTitle :: $lidarrAlbumReleaseTitleClean vs $deezerAlbumTitleClean :: Calculating Similarity..."
 		diff=$(levenshtein "${lidarrAlbumReleaseTitleClean,,}" "${deezerAlbumTitleClean,,}" 2>/dev/null)
 		if [ "$diff" -le "$matchDistance" ]; then
-			log "$1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Deezer :: $type :: $lidarrReleaseTitle :: $lidarrAlbumReleaseTitleClean vs $deezerAlbumTitleClean :: Deezer MATCH Found :: Calculated Difference = $diff"
+			log "$1 :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Deezer :: $type :: $lidarrReleaseTitle :: $lidarrAlbumReleaseTitleClean vs $deezerAlbumTitleClean :: Deezer MATCH Found :: Calculated Difference = $diff"
 
 			# Execute Download
-			log "$1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Deezer  :: $type :: $lidarrReleaseTitle :: Downloading $deezerAlbumTrackCount Tracks :: $deezerAlbumTitle ($downloadedReleaseYear)"
+			log "$1 :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Deezer  :: $type :: $lidarrReleaseTitle :: Downloading $deezerAlbumTrackCount Tracks :: $deezerAlbumTitle ($downloadedReleaseYear)"
 			
 			DownloadProcess "$deezerAlbumID" "DEEZER" "$downloadedReleaseYear" "$deezerAlbumTitle" "$deezerAlbumTrackCount"
 
@@ -1655,8 +1655,8 @@ ArtistDeezerSearch () {
 	if [ "$alreadyImported" == "true" ]; then
 		return
 	else
-		log "$1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Deezer :: $type :: $lidarrReleaseTitle :: ERROR :: Albums found, but none matching search criteria..."
-		log "$1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Deezer :: $type :: $lidarrReleaseTitle :: ERROR :: Album not found..."
+		log "$1 :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Deezer :: $type :: $lidarrReleaseTitle :: ERROR :: Albums found, but none matching search criteria..."
+		log "$1 :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Deezer :: $type :: $lidarrReleaseTitle :: ERROR :: Album not found..."
 	fi
 	
 }
@@ -1676,7 +1676,7 @@ FuzzyDeezerSearch () {
 		mkdir -p /config/extended/cache/deezer
 	fi
 
-	log "$1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Deezer :: $type :: $lidarrReleaseTitle :: Searching... (Track Count: $lidarrAlbumReleasesMinTrackCount-$lidarrAlbumReleasesMaxTrackCount)"
+	log "$1 :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Deezer :: $type :: $lidarrReleaseTitle :: Searching... (Track Count: $lidarrAlbumReleasesMinTrackCount-$lidarrAlbumReleasesMaxTrackCount)"
 
 	deezerSearch=""
 	if [ "$lidarrArtistForeignArtistId" == "89ad4ac3-39f7-470e-963a-56509c546377" ]; then
@@ -1687,7 +1687,7 @@ FuzzyDeezerSearch () {
 		deezerSearch=$(curl -s "https://api.deezer.com/search?q=artist:%22${albumArtistNameSearch}%22%20album:%22${albumTitleSearch}%22&strict=on&limit=20" | jq -r ".data[]")
 	fi
 	resultsCount=$(echo "$deezerSearch" | jq -r .album.id | sort -u | wc -l)
-	log "$1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Deezer :: $type :: $lidarrReleaseTitle :: $resultsCount search results found"
+	log "$1 :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Deezer :: $type :: $lidarrReleaseTitle :: $resultsCount search results found"
 	if [ ! -z "$deezerSearch" ]; then
 		for deezerAlbumID in $(echo "$deezerSearch" | jq -r .album.id | sort -u); do
 			deezerAlbumData="$(echo "$deezerSearch" | jq -r ".album | select(.id==$deezerAlbumID)")"
@@ -1726,12 +1726,12 @@ FuzzyDeezerSearch () {
 				continue
 			fi
 
-			log "$1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Deezer :: $type :: $lidarrReleaseTitle :: $lidarrAlbumReleaseTitleClean vs $deezerAlbumTitleClean :: Checking for Match..."
-			log "$1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Deezer :: $type :: $lidarrReleaseTitle :: $lidarrAlbumReleaseTitleClean vs $deezerAlbumTitleClean :: Calculating Similarity..."
+			log "$1 :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Deezer :: $type :: $lidarrReleaseTitle :: $lidarrAlbumReleaseTitleClean vs $deezerAlbumTitleClean :: Checking for Match..."
+			log "$1 :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Deezer :: $type :: $lidarrReleaseTitle :: $lidarrAlbumReleaseTitleClean vs $deezerAlbumTitleClean :: Calculating Similarity..."
 			diff=$(levenshtein "${lidarrAlbumReleaseTitleClean,,}" "${deezerAlbumTitleClean,,}" 2>/dev/null)
 			if [ "$diff" -le "$matchDistance" ]; then
-				log "$1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Deezer :: $type :: $lidarrReleaseTitle :: $lidarrAlbumReleaseTitleClean vs $deezerAlbumTitleClean :: Deezer MATCH Found :: Calculated Difference = $diff"
-				log "$1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Deezer :: $type :: $lidarrReleaseTitle :: Downloading $deezerAlbumTrackCount Tracks :: $deezerAlbumTitle ($downloadedReleaseYear)"
+				log "$1 :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Deezer :: $type :: $lidarrReleaseTitle :: $lidarrAlbumReleaseTitleClean vs $deezerAlbumTitleClean :: Deezer MATCH Found :: Calculated Difference = $diff"
+				log "$1 :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Deezer :: $type :: $lidarrReleaseTitle :: Downloading $deezerAlbumTrackCount Tracks :: $deezerAlbumTitle ($downloadedReleaseYear)"
 				
 				DownloadProcess "$deezerAlbumID" "DEEZER" "$downloadedReleaseYear" "$deezerAlbumTitle" "$deezerAlbumTrackCount"
 
@@ -1743,9 +1743,9 @@ FuzzyDeezerSearch () {
 				fi
 			fi
 		done
-		log "$1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Deezer :: $type :: $lidarrReleaseTitle :: ERROR :: Results found, but none matching search criteria..."
+		log "$1 :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Deezer :: $type :: $lidarrReleaseTitle :: ERROR :: Results found, but none matching search criteria..."
 	else
-		log "$1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Deezer :: $type :: $lidarrReleaseTitle :: ERROR :: No results found via Fuzzy Search..."
+		log "$1 :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Deezer :: $type :: $lidarrReleaseTitle :: ERROR :: No results found via Fuzzy Search..."
 	fi
 	
 }
@@ -1778,19 +1778,19 @@ ArtistTidalSearch () {
 	fi
 
 
-	log "$1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Tidal :: $type :: $lidarrReleaseTitle :: Searching $2... (Track Count: $lidarrAlbumReleasesMinTrackCount-$lidarrAlbumReleasesMaxTrackCount)..."
+	log "$1 :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Tidal :: $type :: $lidarrReleaseTitle :: Searching $2... (Track Count: $lidarrAlbumReleasesMinTrackCount-$lidarrAlbumReleasesMaxTrackCount)..."
 	tidalArtistAlbumsData=$(cat "/config/extended/cache/tidal/$2-albums.json" | jq -r ".items | sort_by(.numberOfTracks) | sort_by(.explicit) | reverse |.[] | select((.numberOfTracks <= $lidarrAlbumReleasesMaxTrackCount) and .numberOfTracks >= $lidarrAlbumReleasesMinTrackCount)")
 
-	log "$1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Tidal :: $type :: $lidarrReleaseTitle :: Filtering results by lyric type, track count and \"$lidarrAlbumReleaseTitleFirstWord\""
+	log "$1 :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Tidal :: $type :: $lidarrReleaseTitle :: Filtering results by lyric type, track count and \"$lidarrAlbumReleaseTitleFirstWord\""
 	tidalArtistAlbumsIds=$(echo "${tidalArtistAlbumsData}" | jq -r "select(.explicit=="$3") | select(.title | test(\"^$lidarrAlbumReleaseTitleFirstWord\";\"i\")) | .id")
 
 	if [ -z "$tidalArtistAlbumsIds" ]; then
-		log "$1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Tidal :: $type :: $lidarrReleaseTitle :: ERROR :: No search results found..."
+		log "$1 :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Tidal :: $type :: $lidarrReleaseTitle :: ERROR :: No search results found..."
 		return
 	fi
 
 	searchResultCount=$(echo "$tidalArtistAlbumsIds" | wc -l)
-	log "$1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Tidal :: $type :: $lidarrReleaseTitle :: $searchResultCount search results found"
+	log "$1 :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Tidal :: $type :: $lidarrReleaseTitle :: $searchResultCount search results found"
 	for tidalArtistAlbumId in $(echo $tidalArtistAlbumsIds); do
 			
 		tidalArtistAlbumData=$(echo "$tidalArtistAlbumsData" | jq -r "select(.id=="$tidalArtistAlbumId")")
@@ -1811,14 +1811,14 @@ ArtistTidalSearch () {
 			continue
 		fi
 
-		log "$1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Tidal :: $type :: $lidarrReleaseTitle :: $lidarrAlbumReleaseTitleClean vs $tidalAlbumTitleClean :: Checking for Match..."
-		log "$1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Tidal :: $type :: $lidarrReleaseTitle :: $lidarrAlbumReleaseTitleClean vs $tidalAlbumTitleClean :: Calculating Similarity..."
+		log "$1 :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Tidal :: $type :: $lidarrReleaseTitle :: $lidarrAlbumReleaseTitleClean vs $tidalAlbumTitleClean :: Checking for Match..."
+		log "$1 :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Tidal :: $type :: $lidarrReleaseTitle :: $lidarrAlbumReleaseTitleClean vs $tidalAlbumTitleClean :: Calculating Similarity..."
 		diff=$(levenshtein "${lidarrAlbumReleaseTitleClean,,}" "${tidalAlbumTitleClean,,}" 2>/dev/null)
 		if [ "$diff" -le "$matchDistance" ]; then
-			log "$1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Tidal :: $type :: $lidarrReleaseTitle :: $lidarrAlbumReleaseTitleClean vs $tidalAlbumTitleClean :: Tidal MATCH Found :: Calculated Difference = $diff"
+			log "$1 :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Tidal :: $type :: $lidarrReleaseTitle :: $lidarrAlbumReleaseTitleClean vs $tidalAlbumTitleClean :: Tidal MATCH Found :: Calculated Difference = $diff"
 
 			# Execute Download
-			log "$1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Tidal :: $type :: $lidarrReleaseTitle :: Downloading $downloadedTrackCount Tracks :: $downloadedAlbumTitle ($downloadedReleaseYear)"
+			log "$1 :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Tidal :: $type :: $lidarrReleaseTitle :: Downloading $downloadedTrackCount Tracks :: $downloadedAlbumTitle ($downloadedReleaseYear)"
 			
 			DownloadProcess "$tidalArtistAlbumId" "TIDAL" "$downloadedReleaseYear" "$downloadedAlbumTitle" "$downloadedTrackCount"
 
@@ -1829,15 +1829,15 @@ ArtistTidalSearch () {
 				break
 			fi
 		else
-			log "$1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Tidal :: $type :: $lidarrReleaseTitle :: $lidarrAlbumReleaseTitleClean vs $tidalAlbumTitleClean :: Tidal Match Not Found :: Calculated Difference ($diff) greater than 5"
+			log "$1 :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Tidal :: $type :: $lidarrReleaseTitle :: $lidarrAlbumReleaseTitleClean vs $tidalAlbumTitleClean :: Tidal Match Not Found :: Calculated Difference ($diff) greater than 5"
 		fi
 	done
 
 	if [ "$alreadyImported" == "true" ]; then
 		return
 	else
-		log "$1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Tidal :: $type :: $lidarrReleaseTitle :: ERROR :: Albums found, but none matching search criteria..."	
-		log "$1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Tidal :: $type :: $lidarrReleaseTitle :: ERROR :: Album not found"
+		log "$1 :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Tidal :: $type :: $lidarrReleaseTitle :: ERROR :: Albums found, but none matching search criteria..."	
+		log "$1 :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Artist Search :: Tidal :: $type :: $lidarrReleaseTitle :: ERROR :: Album not found"
 	fi
 	
 }
@@ -1853,7 +1853,7 @@ FuzzyTidalSearch () {
 		type="Clean"
 	fi
 
-	log "$1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Tidal :: $type :: $lidarrReleaseTitle :: Searching... (Track Count: $lidarrAlbumReleasesMinTrackCount-$lidarrAlbumReleasesMaxTrackCount)..."
+	log "$1 :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Tidal :: $type :: $lidarrReleaseTitle :: Searching... (Track Count: $lidarrAlbumReleasesMinTrackCount-$lidarrAlbumReleasesMaxTrackCount)..."
 	
 	if [ "$lidarrArtistForeignArtistId" == "89ad4ac3-39f7-470e-963a-56509c546377" ]; then
 		# Search without Artist for VA albums
@@ -1865,7 +1865,7 @@ FuzzyTidalSearch () {
 	sleep $sleepTimer
 	tidalSearch=$(echo "$tidalSearch" | jq -r "select(.title | test(\"^$lidarrAlbumReleaseTitleFirstWord\";\"i\"))")
 	searchResultCount=$(echo "$tidalSearch" | jq -r ".id" | sort -u | wc -l)
-	log "$1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Tidal :: $type :: $lidarrReleaseTitle :: $searchResultCount search results found ($lidarrAlbumReleaseTitleFirstWord)"
+	log "$1 :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Tidal :: $type :: $lidarrReleaseTitle :: $searchResultCount search results found ($lidarrAlbumReleaseTitleFirstWord)"
 	if [ ! -z "$tidalSearch" ]; then
 		for tidalAlbumID in $(echo "$tidalSearch" | jq -r .id | sort -u); do
 			tidalAlbumData="$(echo "$tidalSearch" | jq -r "select(.id==$tidalAlbumID)")"
@@ -1886,12 +1886,12 @@ FuzzyTidalSearch () {
 				continue
 			fi
 
-			log "$1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Tidal :: $type :: $lidarrReleaseTitle :: $lidarrAlbumReleaseTitleClean vs $tidalAlbumTitleClean :: Checking for Match..."
-			log "$1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Tidal :: $type :: $lidarrReleaseTitle :: $lidarrAlbumReleaseTitleClean vs $tidalAlbumTitleClean :: Calculating Similarity..."
+			log "$1 :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Tidal :: $type :: $lidarrReleaseTitle :: $lidarrAlbumReleaseTitleClean vs $tidalAlbumTitleClean :: Checking for Match..."
+			log "$1 :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Tidal :: $type :: $lidarrReleaseTitle :: $lidarrAlbumReleaseTitleClean vs $tidalAlbumTitleClean :: Calculating Similarity..."
 			diff=$(levenshtein "${lidarrAlbumReleaseTitleClean,,}" "${tidalAlbumTitleClean,,}" 2>/dev/null)
 			if [ "$diff" -le "$matchDistance" ]; then
-				log "$1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Tidal :: $type :: $lidarrReleaseTitle :: $lidarrAlbumReleaseTitleClean vs $tidalAlbumTitleClean :: Tidal MATCH Found :: Calculated Difference = $diff"
-				log "$1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Tidal :: $type :: $lidarrReleaseTitle :: Downloading $downloadedTrackCount Tracks :: $tidalAlbumTitle ($downloadedReleaseYear)"
+				log "$1 :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Tidal :: $type :: $lidarrReleaseTitle :: $lidarrAlbumReleaseTitleClean vs $tidalAlbumTitleClean :: Tidal MATCH Found :: Calculated Difference = $diff"
+				log "$1 :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Tidal :: $type :: $lidarrReleaseTitle :: Downloading $downloadedTrackCount Tracks :: $tidalAlbumTitle ($downloadedReleaseYear)"
 				
 				DownloadProcess "$tidalAlbumID" "TIDAL" "$downloadedReleaseYear" "$tidalAlbumTitle" "$downloadedTrackCount"
 				
@@ -1903,12 +1903,12 @@ FuzzyTidalSearch () {
 				fi
 
 			else
-				log "$1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Tidal :: $type :: $lidarrReleaseTitle :: $lidarrAlbumReleaseTitleClean vs $tidalAlbumTitleClean :: Tidal Match Not Found :: Calculated Difference ($diff) greater than 5"
+				log "$1 :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Tidal :: $type :: $lidarrReleaseTitle :: $lidarrAlbumReleaseTitleClean vs $tidalAlbumTitleClean :: Tidal Match Not Found :: Calculated Difference ($diff) greater than 5"
 			fi
 		done
-		log "$1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Tidal :: $type :: $lidarrReleaseTitle :: ERROR :: Albums found, but none matching search criteria..."
+		log "$1 :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Tidal :: $type :: $lidarrReleaseTitle :: ERROR :: Albums found, but none matching search criteria..."
 	else
-		log "$1 :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Tidal :: $type :: $lidarrReleaseTitle :: ERROR :: No results found..."
+		log "$1 :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Fuzzy Search :: Tidal :: $type :: $lidarrReleaseTitle :: ERROR :: No results found..."
 	fi	
 }
 
@@ -1918,15 +1918,15 @@ CheckLidarrBeforeImport () {
 	alreadyImported=false		
 	checkLidarrAlbumData="$(curl -s "$lidarrUrl/api/v1/album/$1?apikey=${lidarrApiKey}")"
 	checkLidarrAlbumPercentOfTracks=$(echo "$checkLidarrAlbumData" | jq -r ".statistics.percentOfTracks")
-	log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Checking Lidarr for existing files"
-	log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: $checkLidarrAlbumPercentOfTracks% Tracks found"
+	log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Checking Lidarr for existing files"
+	log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: $checkLidarrAlbumPercentOfTracks% Tracks found"
 	if [ "$checkLidarrAlbumPercentOfTracks" == "null" ]; then
 		checkLidarrAlbumPercentOfTracks=0
 		return
 	fi
 	if [ "${checkLidarrAlbumPercentOfTracks%%.*}" -ge "100" ]; then
 		if [ "$wantedAlbumListSource" == "missing" ]; then
-			log "$processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported Album (Missing), skipping..."
+			log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported Album (Missing), skipping..."
 			alreadyImported=true
 			return
 		fi
@@ -1952,9 +1952,9 @@ AddRelatedArtists () {
 		deezerArtistUrl=$(echo "${lidarrArtistData}" | jq -r ".links | .[] | select(.name==\"deezer\") | .url")
 		deezerArtistIds=($(echo "$deezerArtistUrl" | grep -o '[[:digit:]]*' | sort -u))
 		lidarrArtistMonitored=$(echo "${lidarrArtistData}" | jq -r ".monitored")
-		log "$artistNumber of $lidarrArtistTotal :: $lidarrArtistName :: Adding Related Artists..."
+		log "$artistNumber of $lidarrArtistTotal :: $wantedAlbumListSource :: $lidarrArtistName :: Adding Related Artists..."
 		if [ "$lidarrArtistMonitored" == "false" ]; then
-			log "$artistNumber of $lidarrArtistTotal :: $lidarrArtistName :: Artist is not monitored :: skipping..."
+			log "$artistNumber of $lidarrArtistTotal :: $wantedAlbumListSource :: $lidarrArtistName :: Artist is not monitored :: skipping..."
 			continue
 		fi
 
@@ -1964,7 +1964,7 @@ AddRelatedArtists () {
 			sleep $sleepTimer
 			getDeezerArtistsIds=($(echo $deezerRelatedArtistData | jq -r .id))
 			getDeezerArtistsIdsCount=$(echo $deezerRelatedArtistData | jq -r .id | wc -l)
-			description="$lidarrArtistName Related Artists"
+			description="$wantedAlbumListSource :: $lidarrArtistName Related Artists"
 			AddDeezerArtistToLidarr			
 		done
 	done
@@ -2000,11 +2000,11 @@ LidarrMissingAlbumSearch () {
 		lidarrArtistMusicbrainzId=$(echo $lidarrArtistData | jq -r .foreignArtistId)
 		if [ -d /config/extended/logs/searched/lidarr/artist ]; then
 			if [ -f /config/extended/logs/searched/lidarr/artist/$lidarrArtistMusicbrainzId ]; then
-				log "$processCount of $lidarrArtistIdsCount :: Previously Notified Lidarr to search for \"$lidarrArtistName\" :: Skipping..."
+				log "$processCount of $lidarrArtistIdsCount :: Previously Notified Lidarr to search for \"$wantedAlbumListSource :: $lidarrArtistName\" :: Skipping..."
 				continue
 			fi
 		fi
-		log "$processCount of $lidarrArtistIdsCount :: Notified Lidarr to search for \"$lidarrArtistName\""
+		log "$processCount of $lidarrArtistIdsCount :: Notified Lidarr to search for \"$wantedAlbumListSource :: $lidarrArtistName\""
 		startLidarrArtistSearch=$(curl -s "$lidarrUrl/api/v1/command" -X POST -H "Content-Type: application/json" -H "X-Api-Key: $lidarrApiKey"  --data-raw "{\"name\":\"ArtistSearch\",\"artistId\":$lidarrArtistId}")
 		if [ ! -d /config/extended/logs/searched/lidarr/artist ]; then
 			mkdir -p /config/extended/logs/searched/lidarr/artist
