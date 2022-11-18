@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-version=1.0.012
+version=1.0.013
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -139,6 +139,13 @@ ProcessWithBeets () {
 	log "$1 :: Finished in $(($duration / 60 )) minutes and $(($duration % 60 )) seconds!"
 }
 
+MetadataPostProcess () {
+	# Process item with PlexNotify.bash if plexToken is configured
+	log "Using MetadataPostProcess.bash to update Plex...."
+	bash /config/extended/scripts/MetadataPostProcess.bash "$1"
+
+}
+
 NotifyPlex () {
 	# Process item with PlexNotify.bash if plexToken is configured
 	if [ ! -z "$plexToken" ]; then
@@ -149,5 +156,6 @@ NotifyPlex () {
 }
 
 ProcessWithBeets "$getFolderPath"
+MetadataPostProcess "$lidarr_album_id"
 NotifyPlex "$getAlbumArtist" "$getAlbumArtistPath"
 exit
