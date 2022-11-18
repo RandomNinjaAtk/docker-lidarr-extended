@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion=1.0.014
+scriptVersion=1.0.015
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -10,6 +10,10 @@ if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrApiKey="$(cat /config/config.xml | xq | jq -r .Config.ApiKey)"
 	lidarrPort="$(cat /config/config.xml | xq | jq -r .Config.Port)"
 	lidarrUrl="http://127.0.0.1:${lidarrPort}${lidarrUrlBase}"
+fi
+
+if [ -z "$lidarr_album_id" ]; then
+	lidarr_album_id="$1"
 fi
 
 # auto-clean up log file to reduce space usage
