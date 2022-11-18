@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-version=1.0.008
+version=1.0.009
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -88,6 +88,7 @@ ProcessWithBeets () {
 			metaflac --remove-tag=ALBUM_ARTIST "$file"
 			metaflac --remove-tag="ALBUM ARTIST" "$file"
 			metaflac --remove-tag=ARTISTSORT "$file"
+			metaflac --remove-tag=COMPOSERSORT "$file"
 			metaflac --set-tag=ALBUMARTIST="$getAlbumArtist" "$file"
 			if [ ! -z "$getArtistCredit" ]; then
         			metaflac --set-tag=ARTIST="$getArtistCredit" "$file"
