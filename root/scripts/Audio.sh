@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.284"
+scriptVersion="1.0.285"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -764,6 +764,7 @@ DownloadProcess () {
 	chmod -R 777 "$downloadPath"/complete
 	
 	if [ -d "$downloadPath/complete/$downloadedAlbumFolder" ]; then
+		cutoffNotify="true"
 		NotifyLidarrForImport "$downloadPath/complete/$downloadedAlbumFolder"
 		
 		LidarrTaskStatusCheck
@@ -1183,6 +1184,7 @@ SearchProcess () {
 		lidarrAlbumType=$(echo "$lidarrAlbumData" | jq -r ".albumType")
 		lidarrAlbumTitle=$(echo "$lidarrAlbumData" | jq -r ".title")
 		lidarrAlbumForeignAlbumId=$(echo "$lidarrAlbumData" | jq -r ".foreignAlbumId")
+		cutoffNotify="false"
 				
 		if [ -f "/config/extended/logs/notfound/$wantedAlbumId--$lidarrArtistForeignArtistId--$lidarrAlbumForeignAlbumId" ]; then
 			log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrAlbumType :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: Previously Not Found, skipping..."
@@ -1929,6 +1931,14 @@ CheckLidarrBeforeImport () {
 			log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported Album (Missing), skipping..."
 			alreadyImported=true
 			return
+		fi
+		if [ "$wantedAlbumListSource" == "cutoff" ]; then
+			if [ "$cutoffNotify" != "true" ]; then
+				log "$processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported Album (CutOff), skipping..."
+				alreadyImported=true
+				cutoffNotiy="true"
+				return
+			fi
 		fi
 	fi
 }
