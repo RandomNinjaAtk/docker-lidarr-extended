@@ -63,6 +63,7 @@ RUN \
 		pyacoustid \
 		requests \
 		beets \
+		mutagen \
 		r128gain \
 		tidal-dl \
 		deemix && \
