@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-version=1.0.013
+version=1.0.014
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -141,7 +141,7 @@ ProcessWithBeets () {
 
 MetadataPostProcess () {
 	# Process item with PlexNotify.bash if plexToken is configured
-	log "Using MetadataPostProcess.bash to update Plex...."
+	log "Using MetadataPostProcess.bash to extract embedded lyrics & artwork...."
 	bash /config/extended/scripts/MetadataPostProcess.bash "$1"
 
 }
