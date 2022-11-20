@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.287"
+scriptVersion="1.0.288"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -405,7 +405,7 @@ TidalClientSetup () {
 	
 	if [ -d /config/extended/cache/tidal ]; then
 		log "TIDAL :: Purging album list cache..."
-		find /config/extended/cache/tidal -type f -name "*.json" -delete &>/dev/null
+		rm /config/extended/cache/tidal/*-albums.json &>/dev/null
 	fi
 	
 	if [ ! -d "$downloadPath/incomplete" ]; then
@@ -1127,7 +1127,7 @@ GetMissingCutOffList () {
 		done
 	fi
 	log "Filtering Missing Album IDs by removing previously searched Album IDs (/config/extended/notfound/<files>)"
-	lidarrMissingTotalRecords=$(find /config/extended/cache/lidarr/list -type f -iname "*-missing" | wc -l)
+	lidarrMissingTotalRecords=$(ls /config/extended/cache/lidarr/list/*-missing | wc -l)
 	log "${lidarrMissingTotalRecords} missing albums found to process!"
 
 	# Get cutoff album list
@@ -1155,7 +1155,7 @@ GetMissingCutOffList () {
 		done
 	fi
 
-	lidarrCutoffTotalRecords=$(find /config/extended/cache/lidarr/list -type f -iname "*-cutoff" | wc -l)
+	lidarrCutoffTotalRecords=$(ls /config/extended/cache/lidarr/list/*-cutoff | wc -l)
 	log "Filtering CutOff Album IDs by removing previously searched Album IDs (/config/extended/notfound/<files>)"
 	log "${lidarrCutoffTotalRecords} CutOff ablums found to process!"
 	
