@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.288"
+scriptVersion="1.0.289"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -997,7 +997,7 @@ DeemixClientSetup () {
 	
 	if [ -d /config/extended/cache/deezer ]; then
 		log "DEEZER :: Purging album list cache..."
-		find /config/extended/cache/deezer -type f -name "*-albums.json" -delete
+		rm /config/extended/cache/deezer/*-albums.json &>/dev/null
 	fi
 	
 	if [ ! -d "$downloadPath/incomplete" ]; then
@@ -1034,7 +1034,6 @@ DeezerClientTest () {
 	fi
 
 }
-
 
 LidarrRootFolderCheck () {
 	if curl -s "$lidarrUrl/api/v1/rootFolder" -H "X-Api-Key: ${lidarrApiKey}" | sed '1q' | grep "\[\]" | read; then
@@ -1081,29 +1080,7 @@ GetMissingCutOffList () {
 
 	log "FINDING MISSING ALBUMS :: sorted by $searchSort"
 
-	if [ "$lidarrMissingTotalRecords" -le "1000" ]; then
-		amountPerPull="500"
-	elif [ "$lidarrMissingTotalRecords" -le "10000" ]; then
-		amountPerPull="1000"
-	elif [ "$lidarrMissingTotalRecords" -le "20000" ]; then
-		amountPerPull="2000"
-	elif [ "$lidarrMissingTotalRecords" -le "30000" ]; then
-		amountPerPull="3000"
-	elif [ "$lidarrMissingTotalRecords" -le "40000" ]; then
-		amountPerPull="4000"
-	elif [ "$lidarrMissingTotalRecords" -le "50000" ]; then
-		amountPerPull="5000"
-	elif [ "$lidarrMissingTotalRecords" -le "60000" ]; then
-		amountPerPull="6000"
-	elif [ "$lidarrMissingTotalRecords" -le "70000" ]; then
-		amountPerPull="7000"
-	elif [ "$lidarrMissingTotalRecords" -le "80000" ]; then
-		amountPerPull="8000"
-	elif [ "$lidarrMissingTotalRecords" -le "90000" ]; then
-		amountPerPull="9000"
-	else
-		amountPerPull="10000"
-	fi
+	amountPerPull="25"
 
 	log "$lidarrMissingTotalRecords Missing Albums Found!"
 	log "Getting Missing Album IDs"
@@ -1124,11 +1101,20 @@ GetMissingCutOffList () {
 					touch /config/extended/cache/lidarr/list/${lidarrRecordId}-missing
 				fi
 			done
+			
+			log "Filtering Missing Album IDs by removing previously searched Album IDs (/config/extended/notfound/<files>)"
+			lidarrMissingRecords=$(ls /config/extended/cache/lidarr/list | wc -l )
+			log "${lidarrMissingRecords} missing albums found to process!"
+			wantedListAlbumTotal=$lidarrMissingRecords
+
+			if [ ${lidarrMissingRecords} -gt 0 ]; then
+				log "Searching for $wantedListAlbumTotal items"
+				SearchProcess
+				rm /config/extended/cache/lidarr/list/*-missing
+			fi
 		done
 	fi
-	log "Filtering Missing Album IDs by removing previously searched Album IDs (/config/extended/notfound/<files>)"
-	lidarrMissingTotalRecords=$(ls /config/extended/cache/lidarr/list/*-missing | wc -l)
-	log "${lidarrMissingTotalRecords} missing albums found to process!"
+	
 
 	# Get cutoff album list
 	lidarrCutoffTotalRecords=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/wanted/cutoff?page=1&pagesize=1&sortKey=$searchOrder&sortDirection=$searchDirection&apikey=${lidarrApiKey}" | jq -r .totalRecords)
@@ -1152,16 +1138,20 @@ GetMissingCutOffList () {
 					touch /config/extended/cache/lidarr/list/${lidarrRecordId}-cutoff
 				fi
 			done
-		done
-	fi
 
-	lidarrCutoffTotalRecords=$(ls /config/extended/cache/lidarr/list/*-cutoff | wc -l)
-	log "Filtering CutOff Album IDs by removing previously searched Album IDs (/config/extended/notfound/<files>)"
-	log "${lidarrCutoffTotalRecords} CutOff ablums found to process!"
-	
-	wantedListAlbumTotal=$(( $lidarrMissingTotalRecords + $lidarrCutoffTotalRecords ))
-    
-	log "Searching for $wantedListAlbumTotal items"
+			lidarrCutoffRecords=$(ls /config/extended/cache/lidarr/list/*-cutoff | wc -l)
+			log "Filtering CutOff Album IDs by removing previously searched Album IDs (/config/extended/notfound/<files>)"
+			log "${lidarrCutoffRecords} CutOff ablums found to process!"
+			wantedListAlbumTotal=$lidarrCutoffRecords
+
+			if [ ${lidarrCutoffRecords} -gt 0 ]; then
+				log "Searching for $wantedListAlbumTotal items"
+				SearchProcess
+				rm /config/extended/cache/lidarr/list/*-cutoff
+			fi
+
+		done
+	fi    
 }
 
 SearchProcess () {
@@ -1914,7 +1904,6 @@ FuzzyTidalSearch () {
 	fi	
 }
 
-
 CheckLidarrBeforeImport () {
 
 	alreadyImported=false		
@@ -2120,7 +2109,6 @@ lidarrMissingAlbumArtistsData=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/arti
 
 if [ "$dlClientSource" == "deezer" ] || [ "$dlClientSource" == "tidal" ] || [ "$dlClientSource" == "both" ]; then
 	GetMissingCutOffList
-	SearchProcess	
 else
 	log "ERROR :: No valid dlClientSource set"
 	log "ERROR :: Expected configuration :: deezer or tidal or both"
