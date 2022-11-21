@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.290"
+scriptVersion="1.0.291"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -1062,9 +1062,6 @@ GetMissingCutOffList () {
 		chmod 777 /config/extended/logs/notfound
 	fi
 	
-	#get notfound log files list
-	getNotFound=$(ls /config/extended/logs/notfound)
-
 	# Configure searchSort preferences based on settings
 	if [ "$searchSort" == "date" ]; then
 		searchOrder="releaseDate"
@@ -1097,8 +1094,8 @@ GetMissingCutOffList () {
 			lidarrRecords=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/wanted/missing?page=$page&pagesize=$amountPerPull&sortKey=$searchOrder&sortDirection=$searchDirection&apikey=${lidarrApiKey}" | jq -r '.records[].id')
 			log "Filtering Missing Album IDs by removing previously searched Album IDs (/config/extended/notfound/<files>)"
 			for lidarrRecordId in $(echo $lidarrRecords); do
-				if ! echo "$getNotFound" | grep "^$lidarrRecordId--" | read; then
-					touch /config/extended/cache/lidarr/list/${lidarrRecordId}-missing
+				if [ ! -f /config/extended/logs/notfound/$lidarrRecordId--* ]; then
+					touch "/config/extended/cache/lidarr/list/${lidarrRecordId}-missing"
 				fi
 			done
 			
@@ -1136,7 +1133,7 @@ GetMissingCutOffList () {
 			log "Filtering CutOff Album IDs by removing previously searched Album IDs (/config/extended/notfound/<files>)"
 			
 			for lidarrRecordId in $(echo $lidarrRecords); do
-				if ! echo "$getNotFound" | grep "^$lidarrRecordId--" | read; then
+				if [ ! -f /config/extended/logs/notfound/$lidarrRecordId--* ]; then
 					touch /config/extended/cache/lidarr/list/${lidarrRecordId}-cutoff
 				fi
 			done
