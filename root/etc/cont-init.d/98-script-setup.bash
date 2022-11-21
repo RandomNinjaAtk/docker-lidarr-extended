@@ -31,7 +31,6 @@ fi
 # set permissions
 chmod 777 -R /usr/local/sma
 find /config/extended -type d -exec chmod 777 {} \;
-find /config/extended -type f -exec chmod 666 {} \;
 chmod -R 777 /config/extended/scripts
 chmod -R 777 /root
 
