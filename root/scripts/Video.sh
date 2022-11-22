@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.057"
+scriptVersion="1.0.058"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -75,10 +75,8 @@ log "1"; sleep 1
 
 
 Configuration () {
-	processstartid="$(ps -A -o pid,cmd|grep "start_video.sh" | grep -v grep | head -n 1 | awk '{print $1}')"
-	processdownloadid="$(ps -A -o pid,cmd|grep "video.sh" | grep -v grep | head -n 1 | awk '{print $1}')"
+	processdownloadid="$(ps -A -o pid,cmd|grep "Video.sh" | grep -v grep | head -n 1 | awk '{print $1}')"
 	log "To kill script, use the following command:"
-	log "kill -9 $processstartid"
 	log "kill -9 $processdownloadid"
 	sleep 2
 	
