@@ -7,3 +7,4 @@ for (( ; ; )); do
 	echo "AutoArtistAdder.bash script sleeping for 12 Hours..."
 	sleep 12h
 done
+exit
