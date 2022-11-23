@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.294"
+scriptVersion="1.0.295"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -310,37 +310,6 @@ TidalClientSetup () {
 	
 }
 
-TidalClientTest () { 
-	log "TIDAL :: tidal-dl client setup verification..."
-	i=0
-	while [ $i -lt 3 ]; do
-		i=$(( $i + 1 ))
-		TidaldlStatusCheck
-		tidal-dl -q Normal -o "$downloadPath"/incomplete -l "166356219"
-		downloadCount=$(find "$downloadPath"/incomplete -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
-		if [ "$downloadCount" -le "0" ]; then
-			continue
-		else
-			break
-		fi
-	done
-
-	if [ "$downloadCount" -le "0" ]; then
-		if [ -f /config/xdg/.tidal-dl.token.json ]; then
-			rm /config/xdg/.tidal-dl.token.json
-		fi
-		log "TIDAL :: ERROR :: Download failed"
-		log "TIDAL :: ERROR :: You will need to re-authenticate on next script run..."
-		log "TIDAL :: ERROR :: Exiting..."
-		rm -rf "$downloadPath"/incomplete/*
-		NotifyWebhook "Error" "TIDAL not authenticated but configured"
-		exit
-	else
-		rm -rf "$downloadPath"/incomplete/*
-		log "TIDAL :: Successfully Verified"
-	fi
-}
-
 TidaldlStatusCheck () {
 	until false
 	do
@@ -456,24 +425,46 @@ DownloadProcess () {
 
 		log "$page :: $wantedAlbumListSource :: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Download Attempt number $downloadTry"
 		if [ "$2" == "DEEZER" ]; then
-			if [ "$downloadTry" == "1" ]; then
-				DeezerClientTest
-			fi
+			
 			deemix -b $deemixQuality -p "$downloadPath"/incomplete "https://www.deezer.com/album/$1"
+			
 			if [ -d "/tmp/deemix-imgs" ]; then
 				rm -rf /tmp/deemix-imgs
+			fi
+
+			# Verify Client Works...
+			clientTestDlCount=$(find "$downloadPath"/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
+			if [ "$clientTestDlCount" -le "0" ]; then
+				log "DEEZER :: ERROR :: Download failed"
+				log "DEEZER :: ERROR :: Please review log for errors in client"
+				log "DEEZER :: ERROR :: Try updating your ARL Token to possibly resolve the issue..."
+				log "DEEZER :: ERROR :: Exiting..."
+				rm -rf "$downloadPath"/incomplete/*
+				NotifyWebhook "Error" "DEEZER not authenticated but configured"
+				exit
 			fi
 		fi
 
 		if [ "$2" == "TIDAL" ]; then
-			if [ "$downloadTry" == "1" ]; then
-				TidaldlStatusCheck
-				TidalClientTest
-			fi
 			TidaldlStatusCheck
+
 			tidal-dl -q $tidalQuality -o "$downloadPath/incomplete" -l "$1"
+
+			# Verify Client Works...
+			clientTestDlCount=$(find "$downloadPath"/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
+			if [ "$clientTestDlCount" -le "0" ]; then
+				if [ -f /config/xdg/.tidal-dl.token.json ]; then
+					rm /config/xdg/.tidal-dl.token.json
+				fi
+				log "TIDAL :: ERROR :: Download failed"
+				log "TIDAL :: ERROR :: You will need to re-authenticate on next script run..."
+				log "TIDAL :: ERROR :: Exiting..."
+				rm -rf "$downloadPath"/incomplete/*
+				NotifyWebhook "Error" "TIDAL not authenticated but configured"
+				exit
+			fi
 		fi
-	
+
 		find "$downloadPath/incomplete" -type f -iname "*.flac" -newer "/temp-download" -print0 | while IFS= read -r -d '' file; do
 			audioFlacVerification "$file"
 			if [ "$verifiedFlacFile" == "0" ]; then
@@ -897,29 +888,6 @@ DeemixClientSetup () {
 
 	#log "DEEZER :: Upgrade deemix to the latest..."
 	#pip install deemix --upgrade &>/dev/null
-
-}
-
-DeezerClientTest () {
-	log "DEEZER :: deemix client setup verification..."
-
-	deemix -b 128 -p "$downloadPath"/incomplete "https://www.deezer.com/album/197472472"
-	if [ -d "/tmp/deemix-imgs" ]; then
-		rm -rf /tmp/deemix-imgs
-	fi
-	downloadCount=$(find "$downloadPath"/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
-	if [ "$downloadCount" -le "0" ]; then
-		log "DEEZER :: ERROR :: Download failed"
-		log "DEEZER :: ERROR :: Please review log for errors in client"
-		log "DEEZER :: ERROR :: Try updating your ARL Token to possibly resolve the issue..."
-		log "DEEZER :: ERROR :: Exiting..."
-		rm -rf "$downloadPath"/incomplete/*
-		NotifyWebhook "Error" "DEEZER not authenticated but configured"
-		exit
-	else
-		rm -rf "$downloadPath"/incomplete/*
-		log "DEEZER :: Successfully Verified"
-	fi
 
 }
 
@@ -1793,8 +1761,7 @@ CheckLidarrBeforeImport () {
 
 	alreadyImported=false		
 	checkLidarrAlbumData="$(curl -s "$lidarrUrl/api/v1/album/$1?apikey=${lidarrApiKey}")"
-	checkLidarrAlbumFiles="$(curl -s "$lidarrUrl/api/v1/trackFile?albumId=$1?apikey=${lidarrApiKey}")"
-	checkLidarrAlbumQualityCutoffNotMet=$(echo "$checkLidarrAlbumData" | jq -r ".[].qualityCutoffNotMet")
+	checkLidarrAlbumPercentOfTracks=$(echo "$checkLidarrAlbumData" | jq -r ".statistics.percentOfTracks")
 	log "$page :: $wantedAlbumListSource :: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Checking Lidarr for existing files"
 	log "$page :: $wantedAlbumListSource :: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: $checkLidarrAlbumPercentOfTracks% Tracks found"
 	if [ "$checkLidarrAlbumPercentOfTracks" == "null" ]; then
@@ -1809,6 +1776,8 @@ CheckLidarrBeforeImport () {
 		fi
 
 		if [ "$wantedAlbumListSource" == "cutoff" ]; then
+			checkLidarrAlbumFiles="$(curl -s "$lidarrUrl/api/v1/trackFile?albumId=$1?apikey=${lidarrApiKey}")"
+			checkLidarrAlbumQualityCutoffNotMet=$(echo "$checkLidarrAlbumData" | jq -r ".[].qualityCutoffNotMet")
 			if echo "$checkLidarrAlbumQualityCutoffNotMet" | grep "true" | read; then
 				log "$page :: $wantedAlbumListSource :: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported Album (CutOff - $checkLidarrAlbumQualityCutoffNotMet), skipping..."
 				alreadyImported=true
