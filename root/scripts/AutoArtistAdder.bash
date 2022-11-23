@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.004"
+scriptVersion="1.0.005"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -114,6 +114,11 @@ AddDeezerArtistToLidarr () {
 			data=$(curl -s "$lidarrUrl/api/v1/search?term=lidarr%3A$musicbrainz_main_artist_id" -H "X-Api-Key: $lidarrApiKey" | jq -r ".[]")
 			artistName="$(echo "$data" | jq -r ".artist.artistName")"
 			foreignId="$(echo "$data" | jq -r ".foreignId")"
+			importListExclusionData=$(curl -s "$lidarrUrl/api/v1/importlistexclusion" -H "X-Api-Key: $lidarrApiKey" | jq -r ".[].foreignId")
+			if echo "$importListExclusionData" | grep "^${foreignId}$" | read; then
+				log "$currentprocess of $getDeezerArtistsIdsCount :: $deezerArtistName :: ERROR :: Artist is on import exclusion block list, skipping...."
+				continue
+			fi
 			data=$(curl -s "$lidarrUrl/api/v1/rootFolder" -H "X-Api-Key: $lidarrApiKey" | jq -r ".[]")
 			path="$(echo "$data" | jq -r ".path")"
 			qualityProfileId="$(echo "$data" | jq -r ".defaultQualityProfileId")"
@@ -274,6 +279,11 @@ AddTidalArtistToLidarr () {
 			data=$(curl -s "$lidarrUrl/api/v1/search?term=lidarr%3A$musicbrainz_main_artist_id" -H "X-Api-Key: $lidarrApiKey" | jq -r ".[]")
 			artistName="$(echo "$data" | jq -r ".artist.artistName")"
 			foreignId="$(echo "$data" | jq -r ".foreignId")"
+			importListExclusionData=$(curl -s "$lidarrUrl/api/v1/importlistexclusion" -H "X-Api-Key: $lidarrApiKey" | jq -r ".[].foreignId")
+			if echo "$importListExclusionData" | grep "^${foreignId}$" | read; then
+				log "$artistNumber of $lidarrArtistTotal :: $lidarrArtistName :: $currentprocess of $numberOfRelatedArtistsToAddPerArtist :: $serviceArtistName :: ERROR :: Artist is on import exclusion block list, skipping...."
+				continue
+			fi
 			data=$(curl -s "$lidarrUrl/api/v1/rootFolder" -H "X-Api-Key: $lidarrApiKey" | jq -r ".[]")
 			path="$(echo "$data" | jq -r ".path")"
 			qualityProfileId="$(echo "$data" | jq -r ".defaultQualityProfileId")"
