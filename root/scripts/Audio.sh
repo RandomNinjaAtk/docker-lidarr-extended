@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.293"
+scriptVersion="1.0.294"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -653,7 +653,6 @@ DownloadProcess () {
 	chmod -R 777 "$downloadPath"/complete
 	
 	if [ -d "$downloadPath/complete/$downloadedAlbumFolder" ]; then
-		cutoffNotify="true"
 		NotifyLidarrForImport "$downloadPath/complete/$downloadedAlbumFolder"
 		
 		LidarrTaskStatusCheck
@@ -1061,7 +1060,6 @@ SearchProcess () {
 		lidarrAlbumType=$(echo "$lidarrAlbumData" | jq -r ".albumType")
 		lidarrAlbumTitle=$(echo "$lidarrAlbumData" | jq -r ".title")
 		lidarrAlbumForeignAlbumId=$(echo "$lidarrAlbumData" | jq -r ".foreignAlbumId")
-		cutoffNotify="false"
 				
 		if [ -f "/config/extended/logs/notfound/$wantedAlbumId--$lidarrArtistForeignArtistId--$lidarrAlbumForeignAlbumId" ]; then
 			log "$page :: $wantedAlbumListSource :: $processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrAlbumType :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: Previously Not Found, skipping..."
@@ -1795,7 +1793,8 @@ CheckLidarrBeforeImport () {
 
 	alreadyImported=false		
 	checkLidarrAlbumData="$(curl -s "$lidarrUrl/api/v1/album/$1?apikey=${lidarrApiKey}")"
-	checkLidarrAlbumPercentOfTracks=$(echo "$checkLidarrAlbumData" | jq -r ".statistics.percentOfTracks")
+	checkLidarrAlbumFiles="$(curl -s "$lidarrUrl/api/v1/trackFile?albumId=$1?apikey=${lidarrApiKey}")"
+	checkLidarrAlbumQualityCutoffNotMet=$(echo "$checkLidarrAlbumData" | jq -r ".[].qualityCutoffNotMet")
 	log "$page :: $wantedAlbumListSource :: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Checking Lidarr for existing files"
 	log "$page :: $wantedAlbumListSource :: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: $checkLidarrAlbumPercentOfTracks% Tracks found"
 	if [ "$checkLidarrAlbumPercentOfTracks" == "null" ]; then
@@ -1808,11 +1807,11 @@ CheckLidarrBeforeImport () {
 			alreadyImported=true
 			return
 		fi
+
 		if [ "$wantedAlbumListSource" == "cutoff" ]; then
-			if [ "$cutoffNotify" == "true" ]; then
-				log "$page :: $wantedAlbumListSource :: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported Album (CutOff), skipping..."
+			if echo "$checkLidarrAlbumQualityCutoffNotMet" | grep "true" | read; then
+				log "$page :: $wantedAlbumListSource :: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported Album (CutOff - $checkLidarrAlbumQualityCutoffNotMet), skipping..."
 				alreadyImported=true
-				cutoffNotiy="false"
 				return
 			fi
 		fi
