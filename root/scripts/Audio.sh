@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.295"
+scriptVersion="1.0.296"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -1035,14 +1035,17 @@ SearchProcess () {
 		fi
 
 		if [ "$enableVideoScript" == "true" ]; then
-			if [ -d /config/extended/logs/video/complete ]; then
-				if [ ! -f "/config/extended/logs/video/complete/$lidarrArtistForeignArtistId" ]; then
+			# Skip Video Check for Various Artists album searches because videos are not supported...
+			if [ "$lidarrArtistForeignArtistId" != "89ad4ac3-39f7-470e-963a-56509c546377" ]; then
+				if [ -d /config/extended/logs/video/complete ]; then
+					if [ ! -f "/config/extended/logs/video/complete/$lidarrArtistForeignArtistId" ]; then
+						log "$page :: $wantedAlbumListSource :: $processNumber of $wantedListAlbumTotal :: $lidarrAlbumType :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: Skipping until all videos are processed for the artist..."
+						continue
+					fi
+				else
 					log "$page :: $wantedAlbumListSource :: $processNumber of $wantedListAlbumTotal :: $lidarrAlbumType :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: Skipping until all videos are processed for the artist..."
 					continue
 				fi
-			else
-				log "$page :: $wantedAlbumListSource :: $processNumber of $wantedListAlbumTotal :: $lidarrAlbumType :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: Skipping until all videos are processed for the artist..."
-				continue
 			fi
 		fi
 		
