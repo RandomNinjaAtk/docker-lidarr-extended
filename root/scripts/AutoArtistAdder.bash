@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.002"
+scriptVersion="1.0.003"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -22,7 +22,7 @@ musicbrainzMirror=https://musicbrainz.org
 #topLimit="3"
 #addRelatedArtists="true"
 #numberOfRelatedArtistsToAddPerArtist="1"
-#searchForMissing=false
+#lidarrSearchForMissing=false
 
 
 touch "/config/logs/AutoArtistAdder.txt"
@@ -303,8 +303,8 @@ AddTidalArtistToLidarr () {
 	done
 }
 
-if [ -z $searchForMissing ]; then
-	searchForMissing=true
+if [ -z $lidarrSearchForMissing ]; then
+	lidarrSearchForMissing=true
 fi
 
 if [ "$addDeezerTopArtists" == "true" ]; then
