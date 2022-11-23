@@ -3,7 +3,7 @@ echo "Starting AutoArtistAdder.bash in 2 min..."
 sleep 2m
 for (( ; ; )); do
 	let i++
-	# bash /config/extended/scripts/AutoArtistAdder.bash
+	bash /config/extended/scripts/AutoArtistAdder.bash
 	echo "AutoArtistAdder.bash script sleeping for 12 Hours..."
 	sleep 12h
 done
