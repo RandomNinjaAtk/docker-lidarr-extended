@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.003"
+scriptVersion="1.0.004"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -126,7 +126,7 @@ AddDeezerArtistToLidarr () {
 				\"monitored\":true,
 				\"monitor\":\"all\",
 				\"rootFolderPath\": \"$path\",
-				\"addOptions\":{\"searchForMissingAlbums\":$searchForMissing}
+				\"addOptions\":{\"searchForMissingAlbums\":$lidarrSearchForMissing}
 				}"
 
 			if echo "$lidarrArtistIds" | grep "^${musicbrainz_main_artist_id}$" | read; then
@@ -286,7 +286,7 @@ AddTidalArtistToLidarr () {
 				\"monitored\":true,
 				\"monitor\":\"all\",
 				\"rootFolderPath\": \"$path\",
-				\"addOptions\":{\"searchForMissingAlbums\":$searchForMissing}
+				\"addOptions\":{\"searchForMissingAlbums\":$lidarrSearchForMissing}
 				}"
 
 			if echo "$lidarrArtistIds" | grep "^${musicbrainz_main_artist_id}$" | read; then
