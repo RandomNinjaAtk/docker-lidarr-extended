@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.298"
+scriptVersion="1.0.299"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -130,10 +130,12 @@ Configuration () {
 
 	log "Output format: $audioFormat"
 
-	if [ "$audioFormat" == "alac" ]; then
-		audioBitrateText="LOSSLESS"
-	else
-		audioBitrateText="${audioBitrate}k"
+	if [ "$audioFormat" != "native" ]; then 
+		if [ "$audioFormat" == "alac" ]; then
+			audioBitrateText="LOSSLESS"
+		else
+			audioBitrateText="${audioBitrate}k"
+		fi
 	fi
 
 	log "Output bitrate: $audioBitrateText"
