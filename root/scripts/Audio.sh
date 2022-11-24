@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.296"
+scriptVersion="1.0.297"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -32,6 +32,8 @@ musicbrainzMirror=https://musicbrainz.org
 #enableBeetsTagging=true
 
 sleepTimer=0.5
+tidaldlFail=0
+deemixFail=0
 
 log () {
 	m_time=`date "+%F %T"`
@@ -434,7 +436,16 @@ DownloadProcess () {
 
 			# Verify Client Works...
 			clientTestDlCount=$(find "$downloadPath"/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
-			if [ "$clientTestDlCount" -le "0" ]; then
+			if [ $clientTestDlCount -le 0 ]; then
+				# Add +1 to failed attempts
+				deemixFail=$(( $deemixFail + 1))
+			else
+				# Reset for successful download
+				deemixFail=0
+			fi
+			
+			# If download failes 6 times, exit with error...
+			if [ $deemixFail -eq 6 ]; then
 				log "DEEZER :: ERROR :: Download failed"
 				log "DEEZER :: ERROR :: Please review log for errors in client"
 				log "DEEZER :: ERROR :: Try updating your ARL Token to possibly resolve the issue..."
@@ -452,7 +463,16 @@ DownloadProcess () {
 
 			# Verify Client Works...
 			clientTestDlCount=$(find "$downloadPath"/incomplete/ -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
-			if [ "$clientTestDlCount" -le "0" ]; then
+			if [ $clientTestDlCount -le 0 ]; then
+				# Add +1 to failed attempts
+				tidaldlFail=$(( $tidaldlFail + 1))
+			else
+				# Reset for successful download
+				tidaldlFail=0
+			fi
+			
+			# If download failes 6 times, exit with error...
+			if [ $tidaldlFail -eq 6 ]; then
 				if [ -f /config/xdg/.tidal-dl.token.json ]; then
 					rm /config/xdg/.tidal-dl.token.json
 				fi
