@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.299"
+scriptVersion="1.0.300"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -819,7 +819,15 @@ DownloadQualityCheck () {
 			fi
 		fi
 		if [ "$audioFormat" == "native" ]; then
-			if [ "$audioBitrate" == "lossless" ]; then
+			if [ "$audioBitrate" == "master" ]; then
+				if find "$1" -type f -regex ".*/.*\.\(opus\|m4a\|mp3\)"| read; then
+					log "$page :: $wantedAlbumListSource :: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Unwanted files found!"
+					log "$page :: $wantedAlbumListSource :: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Performing cleanup..."
+					rm "$1"/*
+				else
+					log "$page :: $wantedAlbumListSource :: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: No unwanted files found!"
+				fi
+			elif [ "$audioBitrate" == "lossless" ]; then
 				if find "$1" -type f -regex ".*/.*\.\(opus\|m4a\|mp3\)"| read; then
 					log "$page :: $wantedAlbumListSource :: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Unwanted files found!"
 					log "$page :: $wantedAlbumListSource :: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Performing cleanup..."
