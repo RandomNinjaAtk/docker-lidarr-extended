@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.297"
+scriptVersion="1.0.298"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -174,7 +174,10 @@ Configuration () {
 DownloadFormat () {
 
 	if [ "$audioFormat" == "native" ]; then
-		if [ "$audioBitrate" == "lossless" ]; then
+		if [ "$audioBitrate" == "master" ]; then
+			tidalQuality=Master
+			deemixQuality=flac
+		elif [ "$audioBitrate" == "lossless" ]; then
 			tidalQuality=HiFi
 			deemixQuality=flac
 		elif [ "$audioBitrate" == "high" ]; then
