@@ -99,6 +99,7 @@ Container images are configured using parameters passed at runtime (such as thos
 | `-e scriptInterval=15m` | #s or #m or #h or #d :: s = seconds, m = minutes, h = hours, d = days :: Amount of time between each script run, when autoStart is enabled |
 | `-e enableAudioScript=true` | true = enabled :: Enables the Audio script to run automatically |
 | `-e enableVideoScript=true` | true = enabled :: Enables the Video script to run automatically |
+| `-e videoDownloadTag=VALUE` | If VALUE is specified, only artists tagged with VALUE will have videos downloaded |
 | `-e configureLidarrWithOptimalSettings=true` | true = enabled :: Automatically configures Lidarr with optimal settings |
 | `-e searchSort=date` | date or album :: Sorts the missing/cutoff list by release date (newest -> oldest) or album type (album -> single) for processing the list |
 | `-e audioFormat=native` | native or alac or mp3 or aac or opus :: native is the native download client file type, selected by the matching audio bitrate |
