@@ -87,6 +87,9 @@ Configuration () {
 	log "CONFIG :: Music Video Location :: $videoPath"
 	log "CONFIG :: Subtitle Language set to: $youtubeSubtitleLanguage"
 	log "CONFIG :: yt-dlp format: $videoFormat"
+	if [ -n "$videoDownloadTag" ]; then
+		log "CONFIG :: Video download tag set to: $videoDownloadTag"
+	fi
 	if [ -f "/config/cookies.txt" ]; then
 		cookiesFile="/config/cookies.txt"
 		log "CONFIG :: Cookies File Found! (/config/cookies.txt)"
@@ -591,8 +594,13 @@ AddFeaturedVideoArtists
 log "-----------------------------------------------------------------------------"
 log "Finding Videos"    
 log "-----------------------------------------------------------------------------"
-lidarrArtists=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/artist?apikey=$lidarrApiKey" | jq -r .[])
-lidarrArtistIds=$(echo $lidarrArtists | jq -r .id)
+if [ -z "$videoDownloadTag" ]; then
+	lidarrArtists=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/artist?apikey=$lidarrApiKey" | jq -r .[])
+	lidarrArtistIds=$(echo $lidarrArtists | jq -r .id)
+else
+	lidarrArtists=$(curl -s "$lidarrUrl/api/v1/tag/detail" -H 'Content-Type: application/json' -H "X-Api-Key: $lidarrApiKey" | jq -r -M ".[] | select(.label == \"$videoDownloadTag\") | .artistIds")
+	lidarrArtistIds=$(echo $lidarrArtists | jq -r .[])
+fi
 lidarrArtistIdsCount=$(echo "$lidarrArtistIds" | wc -l)
 processCount=0
 for lidarrArtistId in $(echo $lidarrArtistIds); do

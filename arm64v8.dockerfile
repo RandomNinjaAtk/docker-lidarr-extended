@@ -40,6 +40,7 @@ ENV enableVideoScript=true
 ENV matchDistance=5
 ENV videoFormat="bestvideo*+bestaudio/best"
 ENV scriptInterval=15m
+ENV videoDownloadTag=""
 
 RUN \
 	echo "*** install packages ***" && \

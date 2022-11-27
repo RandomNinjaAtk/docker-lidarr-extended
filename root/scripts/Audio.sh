@@ -1638,11 +1638,6 @@ ArtistTidalSearch () {
 	# $3 Lyric Type (true or false) - false = Clean, true = Explicit
 
 	# Get tidal artist album list
-	if [ ! -f /config/extended/cache/tidal/$2-videos.json ]; then
-		curl -s "https://api.tidal.com/v1/artists/$2/videos?limit=10000&countryCode=$tidalCountryCode&filter=ALL" -H 'x-tidal-token: CzET4vdadNUFQ5JU' > /config/extended/cache/tidal/$2-videos.json
-		sleep $sleepTimer
-	fi
-
 	if [ ! -f /config/extended/cache/tidal/$2-albums.json ]; then
 		curl -s "https://api.tidal.com/v1/artists/$2/albums?limit=10000&countryCode=$tidalCountryCode&filter=ALL" -H 'x-tidal-token: CzET4vdadNUFQ5JU' > /config/extended/cache/tidal/$2-albums.json
 		sleep $sleepTimer
