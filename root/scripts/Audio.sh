@@ -1808,7 +1808,7 @@ CheckLidarrBeforeImport () {
 
 		if [ "$wantedAlbumListSource" == "cutoff" ]; then
 			checkLidarrAlbumFiles="$(curl -s "$lidarrUrl/api/v1/trackFile?albumId=$1?apikey=${lidarrApiKey}")"
-			checkLidarrAlbumQualityCutoffNotMet=$(echo "$checkLidarrAlbumData" | jq -r ".[].qualityCutoffNotMet")
+			checkLidarrAlbumQualityCutoffNotMet=$(echo "$checkLidarrAlbumFiles" | jq -r ".[].qualityCutoffNotMet")
 			if echo "$checkLidarrAlbumQualityCutoffNotMet" | grep "true" | read; then
 				log "$page :: $wantedAlbumListSource :: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported Album (CutOff - $checkLidarrAlbumQualityCutoffNotMet), skipping..."
 				alreadyImported=true
