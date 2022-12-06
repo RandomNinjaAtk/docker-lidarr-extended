@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.300"
+scriptVersion="1.0.301"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -256,11 +256,11 @@ DownloadFolderCleaner () {
 NotFoundFolderCleaner () {
 	# check for completed download folder
 	if [ -d /config/extended/logs/notfound ]; then
-		# check for notfound entries older than 90 days
-		if find /config/extended/logs/notfound -mindepth 1 -type f -mtime +90 | read; then
-			log "Removing prevously notfound lidarr album ids older than 90 days to give them a retry..."
-			# delete ntofound entries older than 90 days
-			find /config/extended/logs/notfound -mindepth 1 -type f -mtime +90 -delete
+		# check for notfound entries older than X days
+		if find /config/extended/logs/notfound -mindepth 1 -type f -mtime +$retryNotFound | read; then
+			log "Removing prevously notfound lidarr album ids older than $retryNotFound days to give them a retry..."
+			# delete ntofound entries older than X days
+			find /config/extended/logs/notfound -mindepth 1 -type f -mtime +$retryNotFound -delete
 		fi
 	fi
 }
