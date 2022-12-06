@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.061"
+scriptVersion="1.0.062"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -625,16 +625,23 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
     lidarrArtistFolder="$(basename "${lidarrArtistPath}")"
     lidarrArtistFolderNoDisambig="$(echo "$lidarrArtistFolder" | sed "s/ (.*)$//g" | sed "s/\.$//g")" # Plex Sanitization, remove disambiguation
     lidarrArtistNameSanitized="$(echo "$lidarrArtistFolderNoDisambig" | sed 's% (.*)$%%g')"
+    log "$processCount of $lidarrArtistIdsCount :: $lidarrArtistName :: Checking for IMVDB Slug"
     artistImvdbUrl=$(echo $lidarrArtistData | jq -r '.links[] | select(.name=="imvdb") | .url')
     artistImvdbSlug=$(basename "$artistImvdbUrl")
     
-     if [ -z "$artistImvdbUrl" ]; then
-	tempmbzartistinfo="$(curl -s -A "$agent" "$musicbrainzMirror/ws/2/artist/$lidarrArtistId?inc=url-rels+genres&fmt=json")"
-	sleep 1
-	artistImvdbUrl="$(echo "$tempmbzartistinfo" | jq -r ".relations | .[] | .url | select(.resource | contains(\"imvdb\")) | .resource")"
-	artistImvdbSlug=$(basename "$artistImvdbUrl")
+    if [ -z "$artistImvdbSlug" ]; then
+        log "$processCount of $lidarrArtistIdsCount :: $lidarrArtistName :: IMVDB Slug Not Found..."
+        log "$processCount of $lidarrArtistIdsCount :: $lidarrArtistName :: Fallback to Musicbrainz for IMVDB Slug"
+        tempmbzartistinfo="$(curl -s -A "$agent" "$musicbrainzMirror/ws/2/artist/$lidarrArtistMusicbrainzId?inc=url-rels+genres&fmt=json")"
+        sleep 1
+        artistImvdbUrl="$(echo "$tempmbzartistinfo" | jq -r ".relations | .[] | .url | select(.resource | contains(\"imvdb\")) | .resource")"
+        artistImvdbSlug=$(basename "$artistImvdbUrl")
     fi
 
+    if [ ! -z "$artistImvdbSlug" ]; then
+        log "$processCount of $lidarrArtistIdsCount :: $lidarrArtistName :: IMVDB Slug :: $artistImvdbSlug"
+    fi 
+    
     CacheMusicbrainzRecords
     ImvdbCache
 
@@ -743,16 +750,16 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
 
     if [ -z "$artistImvdbSlug" ]; then
         log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: No IMVDB artist link found, skipping..."
-	# Create log of missing IMVDB url...
-	if [ ! -d "/config/extended/logs/video/imvdb-link-missing" ]; then
-		mkdir -p "/config/extended/logs/video/imvdb-link-missing"
-		chmod 777 "/config/extended/logs/video"
-		chmod 777 "/config/extended/logs/video/imvdb-link-missing"
-	fi
-	if [ -d "/config/extended/logs/video/imvdb-link-missing" ]; then
-		log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: Logging missing IMVDB artist in folder: /config/extended/logs/video/imvdb-link-missing"
-		touch "/config/extended/logs/video/imvdb-link-missing/${lidarrArtistFolderNoDisambig}--mbid-${lidarrArtistMusicbrainzId}"
-	fi       
+        # Create log of missing IMVDB url...
+        if [ ! -d "/config/extended/logs/video/imvdb-link-missing" ]; then
+            mkdir -p "/config/extended/logs/video/imvdb-link-missing"
+            chmod 777 "/config/extended/logs/video"
+            chmod 777 "/config/extended/logs/video/imvdb-link-missing"
+        fi
+        if [ -d "/config/extended/logs/video/imvdb-link-missing" ]; then
+            log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: Logging missing IMVDB artist in folder: /config/extended/logs/video/imvdb-link-missing"
+            touch "/config/extended/logs/video/imvdb-link-missing/${lidarrArtistFolderNoDisambig}--mbid-${lidarrArtistMusicbrainzId}"
+        fi       
     else
     	# Remove missing IMVDB log file, now that it is found...
     	if [ -f "/config/extended/logs/video/imvdb-link-missing/${lidarrArtistFolderNoDisambig}--mbid-${lidarrArtistMusicbrainzId}" ]; then
