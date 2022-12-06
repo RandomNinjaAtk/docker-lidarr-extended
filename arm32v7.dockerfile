@@ -11,7 +11,7 @@ COPY --from=builder qemu-arm-static /usr/bin
 
 LABEL maintainer="RandomNinjaAtk"
 ENV dockerTitle="lidarr-extended"
-ENV dockerVersion="arm32v7-1.0.33"
+ENV dockerVersion="arm32v7-1.0.34"
 ENV LANG=en_US.UTF-8
 ENV autoStart=true
 ENV configureLidarrWithOptimalSettings=false
@@ -41,6 +41,7 @@ ENV matchDistance=5
 ENV videoFormat="bestvideo*+bestaudio/best"
 ENV scriptInterval=15m
 ENV videoDownloadTag=""
+ENV retryNotFound=90
 
 RUN \
 	echo "*** install packages ***" && \
