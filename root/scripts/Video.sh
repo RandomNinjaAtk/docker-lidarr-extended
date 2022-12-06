@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.060"
+scriptVersion="1.0.061"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -627,6 +627,13 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
     lidarrArtistNameSanitized="$(echo "$lidarrArtistFolderNoDisambig" | sed 's% (.*)$%%g')"
     artistImvdbUrl=$(echo $lidarrArtistData | jq -r '.links[] | select(.name=="imvdb") | .url')
     artistImvdbSlug=$(basename "$artistImvdbUrl")
+    
+     if [ -z "$artistImvdbUrl" ]; then
+	tempmbzartistinfo="$(curl -s -A "$agent" "$musicbrainzMirror/ws/2/artist/$lidarrArtistId?inc=url-rels+genres&fmt=json")"
+	sleep 1
+	artistImvdbUrl="$(echo "$tempmbzartistinfo" | jq -r ".relations | .[] | .url | select(.resource | contains(\"imvdb\")) | .resource")"
+	artistImvdbSlug=$(basename "$artistImvdbUrl")
+    fi
 
     CacheMusicbrainzRecords
     ImvdbCache
