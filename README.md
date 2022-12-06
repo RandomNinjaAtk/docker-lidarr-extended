@@ -126,6 +126,7 @@ Container images are configured using parameters passed at runtime (such as thos
 | `-e matchDistance=5` | The number of changes required to transform the searched album title into a possible found album title match... (0, requires a perfect match) |
 | `-e enableBeetsTagging=true` | true = enabled :: Downloads will be processed and tagged by Beets |
 | `-e beetsMatchPercentage=90` | 1-100 :: Set this to the minimum percentage required for Beets to match the downloaded album to a musicbrainz release :: Lower percentage is less restrictive |
+| `-e retryNotFound=90` | ## :: Number of days between re-attempting the download of previously notfound albums |
 
 ## Usage
 
@@ -172,6 +173,7 @@ docker create \
   -e matchDistance=5 \
   -e enableBeetsTagging=true \
   -e beetsMatchPercentage=90 \
+  -e retryNotFound=90 \
   --restart unless-stopped \
   randomninjaatk/lidarr-extended:latest
 ```
@@ -224,6 +226,7 @@ services:
       - matchDistance=5
       - enableBeetsTagging=true
       - beetsMatchPercentage=90
+      - retryNotFound=90
     ports:
       - 8686:8686
     restart: unless-stopped
