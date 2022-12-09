@@ -36,6 +36,14 @@ log () {
 	echo $m_time" :: AutoArtistAdder :: $scriptVersion :: "$1
 }
 
+NotifyWebhook () {
+	if [ "$webHook" ]
+	then
+		content="$1: $2"
+		curl -s -X POST "{$webHook}" -H 'Content-Type: application/json' -d '{"event":"'"$1"'", "message":"'"$2"'", "content":"'"$content"'"}'
+	fi
+}
+
 AddDeezerTopArtists () {
 	getDeezerArtistsIds=$(curl -s "https://api.deezer.com/chart/0/artists?limit=$1" | jq -r ".data[].id")
 	getDeezerArtistsIdsCount=$(echo "$getDeezerArtistsIds" | wc -l)
@@ -312,6 +320,7 @@ AddTidalArtistToLidarr () {
 			lidarrAddArtist=$(curl -s "$lidarrUrl/api/v1/artist" -X POST -H 'Content-Type: application/json' -H "X-Api-Key: $lidarrApiKey" --data-raw "$data")
 		else
 			log "$artistNumber of $lidarrArtistTotal :: $lidarrArtistName :: $currentprocess of $numberOfRelatedArtistsToAddPerArtist :: $serviceArtistName :: ERROR :: Artist not found in Musicbrainz, please add \"https://listen.tidal.com/artist/${serviceArtistId}\" to the correct artist on Musicbrainz"
+			NotifyWebhook "Error" "Artist not found in Musicbrainz, please add <https://deezer.com/artist/${deezerArtistId}> to the correct artist on Musicbrainz"
 		fi
 		LidarrTaskStatusCheck
 	done
