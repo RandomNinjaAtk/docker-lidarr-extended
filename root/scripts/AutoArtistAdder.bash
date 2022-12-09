@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.005"
+scriptVersion="1.0.006"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -121,8 +121,11 @@ AddDeezerArtistToLidarr () {
 			fi
 			data=$(curl -s "$lidarrUrl/api/v1/rootFolder" -H "X-Api-Key: $lidarrApiKey" | jq -r ".[]")
 			path="$(echo "$data" | jq -r ".path")"
+			path=$(echo $path | cut -d' ' -f1)
 			qualityProfileId="$(echo "$data" | jq -r ".defaultQualityProfileId")"
+			qualityProfileId=$(echo $qualityProfileId | cut -d' ' -f1)
 			metadataProfileId="$(echo "$data" | jq -r ".defaultMetadataProfileId")"
+			metadataProfileId=$(echo $metadataProfileId | cut -d' ' -f1)
 			data="{
 				\"artistName\": \"$artistName\",
 				\"foreignArtistId\": \"$foreignId\",
@@ -133,7 +136,6 @@ AddDeezerArtistToLidarr () {
 				\"rootFolderPath\": \"$path\",
 				\"addOptions\":{\"searchForMissingAlbums\":$lidarrSearchForMissing}
 				}"
-
 			if echo "$lidarrArtistIds" | grep "^${musicbrainz_main_artist_id}$" | read; then
 				log "$currentprocess of $getDeezerArtistsIdsCount :: $deezerArtistName :: Already in Lidarr ($musicbrainz_main_artist_id), skipping..."
 				continue
@@ -286,8 +288,11 @@ AddTidalArtistToLidarr () {
 			fi
 			data=$(curl -s "$lidarrUrl/api/v1/rootFolder" -H "X-Api-Key: $lidarrApiKey" | jq -r ".[]")
 			path="$(echo "$data" | jq -r ".path")"
+			path=$(echo $path | cut -d' ' -f1)
 			qualityProfileId="$(echo "$data" | jq -r ".defaultQualityProfileId")"
+			qualityProfileId=$(echo $qualityProfileId | cut -d' ' -f1)
 			metadataProfileId="$(echo "$data" | jq -r ".defaultMetadataProfileId")"
+			metadataProfileId=$(echo $metadataProfileId | cut -d' ' -f1)
 			data="{
 				\"artistName\": \"$artistName\",
 				\"foreignArtistId\": \"$foreignId\",
@@ -298,7 +303,6 @@ AddTidalArtistToLidarr () {
 				\"rootFolderPath\": \"$path\",
 				\"addOptions\":{\"searchForMissingAlbums\":$lidarrSearchForMissing}
 				}"
-
 			if echo "$lidarrArtistIds" | grep "^${musicbrainz_main_artist_id}$" | read; then
 				log "$artistNumber of $lidarrArtistTotal :: $lidarrArtistName :: $currentprocess of $numberOfRelatedArtistsToAddPerArtist :: $serviceArtistName :: Already in Lidarr ($musicbrainz_main_artist_id), skipping..."
 				continue
