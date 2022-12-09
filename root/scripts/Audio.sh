@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.301"
+scriptVersion="1.0.302"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -1935,22 +1935,6 @@ fi
 
 if [ "$dlClientSource" == "tidal" ] || [ "$dlClientSource" == "both" ]; then
 	TidalClientSetup
-fi
-
-if [ "$addDeezerTopArtists" == "true" ]; then
-	AddDeezerTopArtists "$topLimit"
-fi
-
-if [ "$addDeezerTopAlbumArtists" == "true" ]; then
-	AddDeezerTopAlbumArtists "$topLimit"
-fi
-
-if [ "$addDeezerTopTrackArtists" == "true" ]; then
-	AddDeezerTopTrackArtists "$topLimit"
-fi
-
-if [ "$addRelatedArtists" == "true" ]; then
-	AddRelatedArtists
 fi
 
 # Get artist list for LidarrMissingAlbumSearch process, to prevent searching for artists that will not be processed by the script
