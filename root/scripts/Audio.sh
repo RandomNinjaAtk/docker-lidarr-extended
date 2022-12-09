@@ -1913,7 +1913,7 @@ NotifyWebhook () {
 	if [ "$webHook" ]
 	then
 		content="$1: $2"
-		curl -X POST "{$webHook}" -H 'Content-Type: application/json' -d '{"event":"'"$1"'", "message":"'"$2"'", "content":"'"$content"'"}'
+		curl -s -X POST "{$webHook}" -H 'Content-Type: application/json' -d '{"event":"'"$1"'", "message":"'"$2"'", "content":"'"$content"'"}'
 	fi
 }
 
