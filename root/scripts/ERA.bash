@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.1.2"
+scriptVersion="1.1.3"
 agent="ERA ( https://github.com/Makario1337/ExtendedReleaseAdder )"
 
 ### DEBUG ###
@@ -69,8 +69,8 @@ AddReleaseToLidarr() {
 	    sed 's/"qualityProfileId": 0/"qualityProfileId": 1/g' | 
 	    sed 's/"metadataProfileId": 0/"metadataProfileId": 1/g' | 
 	    sed "s%\"metadataProfileId\": 1%\"metadataProfileId\": 1,\"rootFolderPath\": \"\" %g" | 
-	    sed 's/"metadataProfileId": 1/"metadataProfileId": 1,\"addOptions": {"monitor": "all","searchForMissingAlbums": false}/g' |
-	    sed 's/"grabbed": false/"grabbed": false,\"addOptions": {"searchForNewAlbum": false}/g'|
+	    sed 's/"metadataProfileId": 1/"metadataProfileId": 1,\"addOptions": {"monitor": "all","searchForMissingAlbums": true}/g' |
+	    sed 's/"grabbed": false/"grabbed": false,\"addOptions": {"searchForNewAlbum": true}/g'|
 	    jq '.' |
 	    cut -c 2- |
 	    head -c -2)
@@ -138,14 +138,23 @@ RefreshArtists() {
     log "Refreshing all ERA artists, so new releasegroup entrys can be added"
     for artists in $RefreshArtistList
     do
-    curl -s -X POST "$lidarrUrl/api/v1/command" -H  "accept: text/plain" -H  "Content-Type: application/json" -H "X-Api-Key: $lidarrApiKey" -d "{\"name\":\"RefreshArtist\",\"artistId\":$artists}"
-    sleep 1.5
+        curl -s -X POST "$lidarrUrl/api/v1/command" -H  "accept: text/plain" -H  "Content-Type: application/json" -H "X-Api-Key: $lidarrApiKey" -d "{\"name\":\"RefreshArtist\",\"artistId\":$artists}"
+        sleep 1.5
+    done
+}
+
+CleanPreviousDownloads() {
+    
+    for artist in ${ERAArtistsList[@]}; do
+        log "cleaning $artist"
+        find /config/extended/logs/notfound -type f -name '*$(echo $artist | tail -c +2 | head -c -2 )*' -delete
     done
 }
 
 SearchAllArtistsByTag
 CheckIfCollectedArtistsAreInLidarrInstance
 ArtistLookupAndCallAddReleaseToLidarr
+CleanPreviousDownloads
 RefreshArtists
 log "DONE :: Finishing..."
 exit
