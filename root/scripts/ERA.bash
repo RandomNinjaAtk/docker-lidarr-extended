@@ -128,6 +128,7 @@ for artist in ${ERAArtistsList[@]}; do
             trim=$(echo $line | cut -c 2- | head -c -2)
             ReleaseName=$(wget -U "$agent" --timeout=0 -q -O - "https://musicbrainz.org/ws/2/release-group/$trim" | grep -o "<title>.*</title>" | sed 's/<title>//g' | head -c -9)
             AddReleaseToLidarr $trim "$artistname" "$ReleaseName"
+            sleep 1.5
         done
     fi
 done
