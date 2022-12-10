@@ -9,7 +9,7 @@ fi
 echo "Starting Script...."
 for (( ; ; )); do
 	let i++
-	bash /config/extended/scripts/ERA.sh
+	bash /config/extended/scripts/ERA.bash
 	echo "Script sleeping for 24 hours..."
 	sleep 24h
 done
