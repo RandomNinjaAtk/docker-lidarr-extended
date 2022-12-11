@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.302"
+scriptVersion="1.0.303"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -1162,6 +1162,7 @@ SearchProcess () {
 				else
 					echo "Update Musicbrainz Relationship Page: https://musicbrainz.org/artist/$lidarrArtistForeignArtistId/edit for \"${lidarrArtistName}\" with Deezer Artist Link" >> "/config/logs/deezer-artist-id-not-found.txt"
 					chmod 777 "/config/logs/deezer-artist-id-not-found.txt"
+					NotifyWebhook "Error" "Update Musicbrainz Relationship Page: <https://musicbrainz.org/artist/${lidarrArtistForeignArtistId}/edit> for ${lidarrArtistName} with Deezer Artist Link"
 				fi
 				skipDeezer=true
 			fi
@@ -1185,6 +1186,7 @@ SearchProcess () {
 				else
 					echo "Update Musicbrainz Relationship Page: https://musicbrainz.org/artist/$lidarrArtistForeignArtistId/edit for \"${lidarrArtistName}\" with Tidal Artist Link" >> "/config/logs/tidal-artist-id-not-found.txt"
 					chmod 777 "/config/logs/tidal-artist-id-not-found.txt"
+					NotifyWebhook "Error" "Update Musicbrainz Relationship Page: <https://musicbrainz.org/artist/${lidarrArtistForeignArtistId}/edit> for ${lidarrArtistName} with Tidal Artist Link"
 				fi
 				skipTidal=true
 			fi
