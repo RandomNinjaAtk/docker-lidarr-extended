@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.303"
+scriptVersion="1.0.304"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -1363,6 +1363,7 @@ SearchProcess () {
 				else
 					sleep 1.5
 					log "$page :: $wantedAlbumListSource :: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Tidal :: NOT FOUND!"
+					NotifyWebhook "Error" "$lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Tidal :: NOT FOUND! Please add it manually"
 				fi
 			fi
 		fi
@@ -1403,6 +1404,7 @@ SearchProcess () {
 					fi
 				else
 					log "$page :: $wantedAlbumListSource :: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Deezer :: NOT FOUND!"
+					NotifyWebhook "Error" "$lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Deezer :: NOT FOUND! Please add it manually"
 				fi
 			fi
 		fi
