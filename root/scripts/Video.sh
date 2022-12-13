@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.062"
+scriptVersion="1.0.063"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
