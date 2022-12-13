@@ -321,7 +321,7 @@ AddTidalArtistToLidarr () {
 			lidarrAddArtist=$(curl -s "$lidarrUrl/api/v1/artist" -X POST -H 'Content-Type: application/json' -H "X-Api-Key: $lidarrApiKey" --data-raw "$data")
 		else
 			log "$artistNumber of $lidarrArtistTotal :: $lidarrArtistName :: $currentprocess of $numberOfRelatedArtistsToAddPerArtist :: $serviceArtistName :: ERROR :: Artist not found in Musicbrainz, please add \"https://listen.tidal.com/artist/${serviceArtistId}\" to the correct artist on Musicbrainz"
-			NotifyWebhook "ArtisError" "Artist not found in Musicbrainz, please add <https://listen.tidal.com/artist/${serviceArtistId}> to the correct artist on Musicbrainz"
+			NotifyWebhook "ArtistError" "Artist not found in Musicbrainz, please add <https://listen.tidal.com/artist/${serviceArtistId}> to the correct artist on Musicbrainz"
 		fi
 		LidarrTaskStatusCheck
 	done
