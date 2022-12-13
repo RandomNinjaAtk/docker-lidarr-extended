@@ -181,7 +181,7 @@ TidalClientSetup () {
 		#pip install tidal-dl==2022.3.4.2 --no-cache-dir &>/dev/null
 		TidaldlStatusCheck
 		log "TIDAL :: ERROR :: Loading client for required authentication, please authenticate, then exit the client..."
-		NotifyWebhook "Error" "TIDAL requires authentication, please authenticate now (check logs)"
+		NotifyWebhook "VideoError" "TIDAL requires authentication, please authenticate now (check logs)"
 		tidal-dl
 	fi
 		
@@ -219,7 +219,7 @@ TidalClientTest () {
 		log "TIDAL :: ERROR :: You will need to re-authenticate on next script run..."
 		log "TIDAL :: ERROR :: Exiting..."
 		rm -rf "$downloadPath"/incomplete/*
-		NotifyWebhook "Error" "TIDAL not authenticated but configured"
+		NotifyWebhook "VideoError" "TIDAL not authenticated but configured"
 		exit
 	else
 		rm -rf "$downloadPath"/incomplete/*

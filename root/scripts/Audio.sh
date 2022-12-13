@@ -192,7 +192,7 @@ DownloadFormat () {
 			log "ERROR :: Invalid audioFormat and audioBitrate options set..."
 			log "ERROR :: Change audioBitrate to a low, high, or lossless..."
 			log "ERROR :: Exiting..."
-			NotifyWebhook "Error" "Invalid audioFormat and audioBitrate options set"
+			NotifyWebhook "FatalError" "Invalid audioFormat and audioBitrate options set"
 			exit
 		fi
 	else
@@ -214,7 +214,7 @@ DownloadFormat () {
 			log "ERROR :: Invalid audioBitrate options set..."
 			log "ERROR :: Change audioBitrate to a desired bitrate number, example: 192..."
 			log "ERROR :: Exiting..."
-			NotifyWebhook "Error" "audioBitrate options set"
+			NotifyWebhook "FatalError" "audioBitrate options set"
 			exit
 		fi
 
@@ -230,7 +230,7 @@ DownloadFormat () {
 		if [ "$audioFormatError" == "true" ]; then		
 			log "ERROR :: Invalid audioFormat options set..."
 			log "ERROR :: Change audioFormat to a desired format (opus or mp3 or aac or alac)"
-			NotifyWebhook "Error" "audioFormat options set"
+			NotifyWebhook "FatalError" "audioFormat options set"
 			exit
 		fi
 
@@ -289,7 +289,7 @@ TidalClientSetup () {
 		#log "TIDAL :: ERROR :: Downgrade tidal-dl for workaround..."
 		#pip3 install tidal-dl==2022.3.4.2 --no-cache-dir &>/dev/null
 		log "TIDAL :: ERROR :: Loading client for required authentication, please authenticate, then exit the client..."
-		NotifyWebhook "Error" "TIDAL requires authentication, please authenticate now (check logs)"
+		NotifyWebhook "FatalError" "TIDAL requires authentication, please authenticate now (check logs)"
 		TidaldlStatusCheck
 		tidal-dl
 	fi
@@ -456,7 +456,7 @@ DownloadProcess () {
 				log "DEEZER :: ERROR :: Try updating your ARL Token to possibly resolve the issue..."
 				log "DEEZER :: ERROR :: Exiting..."
 				rm -rf "$downloadPath"/incomplete/*
-				NotifyWebhook "Error" "DEEZER not authenticated but configured"
+				NotifyWebhook "FatalError" "DEEZER not authenticated but configured"
 				exit
 			fi
 		fi
@@ -485,7 +485,7 @@ DownloadProcess () {
 				log "TIDAL :: ERROR :: You will need to re-authenticate on next script run..."
 				log "TIDAL :: ERROR :: Exiting..."
 				rm -rf "$downloadPath"/incomplete/*
-				NotifyWebhook "Error" "TIDAL not authenticated but configured"
+				NotifyWebhook "FatalError" "TIDAL not authenticated but configured"
 				exit
 			fi
 		fi
@@ -929,7 +929,7 @@ LidarrRootFolderCheck () {
 		log "ERROR :: No root folder found"
 		log "ERROR :: Configure root folder in Lidarr to continue..."
 		log "ERROR :: Exiting..."
-		NotifyWebhook "Error" "No root folder found"
+		NotifyWebhook "FatalError" "No root folder found"
 		exit
 	fi
 }
@@ -1162,7 +1162,7 @@ SearchProcess () {
 				else
 					echo "Update Musicbrainz Relationship Page: https://musicbrainz.org/artist/$lidarrArtistForeignArtistId/edit for \"${lidarrArtistName}\" with Deezer Artist Link" >> "/config/logs/deezer-artist-id-not-found.txt"
 					chmod 777 "/config/logs/deezer-artist-id-not-found.txt"
-					NotifyWebhook "Error" "Update Musicbrainz Relationship Page: <https://musicbrainz.org/artist/${lidarrArtistForeignArtistId}/edit> for ${lidarrArtistName} with Deezer Artist Link"
+					NotifyWebhook "ArtisError" "Update Musicbrainz Relationship Page: <https://musicbrainz.org/artist/${lidarrArtistForeignArtistId}/edit> for ${lidarrArtistName} with Deezer Artist Link"
 				fi
 				skipDeezer=true
 			fi
@@ -1186,7 +1186,7 @@ SearchProcess () {
 				else
 					echo "Update Musicbrainz Relationship Page: https://musicbrainz.org/artist/$lidarrArtistForeignArtistId/edit for \"${lidarrArtistName}\" with Tidal Artist Link" >> "/config/logs/tidal-artist-id-not-found.txt"
 					chmod 777 "/config/logs/tidal-artist-id-not-found.txt"
-					NotifyWebhook "Error" "Update Musicbrainz Relationship Page: <https://musicbrainz.org/artist/${lidarrArtistForeignArtistId}/edit> for ${lidarrArtistName} with Tidal Artist Link"
+					NotifyWebhook "ArtisError" "Update Musicbrainz Relationship Page: <https://musicbrainz.org/artist/${lidarrArtistForeignArtistId}/edit> for ${lidarrArtistName} with Tidal Artist Link"
 				fi
 				skipTidal=true
 			fi
@@ -1363,7 +1363,7 @@ SearchProcess () {
 				else
 					sleep 1.5
 					log "$page :: $wantedAlbumListSource :: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Tidal :: NOT FOUND!"
-					NotifyWebhook "Error" "$lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Tidal :: NOT FOUND! Please add it manually"
+					NotifyWebhook "AlbumError" "$lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Tidal :: NOT FOUND! Please add it manually"
 				fi
 			fi
 		fi
@@ -1404,7 +1404,7 @@ SearchProcess () {
 					fi
 				else
 					log "$page :: $wantedAlbumListSource :: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Deezer :: NOT FOUND!"
-					NotifyWebhook "Error" "$lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Deezer :: NOT FOUND! Please add it manually"
+					NotifyWebhook "AlbumError" "$lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Deezer :: NOT FOUND! Please add it manually"
 				fi
 			fi
 		fi
