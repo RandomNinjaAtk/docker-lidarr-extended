@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.007"
+scriptVersion="1.0.008"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -153,7 +153,7 @@ AddDeezerArtistToLidarr () {
 			lidarrAddArtist=$(curl -s "$lidarrUrl/api/v1/artist" -X POST -H 'Content-Type: application/json' -H "X-Api-Key: $lidarrApiKey" --data-raw "$data")
 		else
 			log "$currentprocess of $getDeezerArtistsIdsCount :: $deezerArtistName :: Artist not found in Musicbrainz, please add \"https://deezer.com/artist/${deezerArtistId}\" to the correct artist on Musicbrainz"
-			NotifyWebhook "Error" "Artist not found in Musicbrainz, please add <https://deezer.com/artist/${deezerArtistId}> to the correct artist on Musicbrainz"
+			NotifyWebhook "ArtistError" "Artist not found in Musicbrainz, please add <https://deezer.com/artist/${deezerArtistId}> to the correct artist on Musicbrainz"
 		fi
 		LidarrTaskStatusCheck
 	done
@@ -321,7 +321,7 @@ AddTidalArtistToLidarr () {
 			lidarrAddArtist=$(curl -s "$lidarrUrl/api/v1/artist" -X POST -H 'Content-Type: application/json' -H "X-Api-Key: $lidarrApiKey" --data-raw "$data")
 		else
 			log "$artistNumber of $lidarrArtistTotal :: $lidarrArtistName :: $currentprocess of $numberOfRelatedArtistsToAddPerArtist :: $serviceArtistName :: ERROR :: Artist not found in Musicbrainz, please add \"https://listen.tidal.com/artist/${serviceArtistId}\" to the correct artist on Musicbrainz"
-			NotifyWebhook "Error" "Artist not found in Musicbrainz, please add <https://listen.tidal.com/artist/${serviceArtistId}> to the correct artist on Musicbrainz"
+			NotifyWebhook "ArtistError" "Artist not found in Musicbrainz, please add <https://listen.tidal.com/artist/${serviceArtistId}> to the correct artist on Musicbrainz"
 		fi
 		LidarrTaskStatusCheck
 	done
