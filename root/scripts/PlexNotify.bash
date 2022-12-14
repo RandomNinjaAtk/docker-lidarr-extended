@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion=1.0.6
+scriptVersion=1.0.7
 if [ -z "$lidarr_artist_path" ]; then
 	lidarr_artist_path="$1"
 	notfidedBy=Extended_Script
@@ -26,17 +26,27 @@ if [ "$lidarr_eventtype" == "Test" ]; then
 	exit 0	
 fi
 
-# Validate connection
-plexVersion=$(curl -s "$plexUrl/?X-Plex-Token=$plexToken" | xq . | jq -r '.MediaContainer."@version"')
-if [ $plexVersion = null ]; then
+plexConnectionError () {
 	log "ERROR :: Cannot communicate with Plex"
 	log "ERROR :: Please check your plexUrl and plexToken"
 	log "ERROR :: Configured plexUrl \"$plexUrl\""
 	log "ERROR :: Configured plexToken \"$plexToken\""
 	log "ERROR :: Exiting..."
 	exit
+}
+
+# Validate connection
+if curl -s "$plexUrl/?X-Plex-Token=$plexToken" | xq . &>/dev/null; then
+	plexVersion=$(curl -s "$plexUrl/?X-Plex-Token=$plexToken" | xq . | jq -r '.MediaContainer."@version"')
+	if [ "$plexVersion" == "null" ]; then
+		# Error out if version is null, indicates bad token
+		plexConnectionError
+	else
+		log "Plex Connection Established, version: $plexVersion"
+	fi
 else
-	log "Plex Connection Established, version: $plexVersion"
+	# Error out if error in curl | xq . command output
+	plexConnectionError
 fi
 
 plexLibraries="$(curl -s "$plexUrl/library/sections?X-Plex-Token=$plexToken")"
