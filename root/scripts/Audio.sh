@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.305"
+scriptVersion="1.0.306"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -981,7 +981,7 @@ GetMissingCutOffList () {
 			fi
 			log "$page :: missing :: Downloading page $page... ($offset - $dlnumber of $lidarrMissingTotalRecords Results)"
 			lidarrRecords=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/wanted/missing?page=$page&pagesize=$amountPerPull&sortKey=$searchOrder&sortDirection=$searchDirection&apikey=${lidarrApiKey}" | jq -r '.records[].id')
-			log "$page :: missing :: Filtering Album IDs by removing previously searched Album IDs (/config/extended/notfound/<files>)"
+			log "$page :: missing :: Filtering Album IDs by removing previously searched Album IDs (/config/extended/logs/notfound/<files>)"
 			for lidarrRecordId in $(echo $lidarrRecords); do
 				if [ ! -f /config/extended/logs/notfound/$lidarrRecordId--* ]; then
 					touch "/config/extended/cache/lidarr/list/${lidarrRecordId}-missing"
@@ -1019,7 +1019,7 @@ GetMissingCutOffList () {
 
 			log "$page :: cutoff :: Downloading page $page... ($offset - $dlnumber of $lidarrCutoffTotalRecords Results)"
 			lidarrRecords=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/wanted/cutoff?page=$page&pagesize=$amountPerPull&sortKey=$searchOrder&sortDirection=$searchDirection&apikey=${lidarrApiKey}" | jq -r '.records[].id')
-			log "$page :: cutoff :: Filtering Album IDs by removing previously searched Album IDs (/config/extended/notfound/<files>)"
+			log "$page :: cutoff :: Filtering Album IDs by removing previously searched Album IDs (/config/extended/logs/notfound/<files>)"
 			
 			for lidarrRecordId in $(echo $lidarrRecords); do
 				if [ ! -f /config/extended/logs/notfound/$lidarrRecordId--* ]; then
