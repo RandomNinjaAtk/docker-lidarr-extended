@@ -1,0 +1,16 @@
+#!/usr/bin/with-contenv bash
+if [ "$FolderRescanIntervalInHours" ]; then
+	echo "Waiting for Lidarr to startup..."
+	sleep 2m
+else
+  sleep infinity
+fi
+
+echo "Starting Script...."
+for (( ; ; )); do
+	let i++
+	bash /config/extended/scripts/extendedconfig.bash
+	sleep infinity
+done
+
+exit $?
