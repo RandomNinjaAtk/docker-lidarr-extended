@@ -42,6 +42,7 @@ ENV videoFormat="bestvideo*+bestaudio/best"
 ENV scriptInterval=15m
 ENV videoDownloadTag=""
 ENV retryNotFound=90
+ENV FolderRescanIntervalInHours=""
 
 RUN \
 	echo "*** install packages ***" && \
@@ -58,6 +59,7 @@ RUN \
 		python3-dev \
 		libc-dev \
 		py3-pip \
+		sqlite \
 		yt-dlp && \
 	echo "*** install python packages ***" && \
 	pip install --upgrade --no-cache-dir \
