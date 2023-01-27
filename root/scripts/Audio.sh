@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.306"
+scriptVersion="1.0.307"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -9,7 +9,7 @@ if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	fi
 	lidarrApiKey="$(cat /config/config.xml | xq | jq -r .Config.ApiKey)"
 	lidarrPort="$(cat /config/config.xml | xq | jq -r .Config.Port)"
-	lidarrUrl="http://127.0.0.1:${lidarrPort}${lidarrUrlBase}"
+	lidarrUrl="http://localhost:${lidarrPort}${lidarrUrlBase}"
 fi
 agent="lidarr-extended ( https://github.com/RandomNinjaAtk/docker-lidarr-extended )"
 musicbrainzMirror=https://musicbrainz.org
