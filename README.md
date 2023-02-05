@@ -14,6 +14,24 @@
   </tr>
  </table>
  
+ ### What is Lidarr Extended:
+
+* Linuxserver.io Lidarr docker container (develop tag)
+* Additional packages and scripts added to the container to provide additional functionality
+
+Sonarr itself is not modified in any way, all changes that are pushed to Sonarr via public Sonarr API's. This is strictly Lidarr Develop branch
+
+For more details, visit the [Wiki](https://github.com/RandomNinjaAtk/docker-lidarr-extended/wiki)
+
+This containers base image is provided by: [linuxserver/lidarr](https://github.com/linuxserver/docker-lidarr)
+ 
+ ### All Arr-Extended Apps:
+* [sabnzbd-extended](https://github.com/RandomNinjaAtk/docker-sabnzbd-extended)
+* [lidarr-extended](https://github.com/RandomNinjaAtk/docker-lidarr-extended)
+* [radarr-extended](https://github.com/RandomNinjaAtk/docker-radarr-extended)
+* [sonarr-extended](https://github.com/RandomNinjaAtk/docker-sonarr-extended)
+* [readarr-extended](https://github.com/RandomNinjaAtk/docker-readarr-extended)
+ 
 ## Lidarr + Extended Script Features
 * [Lidarr](https://lidarr.audio/) Develop (develop branch), base image provided by [LinuxServer.io Team](https://github.com/linuxserver/docker-lidarr)
 * Downloading **Music** using online sources for use in popular applications (Plex/Kodi/Emby/Jellyfin): 
