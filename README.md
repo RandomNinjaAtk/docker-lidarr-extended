@@ -19,7 +19,7 @@
 * Linuxserver.io Lidarr docker container (develop tag)
 * Additional packages and scripts added to the container to provide additional functionality
 
-Sonarr itself is not modified in any way, all changes that are pushed to Sonarr via public Sonarr API's. This is strictly Lidarr Develop branch
+Lidarr itself is not modified in any way, all changes that are pushed to Lidarr via public Lidarr API's. This is strictly Lidarr Develop branch
 
 For more details, visit the [Wiki](https://github.com/RandomNinjaAtk/docker-lidarr-extended/wiki)
 
