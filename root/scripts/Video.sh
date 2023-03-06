@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.066"
+scriptVersion="1.0.068"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -695,27 +695,6 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
                 videoDownloadUrl="$(echo "$musicbrainzVideoRelations" | grep -i "youtube" | head -n1)"
             fi
 
-            log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: ${musicbrainzVideoTitle}${musicbrainzVideoDisambiguation} :: $videoDownloadUrl..."
-
-            if echo "$musicbrainzVideoDisambiguation" | grep -i "lyric" | read; then
-                plexVideoType="-lyrics"
-                videoDisambiguationTitle=" (lyric)"
-            else
-                plexVideoType="-video"
-                videoDisambiguationTitle=""
-            fi
-            if [ -d "$videoPath/$lidarrArtistFolderNoDisambig" ]; then
-                if [ -f "$videoPath/$lidarrArtistFolderNoDisambig/${musicbrainzVideoTitleClean}${plexVideoType}.mkv" ]; then
-                    log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: ${musicbrainzVideoTitle}${musicbrainzVideoDisambiguation} :: Previously Downloaded, skipping..."
-                    continue
-                fi
-            fi
-
-            if [ "$musicbrainzVideoArtistCreditId" != "$lidarrArtistMusicbrainzId" ]; then
-                log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: ${musicbrainzVideoTitle}${musicbrainzVideoDisambiguation} :: First artist does not match album arist, skipping..."
-                continue
-            fi
-
             if echo "$videoDownloadUrl" | grep -i "tidal" | read; then
                 videoId="$(echo "$videoDownloadUrl" | grep -o '[[:digit:]]*')"
                 videoData="$(curl -s "https://api.tidal.com/v1/videos/$videoId?countryCode=$tidalCountryCode" -H 'x-tidal-token: CzET4vdadNUFQ5JU' | jq -r)"
@@ -724,7 +703,7 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
                 videoImageId="$(echo "$videoData" | jq -r ".imageId")"
                 videoImageIdFix="$(echo "$videoImageId" | sed "s/-/\//g")"
                 videoThumbnail="https://resources.tidal.com/images/$videoImageIdFix/750x500.jpg"
-		videoSource="tidal"
+		        videoSource="tidal"
             fi
 
             if echo "$videoDownloadUrl" | grep -i "youtube" | read; then
@@ -737,8 +716,51 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
                 videoThumbnail="$(echo "$videoData" | jq -r .thumbnail)"
                 videoUploadDate="$(echo "$videoData" | jq -r .upload_date)"
                 videoYear="${videoUploadDate:0:4}"
-		videoSource="youtube"
+		        videoSource="youtube"
             fi
+
+            log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: ${musicbrainzVideoTitle}${musicbrainzVideoDisambiguation} :: $videoDownloadUrl..."
+
+            if echo "$musicbrainzVideoDisambiguation" | grep -i "lyric" | read; then
+                plexVideoType="-lyrics"
+                videoDisambiguationTitle=" (lyric)"
+            else
+                plexVideoType="-video"
+                videoDisambiguationTitle=""
+            fi
+            if [ -d "$videoPath/$lidarrArtistFolderNoDisambig" ]; then
+                if [ -f "$videoPath/$lidarrArtistFolderNoDisambig/${musicbrainzVideoTitleClean}${plexVideoType}.nfo" ]; then
+                    if cat "$videoPath/$lidarrArtistFolderNoDisambig/${musicbrainzVideoTitleClean}${plexVideoType}.nfo" | grep "source" | read; then
+                        sleep 0
+                    else
+                        log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: ${musicbrainzVideoTitle}${musicbrainzVideoDisambiguation} :: NFO Missing Source information adding source information..."
+                        sed -i '$d' "$videoPath/$lidarrArtistFolderNoDisambig/${musicbrainzVideoTitleClean}${plexVideoType}.nfo"
+                        echo "	<source>youtube</source>" >> "$videoPath/$lidarrArtistFolderNoDisambig/${musicbrainzVideoTitleClean}${plexVideoType}.nfo"
+                        echo "</musicvideo>" >> "$videoPath/$lidarrArtistFolderNoDisambig/${musicbrainzVideoTitleClean}${plexVideoType}.nfo"
+                        tidy -w 2000 -i -m -xml "$videoPath/$lidarrArtistFolderNoDisambig/${musicbrainzVideoTitleClean}${plexVideoType}.nfo" &>/dev/null
+                    fi
+                fi
+
+                if [ "$videoSource" == "tidal" ]; then
+                    if [ -f "$videoPath/$lidarrArtistFolderNoDisambig/${musicbrainzVideoTitleClean}${plexVideoType}.nfo" ]; then
+                        if cat "$videoPath/$lidarrArtistFolderNoDisambig/${musicbrainzVideoTitleClean}${plexVideoType}.nfo" | grep "<source>youtube</source>" | read; then
+                            log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: ${musicbrainzVideoTitle}${musicbrainzVideoDisambiguation} :: Previous download is youtube, upgrading to tidal version..."
+                            rm "$videoPath/$lidarrArtistFolderNoDisambig/${musicbrainzVideoTitleClean}${plexVideoType}"*
+                        fi
+                    fi
+                fi
+                if [ -f "$videoPath/$lidarrArtistFolderNoDisambig/${musicbrainzVideoTitleClean}${plexVideoType}.mkv" ]; then
+                    log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: ${musicbrainzVideoTitle}${musicbrainzVideoDisambiguation} :: Previously Downloaded, skipping..."
+                    continue
+                fi
+            fi
+
+            if [ "$musicbrainzVideoArtistCreditId" != "$lidarrArtistMusicbrainzId" ]; then
+                log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: ${musicbrainzVideoTitle}${musicbrainzVideoDisambiguation} :: First artist does not match album arist, skipping..."
+                continue
+            fi
+
+            
 
             DownloadVideo "$videoDownloadUrl" "$musicbrainzVideoTitleClean" "$plexVideoType" "MBZDB"
             if [ "$downloadFailed" = "true" ]; then
@@ -806,6 +828,24 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
                 plexVideoType="-video"
                 
                 if [ -d "$videoPath/$lidarrArtistFolderNoDisambig" ]; then
+                    if [ -f "$videoPath/$lidarrArtistFolderNoDisambig/${videoTitleClean}${plexVideoType}.nfo" ]; then
+                        if cat "$videoPath/$lidarrArtistFolderNoDisambig/${videoTitleClean}${plexVideoType}.nfo" | grep "source" | read; then
+                            sleep 0
+                        else
+                            sed -i '$d' "$videoPath/$lidarrArtistFolderNoDisambig/${videoTitleClean}${plexVideoType}.nfo"
+                            echo "	<source>youtube</source>" >> "$videoPath/$lidarrArtistFolderNoDisambig/${videoTitleClean}${plexVideoType}.nfo"
+                            echo "</musicvideo>" >> "$videoPath/$lidarrArtistFolderNoDisambig/${videoTitleClean}${plexVideoType}.nfo"
+                            tidy -w 2000 -i -m -xml "$videoPath/$lidarrArtistFolderNoDisambig/${videoTitleClean}${plexVideoType}.nfo" &>/dev/null
+                        fi
+                    fi
+                    if [ -f "$videoPath/$lidarrArtistFolderNoDisambig/${videoTitleClean}${plexVideoType}.nfo" ]; then
+                        if cat "$videoPath/$lidarrArtistFolderNoDisambig/${videoTitleClean}${plexVideoType}.nfo" | grep "source" | read; then
+                            sleep 0
+                        else
+                            log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: ${videoTitleClean} :: NFO Missing Source information, purging for re-processing..."
+                            rm "$videoPath/$lidarrArtistFolderNoDisambig/${videoTitleClean}${plexVideoType}"*
+                        fi
+                    fi
                     if [ -f "$videoPath/$lidarrArtistFolderNoDisambig/${videoTitleClean}${plexVideoType}.mkv" ]; then
                         log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: ${imvdbVideoTitle} :: Previously Downloaded, skipping..."
                         continue
@@ -843,7 +883,7 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
                 videoThumbnail="$imvdbVideoImage"   
                 videoUploadDate="$(echo "$videoData" | jq -r .upload_date)"
                 videoYear="${videoUploadDate:0:4}"
-		videoSource="youtube"
+		        videoSource="youtube"
                 
                 log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: ${imvdbVideoTitle} :: $videoDownloadUrl..."
                 DownloadVideo "$videoDownloadUrl" "$videoTitleClean" "$plexVideoType" "IMVDB"
