@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.063"
+scriptVersion="1.0.064"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -107,8 +107,8 @@ CacheMusicbrainzRecords () {
         log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: Processing..."
         log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: Checking Musicbrainz for recordings..."
         musicbrainzArtistRecordings=$(curl -s -A "$agent" "$musicbrainzMirror/ws/2/recording?artist=$lidarrArtistMusicbrainzId&limit=1&offset=0&fmt=json")
-		sleep 1
-		musicbrainzArtistRecordingsCount=$(echo "$musicbrainzArtistRecordings" | jq -r '."recording-count"')
+	sleep 1
+	musicbrainzArtistRecordingsCount=$(echo "$musicbrainzArtistRecordings" | jq -r '."recording-count"')
         log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: $musicbrainzArtistRecordingsCount recordings found..."
         
         if [ ! -d /config/extended/cache/musicbrainz ]; then
@@ -117,17 +117,14 @@ CacheMusicbrainzRecords () {
         fi
 
         if [ -f "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json" ]; then
-            if ! [[ $(find "/config/extended/cache/musicbrainz" -type f -name "$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json" -mtime +7 -print) ]]; then
-                log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: Previously cached, skipping..."
-                return
-            fi            
-        fi
-
-        if [ -f "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json" ]; then
             musicbrainzArtistDownloadedRecordingsCount=$(cat "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json" | jq -r .id | wc -l)
             if [ $musicbrainzArtistRecordingsCount -ne $musicbrainzArtistDownloadedRecordingsCount  ]; then
                 log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: Previously cached, data needs to be updated..."
                 rm "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json"
+		if [ -f /config/extended/extended/logs/video/complete/$lidarrArtistMusicbrainzId ]; then
+			log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: Removing Artist completed log file to allow artist re-processing..."
+			rm /config/extended/extended/logs/video/complete/$lidarrArtistMusicbrainzId
+		fi
             fi
         fi
         
@@ -265,7 +262,13 @@ ImvdbCache () {
     if [ "$artistImvdbVideoUrlsCount" ==  "$cachedArtistImvdbVideoUrlsCount" ]; then
         log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: Chache is already up-to-date, skipping..."
         return
+    else 
+    	if [ -f /config/extended/extended/logs/video/complete/$lidarrArtistMusicbrainzId ]; then
+		log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: Removing Artist completed log file to allow artist re-processing..."
+		rm /config/extended/extended/logs/video/complete/$lidarrArtistMusicbrainzId
+	fi
     fi
+    
 
     sleep 0.5
     imvdbProcessCount=0
@@ -605,20 +608,13 @@ lidarrArtistIdsCount=$(echo "$lidarrArtistIds" | wc -l)
 processCount=0
 for lidarrArtistId in $(echo $lidarrArtistIds); do
 	processCount=$(( $processCount + 1))
-    lidarrArtistData=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/artist/$lidarrArtistId?apikey=$lidarrApiKey")
+    	lidarrArtistData=$(wget --timeout=0 -q -O - "$lidarrUrl/api/v1/artist/$lidarrArtistId?apikey=$lidarrApiKey")
 	lidarrArtistName=$(echo $lidarrArtistData | jq -r .artistName)
 	lidarrArtistMusicbrainzId=$(echo $lidarrArtistData | jq -r .foreignArtistId)
     
     if  [ "$lidarrArtistName" == "Various Artists" ]; then
         log "$processCount of $lidarrArtistIdsCount :: $lidarrArtistName :: Skipping, not processed by design..."
         continue
-    fi
-     
-    if [ -d /config/extended/logs/video/complete ]; then
-        if [ -f "/config/extended/logs/video/complete/$lidarrArtistMusicbrainzId" ]; then
-            log "$processCount of $lidarrArtistIdsCount :: $lidarrArtistName :: Music Videos previously downloaded, skipping..."
-            continue            
-        fi
     fi
 
     lidarrArtistPath="$(echo "${lidarrArtistData}" | jq -r " .path")"
@@ -644,6 +640,13 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
     
     CacheMusicbrainzRecords
     ImvdbCache
+    
+    if [ -d /config/extended/logs/video/complete ]; then
+        if [ -f "/config/extended/logs/video/complete/$lidarrArtistMusicbrainzId" ]; then
+            log "$processCount of $lidarrArtistIdsCount :: $lidarrArtistName :: Music Videos previously downloaded, skipping..."
+            continue            
+        fi
+    fi
 
     log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: Checking records for videos..."
     musicbrainzArtistVideoRecordings=$(cat "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json" | jq -r "select(.video==true)")
