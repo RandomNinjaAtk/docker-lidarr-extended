@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.064"
+scriptVersion="1.0.065"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -491,6 +491,7 @@ VideoNfoWriter () {
 	echo "		<musicBrainzArtistID>$lidarrArtistMusicbrainzId</musicBrainzArtistID>" >> "$nfo"
 	echo "	</albumArtistCredits>" >> "$nfo"
     echo "	<thumb>${1}${2}.jpg</thumb>" >> "$nfo"
+    echo "	<source>$8</source>" >> "$nfo"
     echo "</musicvideo>" >> "$nfo"
     tidy -w 2000 -i -m -xml "$nfo" &>/dev/null
     chmod 666 "$nfo"
@@ -718,6 +719,7 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
                 videoImageId="$(echo "$videoData" | jq -r ".imageId")"
                 videoImageIdFix="$(echo "$videoImageId" | sed "s/-/\//g")"
                 videoThumbnail="https://resources.tidal.com/images/$videoImageIdFix/750x500.jpg"
+		videoSource="tidal"
             fi
 
             if echo "$videoDownloadUrl" | grep -i "youtube" | read; then
@@ -730,6 +732,7 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
                 videoThumbnail="$(echo "$videoData" | jq -r .thumbnail)"
                 videoUploadDate="$(echo "$videoData" | jq -r .upload_date)"
                 videoYear="${videoUploadDate:0:4}"
+		videoSource="youtube"
             fi
 
             DownloadVideo "$videoDownloadUrl" "$musicbrainzVideoTitleClean" "$plexVideoType" "MBZDB"
@@ -740,7 +743,7 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
             DownloadThumb "$videoThumbnail" "$musicbrainzVideoTitleClean" "$plexVideoType" "MBZDB"
             VideoProcessWithSMA "MBZDB" "$musicbrainzVideoTitle"
             VideoTagProcess "$musicbrainzVideoTitleClean" "$plexVideoType" "$videoYear" "MBZDB"
-            VideoNfoWriter "$musicbrainzVideoTitleClean" "$plexVideoType" "$musicbrainzVideoTitle" "" "musicbrainz" "$videoYear" "MBZDB"
+            VideoNfoWriter "$musicbrainzVideoTitleClean" "$plexVideoType" "$musicbrainzVideoTitle" "" "musicbrainz" "$videoYear" "MBZDB" "$videoSource"
                 
             if [ ! -d "$videoPath/$lidarrArtistFolderNoDisambig" ]; then
                 mkdir -p "$videoPath/$lidarrArtistFolderNoDisambig"
@@ -835,6 +838,7 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
                 videoThumbnail="$imvdbVideoImage"   
                 videoUploadDate="$(echo "$videoData" | jq -r .upload_date)"
                 videoYear="${videoUploadDate:0:4}"
+		videoSource="youtube"
                 
                 log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: ${imvdbVideoTitle} :: $videoDownloadUrl..."
                 DownloadVideo "$videoDownloadUrl" "$videoTitleClean" "$plexVideoType" "IMVDB"
@@ -845,7 +849,7 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
                 DownloadThumb "$imvdbVideoImage" "$videoTitleClean" "$plexVideoType" "IMVDB"
                 VideoProcessWithSMA "IMVDB" "$imvdbVideoTitle" 
                 VideoTagProcess "$videoTitleClean" "$plexVideoType" "$videoYear" "IMVDB"
-                VideoNfoWriter "$videoTitleClean" "$plexVideoType" "$imvdbVideoTitle" "" "imvdb" "$videoYear" "IMVDB"
+                VideoNfoWriter "$videoTitleClean" "$plexVideoType" "$imvdbVideoTitle" "" "imvdb" "$videoYear" "IMVDB" "$videoSource"
                     
                 if [ ! -d "$videoPath/$lidarrArtistFolderNoDisambig" ]; then
                     mkdir -p "$videoPath/$lidarrArtistFolderNoDisambig"
