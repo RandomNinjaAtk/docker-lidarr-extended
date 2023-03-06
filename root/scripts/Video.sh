@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.068"
+scriptVersion="1.0.069"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -749,7 +749,7 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
                         fi
                     fi
                 fi
-                if [ -f "$videoPath/$lidarrArtistFolderNoDisambig/${musicbrainzVideoTitleClean}${plexVideoType}.mkv" ]; then
+                if [[ -n $(find "$videoPath/$lidarrArtistFolderNoDisambig" -maxdepth 1 -iname "${musicbrainzVideoTitleClean}${plexVideoType}.mkv") ]]; then
                     log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: ${musicbrainzVideoTitle}${musicbrainzVideoDisambiguation} :: Previously Downloaded, skipping..."
                     continue
                 fi
@@ -838,15 +838,7 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
                             tidy -w 2000 -i -m -xml "$videoPath/$lidarrArtistFolderNoDisambig/${videoTitleClean}${plexVideoType}.nfo" &>/dev/null
                         fi
                     fi
-                    if [ -f "$videoPath/$lidarrArtistFolderNoDisambig/${videoTitleClean}${plexVideoType}.nfo" ]; then
-                        if cat "$videoPath/$lidarrArtistFolderNoDisambig/${videoTitleClean}${plexVideoType}.nfo" | grep "source" | read; then
-                            sleep 0
-                        else
-                            log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: ${videoTitleClean} :: NFO Missing Source information, purging for re-processing..."
-                            rm "$videoPath/$lidarrArtistFolderNoDisambig/${videoTitleClean}${plexVideoType}"*
-                        fi
-                    fi
-                    if [ -f "$videoPath/$lidarrArtistFolderNoDisambig/${videoTitleClean}${plexVideoType}.mkv" ]; then
+                    if [[ -n $(find "$videoPath/$lidarrArtistFolderNoDisambig" -maxdepth 1 -iname "${videoTitleClean}${plexVideoType}.mkv") ]]; then
                         log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: ${imvdbVideoTitle} :: Previously Downloaded, skipping..."
                         continue
                     fi
