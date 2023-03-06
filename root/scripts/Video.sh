@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.065"
+scriptVersion="1.0.066"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -107,8 +107,8 @@ CacheMusicbrainzRecords () {
         log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: Processing..."
         log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: Checking Musicbrainz for recordings..."
         musicbrainzArtistRecordings=$(curl -s -A "$agent" "$musicbrainzMirror/ws/2/recording?artist=$lidarrArtistMusicbrainzId&limit=1&offset=0&fmt=json")
-	sleep 1
-	musicbrainzArtistRecordingsCount=$(echo "$musicbrainzArtistRecordings" | jq -r '."recording-count"')
+        sleep 1
+        musicbrainzArtistRecordingsCount=$(echo "$musicbrainzArtistRecordings" | jq -r '."recording-count"')
         log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: $musicbrainzArtistRecordingsCount recordings found..."
         
         if [ ! -d /config/extended/cache/musicbrainz ]; then
@@ -120,12 +120,10 @@ CacheMusicbrainzRecords () {
             musicbrainzArtistDownloadedRecordingsCount=$(cat "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json" | jq -r .id | wc -l)
             if [ $musicbrainzArtistRecordingsCount -ne $musicbrainzArtistDownloadedRecordingsCount  ]; then
                 log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: Previously cached, data needs to be updated..."
-                rm "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json"
-		if [ -f /config/extended/extended/logs/video/complete/$lidarrArtistMusicbrainzId ]; then
-			log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: Removing Artist completed log file to allow artist re-processing..."
-			rm /config/extended/extended/logs/video/complete/$lidarrArtistMusicbrainzId
-		fi
+                rm "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json"               
             fi
+        else
+            return
         fi
         
         if [ -f "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json" ]; then
@@ -133,7 +131,14 @@ CacheMusicbrainzRecords () {
                 log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: Previously cached, data needs to be updated..."
                 rm "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json"
             fi
+        else
+            return
         fi 
+
+        if [ -f "/config/extended/logs/video/complete/$lidarrArtistMusicbrainzId" ]; then
+            log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: Removing Artist completed log file to allow artist re-processing..."
+            rm "/config/extended/logs/video/complete/$lidarrArtistMusicbrainzId"
+        fi
 
         if [ ! -f "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json" ]; then
             offsetcount=$(( $musicbrainzArtistRecordingsCount / 100 ))
@@ -263,10 +268,10 @@ ImvdbCache () {
         log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: Chache is already up-to-date, skipping..."
         return
     else 
-    	if [ -f /config/extended/extended/logs/video/complete/$lidarrArtistMusicbrainzId ]; then
-		log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: Removing Artist completed log file to allow artist re-processing..."
-		rm /config/extended/extended/logs/video/complete/$lidarrArtistMusicbrainzId
-	fi
+    	if [ -f "/config/extended/logs/video/complete/$lidarrArtistMusicbrainzId" ]; then
+		    log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: Removing Artist completed log file to allow artist re-processing..."
+		    rm "/config/extended/logs/video/complete/$lidarrArtistMusicbrainzId"
+	    fi
     fi
     
 
