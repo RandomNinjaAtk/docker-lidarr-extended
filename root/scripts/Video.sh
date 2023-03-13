@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.069"
+scriptVersion="1.0.070"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -121,18 +121,18 @@ CacheMusicbrainzRecords () {
             if [ $musicbrainzArtistRecordingsCount -ne $musicbrainzArtistDownloadedRecordingsCount  ]; then
                 log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: Previously cached, data needs to be updated..."
                 rm "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json"               
+            else
+                return
             fi
-        else
-            return
         fi
         
         if [ -f "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json" ]; then
             if ! cat "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json" | grep -i "artist-credit" | read; then
                 log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: Previously cached, data needs to be updated..."
                 rm "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json"
+            else
+                return
             fi
-        else
-            return
         fi 
 
         if [ -f "/config/extended/logs/video/complete/$lidarrArtistMusicbrainzId" ]; then
@@ -154,10 +154,8 @@ CacheMusicbrainzRecords () {
                 log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: Downloading page $i... ($offset - $dlnumber Results)"
                 curl -s -A "$agent" "$musicbrainzMirror/ws/2/recording?artist=$lidarrArtistMusicbrainzId&inc=artist-credits+url-rels+recording-rels+release-rels+release-group-rels&limit=100&offset=$offset&fmt=json" | jq -r ".recordings[]" >> "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json"
                 sleep 1
-        
             done
         fi
-
 }
 
 TidalClientSetup () {
@@ -666,7 +664,6 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
     if [ $musicbrainzArtistVideoRecordingsDataWithUrlIdsCount = 0 ]; then
         log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: No vidoes with URLs to process, skipping..."
     else
-
         for musicbrainzVideoId in $(echo "$musicbrainzArtistVideoRecordingsDataWithUrlIds"); do
             musicbrainzVideoRecordingData=$(echo "$musicbrainzArtistVideoRecordingsDataWithUrl" | jq -r "select(.id==\"$musicbrainzVideoId\")")
             musicbrainzVideoTitle="$(echo "$musicbrainzVideoRecordingData" | jq -r .title)"
