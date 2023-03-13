@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.070"
+scriptVersion="1.0.071"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -122,6 +122,7 @@ CacheMusicbrainzRecords () {
                 log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: Previously cached, data needs to be updated..."
                 rm "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json"               
             else
+                log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: Chache is already up-to-date, skipping..."
                 return
             fi
         fi
@@ -131,6 +132,7 @@ CacheMusicbrainzRecords () {
                 log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: Previously cached, data needs to be updated..."
                 rm "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json"
             else
+                log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: Chache is already up-to-date, skipping..."
                 return
             fi
         fi 
