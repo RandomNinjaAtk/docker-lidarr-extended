@@ -28,20 +28,18 @@ if [ ! -d "/config/extended/logs" ]; then
 	mkdir -p "/config/extended/logs"
 fi
 
+echo "Setting up scripts..."
+if [  -f "/config/extended/scripts/QueueCleaner.bash" ]; then
+	echo "Removing old script, QueueCleaner.bash"
+	rm "/config/extended/scripts/QueueCleaner.bash"
+fi
+echo "Downloading and setting up QueueCleaner.bash"
+curl "https://raw.githubusercontent.com/RandomNinjaAtk/arr-scripts/main/QueueCleaner.bash" -o "/config/extended/scripts/QueueCleaner.bash"
+
 # set permissions
 chmod 777 -R /usr/local/sma
 find /config/extended -type d -exec chmod 777 {} \;
 chmod -R 777 /config/extended/scripts
 chmod -R 777 /root
-
-
-echo "Setting up scripts..."
-if [  -f "/etc/services.d/QueueCleaner.bash" ]; then
-	echo "Removing old script, QueueCleaner.bash"
-	rm "/etc/services.d/QueueCleaner.bash"
-fi
-echo "Downloading and setting up QueueCleaner.bash"
-curl "https://raw.githubusercontent.com/RandomNinjaAtk/arr-scripts/main/QueueCleaner.bash" -o "/etc/services.d/QueueCleaner.bash"
-chmod 777 "/etc/services.d/QueueCleaner.bash"
 echo "Complete..."
 exit
