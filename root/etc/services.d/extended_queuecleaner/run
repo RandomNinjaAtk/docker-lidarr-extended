@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/with-contenv bash
 scriptVersion="1.0.2"
 
 ######## Settings
