@@ -36,7 +36,6 @@ chmod -R 777 /root
 
 
 echo "Setting up scripts..."
-echo "Downloading and setting up QueueCleaner.bash"
 if [  -f "/etc/services.d/QueueCleaner.bash" ]; then
 	echo "Removing old script, QueueCleaner.bash"
 	rm "/etc/services.d/QueueCleaner.bash"
