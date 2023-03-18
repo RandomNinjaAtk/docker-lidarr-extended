@@ -37,6 +37,11 @@ chmod -R 777 /root
 
 echo "Setting up scripts..."
 echo "Downloading and setting up QueueCleaner.bash"
+if [  -f "/etc/services.d/QueueCleaner.bash" ]; then
+	echo "Removing old script, QueueCleaner.bash"
+	rm "/etc/services.d/QueueCleaner.bash"
+fi
+echo "Downloading and setting up QueueCleaner.bash"
 curl "https://raw.githubusercontent.com/RandomNinjaAtk/arr-scripts/main/QueueCleaner.bash" -o "/etc/services.d/QueueCleaner.bash"
 chmod 777 "/etc/services.d/QueueCleaner.bash"
 echo "Complete..."
