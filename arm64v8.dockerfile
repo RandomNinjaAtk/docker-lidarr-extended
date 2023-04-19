@@ -58,6 +58,8 @@ RUN \
 		python3-dev \
 		libc-dev \
 		py3-pip \
+                rust \
+                cargo \
 		yt-dlp && \
 	echo "*** install python packages ***" && \
 	pip install --upgrade --no-cache-dir \
