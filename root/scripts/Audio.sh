@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.310"
+scriptVersion="1.0.311"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -988,7 +988,7 @@ GetMissingCutOffList () {
 				fi
 			done
 			
-			lidarrMissingRecords=$(ls /config/extended/cache/lidarr/list | wc -l 2>/dev/null)
+			lidarrMissingRecords=$(ls /config/extended/cache/lidarr/list 2>/dev/null | wc -l)
 			log "$page :: missing :: ${lidarrMissingRecords} albums found to process!"
 			wantedListAlbumTotal=$lidarrMissingRecords
 
@@ -1027,7 +1027,7 @@ GetMissingCutOffList () {
 				fi
 			done
 
-			lidarrCutoffRecords=$(ls /config/extended/cache/lidarr/list/*-cutoff | wc -l 2>/dev/null)
+			lidarrCutoffRecords=$(ls /config/extended/cache/lidarr/list/*-cutoff 2>/dev/null | wc -l)
 			log "$page :: cutoff :: ${lidarrCutoffRecords} ablums found to process!"
 			wantedListAlbumTotal=$lidarrCutoffRecords
 
