@@ -42,6 +42,7 @@ ENV videoFormat="bestvideo*+bestaudio/best"
 ENV scriptInterval=15m
 ENV videoDownloadTag=""
 ENV retryNotFound=90
+ENV videoContainer=mkv
 
 RUN \
 	echo "*** install packages ***" && \
