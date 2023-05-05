@@ -64,6 +64,9 @@ log "Donate: https://github.com/sponsors/RandomNinjaAtk"
 log "Project: https://github.com/RandomNinjaAtk/docker-lidarr-extended"
 log "Support: https://github.com/RandomNinjaAtk/docker-lidarr-extended/discussions"
 log "-----------------------------------------------------------------------------"
+log "Snorkrat Modified for videoContainer option"
+log "Video container set to format: $videoContainer"
+log "-----------------------------------------------------------------------------"
 sleep 5
 log ""
 log "Lift off in..."; sleep 0.5
@@ -87,6 +90,7 @@ Configuration () {
 	log "CONFIG :: Music Video Location :: $videoPath"
 	log "CONFIG :: Subtitle Language set to: $youtubeSubtitleLanguage"
 	log "CONFIG :: yt-dlp format: $videoFormat"
+	log "CONFIG :: Video container set to format: $videoContainer"
 	if [ -n "$videoDownloadTag" ]; then
 		log "CONFIG :: Video download tag set to: $videoDownloadTag"
 	fi
@@ -341,12 +345,12 @@ DownloadVideo () {
 
     if echo "$1" | grep -i "youtube" | read; then
         if [ ! -z "$cookiesFile" ]; then
-            yt-dlp -f "$videoFormat" --no-video-multistreams --cookies "$cookiesFile" -o "$downloadPath/incomplete/${2}${3}" --embed-subs --sub-lang $youtubeSubtitleLanguage --merge-output-format mkv --remux-video mkv --no-mtime --geo-bypass "$1"
+            yt-dlp -f "$videoFormat" --no-video-multistreams --cookies "$cookiesFile" -o "$downloadPath/incomplete/${2}${3}" --embed-subs --sub-lang $youtubeSubtitleLanguage --merge-output-format $videoContainer --remux-video $videoContainer --no-mtime --geo-bypass "$1"
         else
-            yt-dlp -f "$videoFormat" --no-video-multistreams -o "$downloadPath/incomplete/${2}${3}" --embed-subs --sub-lang $youtubeSubtitleLanguage --merge-output-format mkv --remux-video mkv --no-mtime --geo-bypass "$1"
+            yt-dlp -f "$videoFormat" --no-video-multistreams -o "$downloadPath/incomplete/${2}${3}" --embed-subs --sub-lang $youtubeSubtitleLanguage --merge-output-format $videoContainer --remux-video $videoContainer --no-mtime --geo-bypass "$1"
         fi
-        if [ -f "$downloadPath/incomplete/${2}${3}.mkv" ]; then
-            chmod 666 "$downloadPath/incomplete/${2}${3}.mkv"
+        if [ -f "$downloadPath/incomplete/${2}${3}.$videoContainer" ]; then
+            chmod 666 "$downloadPath/incomplete/${2}${3}.$videoContainer"
             downloadFailed=false
         else
             downloadFailed=true
@@ -394,16 +398,31 @@ VideoProcessWithSMA () {
         extension="${filename##*.}"
         filenamenoext="${filename%.*}"
 
-        if python3 /usr/local/sma/manual.py --config "/config/extended/scripts/sma.ini" -i "$file" -nt &>/dev/null; then
-            sleep 0.01
-            log "$processCount of $lidarrArtistIdsCount :: $1 :: $lidarrArtistName :: $2 :: Processed with SMA..."
-            rm  /usr/local/sma/config/*log*
+        if [[ $filenoext.$videoContainer == *.mkv ]]
+        then
+
+            if python3 /usr/local/sma/manual.py --config "/config/extended/scripts/sma.ini" -i "$file" -nt &>/dev/null; then
+                sleep 0.01
+                log "$processCount of $lidarrArtistIdsCount :: $1 :: $lidarrArtistName :: $2 :: Processed with SMA..."
+                rm  /usr/local/sma/config/*log*
+            else
+                log "$processCount of $lidarrArtistIdsCount :: $1 :: $lidarrArtistName :: $2 :: ERROR: SMA Processing Error"
+                rm "$video"
+                log "$processCount of $lidarrArtistIdsCount :: $1 :: $lidarrArtistName :: $2 :: INFO: deleted: $filename"
+            fi
         else
-            log "$processCount of $lidarrArtistIdsCount :: $1 :: $lidarrArtistName :: $2 :: ERROR: SMA Processing Error"
-            rm "$video"
-            log "$processCount of $lidarrArtistIdsCount :: $1 :: $lidarrArtistName :: $2 :: INFO: deleted: $filename"
+                if python3 /usr/local/sma/manual.py --config "/config/extended/scripts/sma-mp4.ini" -i "$file" -nt &>/dev/null; then
+                sleep 0.01
+                log "$processCount of $lidarrArtistIdsCount :: $1 :: $lidarrArtistName :: $2 :: Processed with SMA..."
+                rm  /usr/local/sma/config/*log*
+            else
+                log "$processCount of $lidarrArtistIdsCount :: $1 :: $lidarrArtistName :: $2 :: ERROR: SMA Processing Error"
+                rm "$video"
+                log "$processCount of $lidarrArtistIdsCount :: $1 :: $lidarrArtistName :: $2 :: INFO: deleted: $filename"
+            fi
         fi
     done
+
 }
 
 VideoTagProcess () {
@@ -430,10 +449,13 @@ VideoTagProcess () {
             genre=""
         fi
 
-        mv "$filenoext.mkv" "$filenoext-temp.mkv"
+        if [[ $filenoext.$videoContainer == *.mkv ]]
+        then
+
+        mv "$filenoext.$videoContainer" "$filenoext-temp.$videoContainer"
 		log "$processCount of $lidarrArtistIdsCount :: $4 :: $lidarrArtistName :: ${1}${2} $3 :: Tagging file"
 		ffmpeg -y \
-			-i "$filenoext-temp.mkv" \
+			-i "$filenoext-temp.$videoContainer" \
 			-c copy \
 			-metadata TITLE="${1}" \
 			-metadata DATE_RELEASE="$3" \
@@ -444,9 +466,32 @@ VideoTagProcess () {
 			-metadata ALBUMARTIST="$lidarrArtistName" \
 			-metadata ENCODED_BY="lidarr-extended" \
 			-attach "$downloadPath/incomplete/${1}${2}.jpg" -metadata:s:t mimetype=image/jpeg \
-			"$filenoext.mkv" &>/dev/null
-        rm "$filenoext-temp.mkv"
-        chmod 666 "$filenoext.mkv"
+			"$filenoext.$videoContainer" &>/dev/null
+        rm "$filenoext-temp.$videoContainer"
+        chmod 666 "$filenoext.$videoContainer"
+
+        else
+
+        mv "$filenoext.$videoContainer" "$filenoext-temp.$videoContainer"
+		log "$processCount of $lidarrArtistIdsCount :: $4 :: $lidarrArtistName :: ${1}${2} $3 :: Tagging file"
+		ffmpeg -y \
+			-i "$filenoext-temp.$videoContainer" \
+            -i "$downloadPath/incomplete/${1}${2}.jpg" \
+            -map 1 \
+            -map 0 \
+			-c copy \
+            -disposition:0 attached_pic \
+            -movflags faststart \
+			-metadata title="${1}" \
+			-metadata date="$3" \
+			-metadata artist="$lidarrArtistName" \
+			-metadata genre="$genre" \
+			"$filenoext.$videoContainer" &>/dev/null
+        rm "$filenoext-temp.$videoContainer"
+        chmod 666 "$filenoext.$videoContainer"
+        
+        fi
+
     done
 }
 
@@ -748,7 +793,7 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
                         fi
                     fi
                 fi
-                if [[ -n $(find "$videoPath/$lidarrArtistFolderNoDisambig" -maxdepth 1 -iname "${musicbrainzVideoTitleClean}${plexVideoType}.mkv") ]]; then
+                if [[ -n $(find "$videoPath/$lidarrArtistFolderNoDisambig" -maxdepth 1 -iname "${musicbrainzVideoTitleClean}${plexVideoType}.$videoContainer") ]]; then
                     log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: ${musicbrainzVideoTitle}${musicbrainzVideoDisambiguation} :: Previously Downloaded, skipping..."
                     continue
                 fi
@@ -837,7 +882,7 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
                             tidy -w 2000 -i -m -xml "$videoPath/$lidarrArtistFolderNoDisambig/${videoTitleClean}${plexVideoType}.nfo" &>/dev/null
                         fi
                     fi
-                    if [[ -n $(find "$videoPath/$lidarrArtistFolderNoDisambig" -maxdepth 1 -iname "${videoTitleClean}${plexVideoType}.mkv") ]]; then
+                    if [[ -n $(find "$videoPath/$lidarrArtistFolderNoDisambig" -maxdepth 1 -iname "${videoTitleClean}${plexVideoType}.$videoContainer") ]]; then
                         log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: ${imvdbVideoTitle} :: Previously Downloaded, skipping..."
                         continue
                     fi
