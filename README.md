@@ -50,7 +50,8 @@ This containers base image is provided by: [linuxserver/lidarr](https://github.c
 * Downloading **Music Videos** using online sources for use in popular applications (Plex/Kodi/Emby/Jellyfin):
   * Completely automated
   * Searches Lidarr Artists (musicbrainz) video recordings for videos to download
-  * Saves videos in MKV format
+  * Saves videos in MKV format by default
+  * Can save videos in MP4 format for Plex metadata support
   * Downloads using Highest available quality for both audio and video
   * Saves thumbnail of video locally for Plex/Kodi/Jellyfin/Emby usage
   * Embed subtitles if available matching desired language
@@ -121,6 +122,7 @@ Container images are configured using parameters passed at runtime (such as thos
 | `-e configureLidarrWithOptimalSettings=true` | true = enabled :: Automatically configures Lidarr with optimal settings |
 | `-e searchSort=date` | date or album :: Sorts the missing/cutoff list by release date (newest -> oldest) or album type (album -> single) for processing the list |
 | `-e audioFormat=native` | native or alac or mp3 or aac or opus :: native is the native download client file type, selected by the matching audio bitrate |
+| `-e videoContainer=mkv` | mkv or mp4 :: Default = mkv.  mp4 allows Plex to read metadata.  Note mp4 videos may not be as high quality as mkv due to codec limitations of mp4. |
 | `-e audioBitrate=lossless` | master or lossless or high or low or ### :: master = MQA/lossless flac files, lossless = flac files, high = 320K, low = 128k/96k, ### = the output bitrate of converted lossless files to selected audioFormat that is not native, example: 192... |
 | `-e requireQuality=true` | true = enabled :: Downloads will be required to have the requested file format |
 | `-e enableReplaygainTags=true` | true = enabled :: Downloads will be tagged with Replaygain Metadata |
