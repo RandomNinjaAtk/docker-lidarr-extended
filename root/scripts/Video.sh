@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.071"
+scriptVersion="1.0.072"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -715,7 +715,7 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
                 videoThumbnail="$(echo "$videoData" | jq -r .thumbnail)"
                 videoUploadDate="$(echo "$videoData" | jq -r .upload_date)"
                 videoYear="${videoUploadDate:0:4}"
-		        videoSource="youtube"
+		videoSource="youtube"
             fi
 
             log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: ${musicbrainzVideoTitle}${musicbrainzVideoDisambiguation} :: $videoDownloadUrl..."
@@ -812,7 +812,8 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
                 imvdbProcessCount=$(( $imvdbProcessCount + 1 ))
                 imvdbVideoTitle="$(cat "$imvdbVideoData" | jq -r .song_title)"
                 videoTitleClean="$(echo "$imvdbVideoTitle" | sed -e "s/[^[:alpha:][:digit:]$^&_+=()'%;{},.@#]/ /g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
-                imvdbVideoYear="$(cat "$imvdbVideoData" | jq -r .year)"
+                imvdbVideoYear=""
+		imvdbVideoYear="$(cat "$imvdbVideoData" | jq -r .year)"
                 imvdbVideoImage="$(cat "$imvdbVideoData" | jq -r .image.o)"
                 imvdbVideoArtistsSlug="$(cat "$imvdbVideoData" | jq -r .artists[].slug)"
                 echo "$lidarrArtistName" > /config/extended/cache/imvdb/$imvdbVideoArtistsSlug
@@ -871,10 +872,14 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
                     videoData="$(yt-dlp -j "$videoDownloadUrl")"
                 fi
                 
-                videoThumbnail="$imvdbVideoImage"   
-                videoUploadDate="$(echo "$videoData" | jq -r .upload_date)"
-                videoYear="${videoUploadDate:0:4}"
-		        videoSource="youtube"
+                videoThumbnail="$imvdbVideoImage"
+		if [ -z "$imvdbVideoYear" ]; then
+                	videoUploadDate="$(echo "$videoData" | jq -r .upload_date)"
+                	videoYear="${videoUploadDate:0:4}"
+		else
+			videoYear="$imvdbVideoYear"
+		fi
+		videoSource="youtube"
                 
                 log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: ${imvdbVideoTitle} :: $videoDownloadUrl..."
                 DownloadVideo "$videoDownloadUrl" "$videoTitleClean" "$plexVideoType" "IMVDB"
