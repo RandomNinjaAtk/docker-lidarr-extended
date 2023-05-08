@@ -64,9 +64,6 @@ log "Donate: https://github.com/sponsors/RandomNinjaAtk"
 log "Project: https://github.com/RandomNinjaAtk/docker-lidarr-extended"
 log "Support: https://github.com/RandomNinjaAtk/docker-lidarr-extended/discussions"
 log "-----------------------------------------------------------------------------"
-log "Snorkrat Modified for videoContainer option"
-log "Video container set to format: $videoContainer"
-log "-----------------------------------------------------------------------------"
 sleep 5
 log ""
 log "Lift off in..."; sleep 0.5
@@ -89,7 +86,8 @@ Configuration () {
 	log "CONFIG :: Download Location :: $downloadPath"
 	log "CONFIG :: Music Video Location :: $videoPath"
 	log "CONFIG :: Subtitle Language set to: $youtubeSubtitleLanguage"
-	log "CONFIG :: yt-dlp format: $videoFormat"
+	log "CONFIG :: yt-dlp format (mkv): $videoFormat"
+	log "CONFIG :: yt-dlp format (mp4): --format-sort ext:mp4:m4a --merge-output-format mp4"
 	log "CONFIG :: Video container set to format: $videoContainer"
 	if [ -n "$videoDownloadTag" ]; then
 		log "CONFIG :: Video download tag set to: $videoDownloadTag"
@@ -344,16 +342,30 @@ DownloadVideo () {
     fi 
 
     if echo "$1" | grep -i "youtube" | read; then
-        if [ ! -z "$cookiesFile" ]; then
-            yt-dlp -f "$videoFormat" --no-video-multistreams --cookies "$cookiesFile" -o "$downloadPath/incomplete/${2}${3}" --embed-subs --sub-lang $youtubeSubtitleLanguage --merge-output-format $videoContainer --remux-video $videoContainer --no-mtime --geo-bypass "$1"
+        if [ $videoContainer = mkv ]; then
+            if [ ! -z "$cookiesFile" ]; then
+                yt-dlp -f "$videoFormat" --no-video-multistreams --cookies "$cookiesFile" -o "$downloadPath/incomplete/${2}${3}" --embed-subs --sub-lang $youtubeSubtitleLanguage --merge-output-format mkv --remux-video mkv --no-mtime --geo-bypass "$1"
+            else
+                yt-dlp -f "$videoFormat" --no-video-multistreams -o "$downloadPath/incomplete/${2}${3}" --embed-subs --sub-lang $youtubeSubtitleLanguage --merge-output-format mkv --remux-video mkv --no-mtime --geo-bypass "$1"
+            fi
+            if [ -f "$downloadPath/incomplete/${2}${3}.mkv" ]; then
+                chmod 666 "$downloadPath/incomplete/${2}${3}.mkv"
+                downloadFailed=false
+            else
+                downloadFailed=true
+            fi
         else
-            yt-dlp -f "$videoFormat" --no-video-multistreams -o "$downloadPath/incomplete/${2}${3}" --embed-subs --sub-lang $youtubeSubtitleLanguage --merge-output-format $videoContainer --remux-video $videoContainer --no-mtime --geo-bypass "$1"
-        fi
-        if [ -f "$downloadPath/incomplete/${2}${3}.$videoContainer" ]; then
-            chmod 666 "$downloadPath/incomplete/${2}${3}.$videoContainer"
-            downloadFailed=false
-        else
-            downloadFailed=true
+            if [ ! -z "$cookiesFile" ]; then
+                yt-dlp --format-sort ext:mp4:m4a --merge-output-format mp4 --no-video-multistreams --cookies "$cookiesFile" -o "$downloadPath/incomplete/${2}${3}" --embed-subs --sub-lang $youtubeSubtitleLanguage --no-mtime --geo-bypass "$1"
+            else
+                yt-dlp --format-sort ext:mp4:m4a --merge-output-format mp4 --no-video-multistreams -o "$downloadPath/incomplete/${2}${3}" --embed-subs --sub-lang $youtubeSubtitleLanguage --no-mtime --geo-bypass "$1"
+            fi
+            if [ -f "$downloadPath/incomplete/${2}${3}.mp4" ]; then
+                chmod 666 "$downloadPath/incomplete/${2}${3}.mp4"
+                downloadFailed=false
+            else
+                downloadFailed=true
+            fi
         fi
     fi
     
@@ -479,13 +491,14 @@ VideoTagProcess () {
             -i "$downloadPath/incomplete/${1}${2}.jpg" \
             -map 1 \
             -map 0 \
-			-c copy \
+            -c copy \
+            -c:v:0 mjpeg \
             -disposition:0 attached_pic \
             -movflags faststart \
-			-metadata title="${1}" \
-			-metadata date="$3" \
-			-metadata artist="$lidarrArtistName" \
-			-metadata genre="$genre" \
+			-metadata TITLE="${1}" \
+			-metadata ARTIST="$lidarrArtistName" \
+			-metadata DATE="$3" \
+			-metadata GENRE="$genre" \
 			"$filenoext.$videoContainer" &>/dev/null
         rm "$filenoext-temp.$videoContainer"
         chmod 666 "$filenoext.$videoContainer"
@@ -793,7 +806,7 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
                         fi
                     fi
                 fi
-                if [[ -n $(find "$videoPath/$lidarrArtistFolderNoDisambig" -maxdepth 1 -iname "${musicbrainzVideoTitleClean}${plexVideoType}.$videoContainer") ]]; then
+                if [[ -n $(find "$videoPath/$lidarrArtistFolderNoDisambig" -maxdepth 1 -iname "${musicbrainzVideoTitleClean}${plexVideoType}.mkv") ]] || [[ -n $(find "$videoPath/$lidarrArtistFolderNoDisambig" -maxdepth 1 -iname "${musicbrainzVideoTitleClean}${plexVideoType}.mp4") ]]; then
                     log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: ${musicbrainzVideoTitle}${musicbrainzVideoDisambiguation} :: Previously Downloaded, skipping..."
                     continue
                 fi
@@ -882,7 +895,7 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
                             tidy -w 2000 -i -m -xml "$videoPath/$lidarrArtistFolderNoDisambig/${videoTitleClean}${plexVideoType}.nfo" &>/dev/null
                         fi
                     fi
-                    if [[ -n $(find "$videoPath/$lidarrArtistFolderNoDisambig" -maxdepth 1 -iname "${videoTitleClean}${plexVideoType}.$videoContainer") ]]; then
+                    if [[ -n $(find "$videoPath/$lidarrArtistFolderNoDisambig" -maxdepth 1 -iname "${videoTitleClean}${plexVideoType}.mkv") ]] || [[ -n $(find "$videoPath/$lidarrArtistFolderNoDisambig" -maxdepth 1 -iname "${videoTitleClean}${plexVideoType}.mp4") ]]; then
                         log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: ${imvdbVideoTitle} :: Previously Downloaded, skipping..."
                         continue
                     fi
