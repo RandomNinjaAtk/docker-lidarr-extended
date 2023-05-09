@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.072"
+scriptVersion="1.0.073"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -86,9 +86,13 @@ Configuration () {
 	log "CONFIG :: Download Location :: $downloadPath"
 	log "CONFIG :: Music Video Location :: $videoPath"
 	log "CONFIG :: Subtitle Language set to: $youtubeSubtitleLanguage"
-	log "CONFIG :: yt-dlp format (mkv): $videoFormat"
-	log "CONFIG :: yt-dlp format (mp4): --format-sort ext:mp4:m4a --merge-output-format mp4"
 	log "CONFIG :: Video container set to format: $videoContainer"
+	if [ "$videoContainer" == "mkv" ]; then
+		log "CONFIG :: yt-dlp format: $videoFormat"
+	fi
+	if [ "$videoContainer" == "mp4" ]; then
+		log "CONFIG :: yt-dlp format: --format-sort ext:mp4:m4a --merge-output-format mp4"
+	fi
 	if [ -n "$videoDownloadTag" ]; then
 		log "CONFIG :: Video download tag set to: $videoDownloadTag"
 	fi
@@ -447,9 +451,9 @@ VideoTagProcess () {
         filenamenoext="${filename%.*}"
         artistGenres=""
         OLDIFS="$IFS"
-		IFS=$'\n'
-		artistGenres=($(echo $lidarrArtistData | jq -r ".genres[]"))
-		IFS="$OLDIFS"
+	IFS=$'\n'
+	artistGenres=($(echo $lidarrArtistData | jq -r ".genres[]"))
+	IFS="$OLDIFS"
 
         if [ ! -z "$artistGenres" ]; then
             for genre in ${!artistGenres[@]}; do
@@ -461,10 +465,8 @@ VideoTagProcess () {
             genre=""
         fi
 
-        if [[ $filenoext.$videoContainer == *.mkv ]]
-        then
-
-        mv "$filenoext.$videoContainer" "$filenoext-temp.$videoContainer"
+        if [[ $filenoext.$videoContainer == *.mkv ]]; then
+		mv "$filenoext.$videoContainer" "$filenoext-temp.$videoContainer"
 		log "$processCount of $lidarrArtistIdsCount :: $4 :: $lidarrArtistName :: ${1}${2} $3 :: Tagging file"
 		ffmpeg -y \
 			-i "$filenoext-temp.$videoContainer" \
@@ -479,32 +481,28 @@ VideoTagProcess () {
 			-metadata ENCODED_BY="lidarr-extended" \
 			-attach "$downloadPath/incomplete/${1}${2}.jpg" -metadata:s:t mimetype=image/jpeg \
 			"$filenoext.$videoContainer" &>/dev/null
-        rm "$filenoext-temp.$videoContainer"
-        chmod 666 "$filenoext.$videoContainer"
-
+		rm "$filenoext-temp.$videoContainer"
+		chmod 666 "$filenoext.$videoContainer"
         else
-
-        mv "$filenoext.$videoContainer" "$filenoext-temp.$videoContainer"
+		mv "$filenoext.$videoContainer" "$filenoext-temp.$videoContainer"
 		log "$processCount of $lidarrArtistIdsCount :: $4 :: $lidarrArtistName :: ${1}${2} $3 :: Tagging file"
 		ffmpeg -y \
 			-i "$filenoext-temp.$videoContainer" \
-            -i "$downloadPath/incomplete/${1}${2}.jpg" \
-            -map 1 \
-            -map 0 \
-            -c copy \
-            -c:v:0 mjpeg \
-            -disposition:0 attached_pic \
-            -movflags faststart \
+		 	-i "$downloadPath/incomplete/${1}${2}.jpg" \
+			-map 1 \
+			-map 0 \
+			-c copy \
+			-c:v:0 mjpeg \
+			-disposition:0 attached_pic \
+			-movflags faststart \
 			-metadata TITLE="${1}" \
 			-metadata ARTIST="$lidarrArtistName" \
 			-metadata DATE="$3" \
 			-metadata GENRE="$genre" \
 			"$filenoext.$videoContainer" &>/dev/null
-        rm "$filenoext-temp.$videoContainer"
-        chmod 666 "$filenoext.$videoContainer"
-        
+		rm "$filenoext-temp.$videoContainer"
+		chmod 666 "$filenoext.$videoContainer"
         fi
-
     done
 }
 
