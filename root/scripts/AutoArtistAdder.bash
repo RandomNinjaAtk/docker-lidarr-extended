@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.009"
+scriptVersion="1.0.1"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -8,11 +8,11 @@ if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 		lidarrUrlBase="/$(echo "$lidarrUrlBase" | sed "s/\///g")"
 	fi
 	lidarrApiKey="$(cat /config/config.xml | xq | jq -r .Config.ApiKey)"
-	lidarrAgentInstanceId="$(echo "$lidarrApiKey" | cut -c1-8)"
+	lidarrAgentInstanceId="$(echo "$lidarrApiKey" | cut -c1-10)"
 	lidarrPort="$(cat /config/config.xml | xq | jq -r .Config.Port)"
 	lidarrUrl="http://localhost:${lidarrPort}${lidarrUrlBase}"
 fi
-agent="lidarr-extended-${lidarrAgentInstanceId} ( https://github.com/RandomNinjaAtk/docker-lidarr-extended )"
+agent="${lidarrAgentInstanceId} ( https://github.com/RandomNinjaAtk/docker-lidarr-extended )"
 musicbrainzMirror=https://musicbrainz.org
 
 # Debugging settings
