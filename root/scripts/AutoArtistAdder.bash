@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.1"
+scriptVersion="1.0.2"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -94,16 +94,16 @@ AddDeezerArtistToLidarr () {
 		query_data=$(curl -s -A "$agent" "https://musicbrainz.org/ws/2/url?query=url:%22https://www.deezer.com/artist/${deezerArtistId}%22&fmt=json")
 		count=$(echo "$query_data" | jq -r ".count")
 		if [ "$count" == "0" ]; then
-			sleep 1.5
+			sleep 2
 			query_data=$(curl -s -A "$agent" "https://musicbrainz.org/ws/2/url?query=url:%22http://www.deezer.com/artist/${deezerArtistId}%22&fmt=json")
 			count=$(echo "$query_data" | jq -r ".count")
-			sleep 1.5
+			sleep 2
 		fi
 							
 		if [ "$count" == "0" ]; then
 			query_data=$(curl -s -A "$agent" "https://musicbrainz.org/ws/2/url?query=url:%22http://deezer.com/artist/${deezerArtistId}%22&fmt=json")
 			count=$(echo "$query_data" | jq -r ".count")
-			sleep 1.5
+			sleep 2
 		fi
 							
 		if [ "$count" == "0" ]; then
@@ -113,7 +113,7 @@ AddDeezerArtistToLidarr () {
 							
 		if [ "$count" != "0" ]; then
 			musicbrainz_main_artist_id=$(echo "$query_data" | jq -r '.urls[]."relation-list"[].relations[].artist.id' | head -n 1)
-			sleep 1.5
+			sleep 2
 			artist_data=$(curl -s -A "$agent" "https://musicbrainz.org/ws/2/artist/$musicbrainz_main_artist_id?fmt=json")
 			artist_sort_name="$(echo "$artist_data" | jq -r '."sort-name"')"
 			artist_formed="$(echo "$artist_data" | jq -r '."begin-area".name')"
@@ -269,19 +269,19 @@ AddTidalArtistToLidarr () {
 		query_data=$(curl -s -A "$agent" "https://musicbrainz.org/ws/2/url?query=url:%22https://listen.tidal.com/artist/${serviceArtistId}%22&fmt=json")
 		count=$(echo "$query_data" | jq -r ".count")
 		if [ "$count" == "0" ]; then
-			sleep 1.5
+			sleep 2
 			query_data=$(curl -s -A "$agent" "https://musicbrainz.org/ws/2/url?query=url:%22http://listen.tidal.com/artist/${serviceArtistId}%22&fmt=json")
 			count=$(echo "$query_data" | jq -r ".count")
 		fi
 							
 		if [ "$count" == "0" ]; then
-			sleep 1.5
+			sleep 2
 			query_data=$(curl -s -A "$agent" "https://musicbrainz.org/ws/2/url?query=url:%22https://tidal.com/artist/${serviceArtistId}%22&fmt=json")
 			count=$(echo "$query_data" | jq -r ".count")
 		fi
 							
 		if [ "$count" == "0" ]; then
-			sleep 1.5
+			sleep 2
 			query_data=$(curl -s -A "$agent" "https://musicbrainz.org/ws/2/url?query=url:%22http://tidal.com/artist/${serviceArtistId}%22&fmt=json")
 			count=$(echo "$query_data" | jq -r ".count")
 		fi
