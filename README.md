@@ -124,7 +124,7 @@ Container images are configured using parameters passed at runtime (such as thos
 | `-e audioFormat=native` | native or alac or mp3 or aac or opus :: native is the native download client file type, selected by the matching audio bitrate |
 | `-e videoContainer=mkv` | mkv or mp4 :: Default = mkv.  mp4 allows Plex to read metadata.  Note mp4 videos may not be as high quality as mkv due to codec limitations of mp4. |
 | `-e audioBitrate=lossless` | master or lossless or high or low or ### :: master = MQA/lossless flac files, lossless = flac files, high = 320K, low = 128k/96k, ### = the output bitrate of converted lossless files to selected audioFormat that is not native, example: 192... |
-| `-e requireQuality=true` | true = enabled :: Downloads will be required to have the requested file format |
+| `-e requireQuality=true` | true = enabled :: Downloads will be checked for quality and require to have the requested file format & quality |
 | `-e enableReplaygainTags=true` | true = enabled :: Downloads will be tagged with Replaygain Metadata |
 | `-e audioLyricType=both` | both or explicit or clean :: both, is explicit preferred  matching, explicit is explicit releases only matching and clean is clean releases only matching |
 | `-e dlClientSource=both` | deezer, tidal or both :: set to both, to use both clients, tidal requires extra steps, view logging output [(Authing information)](https://github.com/RandomNinjaAtk/docker-lidarr-extended/issues/96#issuecomment-1280672421)|
