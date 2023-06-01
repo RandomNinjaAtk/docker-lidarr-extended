@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.1"
+scriptVersion="1.0.2"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -113,7 +113,7 @@ CacheMusicbrainzRecords () {
         log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: Processing..."
         log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: Checking Musicbrainz for recordings..."
         musicbrainzArtistRecordings=$(curl -s -A "$agent" "$musicbrainzMirror/ws/2/recording?artist=$lidarrArtistMusicbrainzId&limit=1&offset=0&fmt=json")
-        sleep 1
+        sleep 2
         musicbrainzArtistRecordingsCount=$(echo "$musicbrainzArtistRecordings" | jq -r '."recording-count"')
         log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: $musicbrainzArtistRecordingsCount recordings found..."
         
@@ -161,7 +161,7 @@ CacheMusicbrainzRecords () {
 
                 log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: Downloading page $i... ($offset - $dlnumber Results)"
                 curl -s -A "$agent" "$musicbrainzMirror/ws/2/recording?artist=$lidarrArtistMusicbrainzId&inc=artist-credits+url-rels+recording-rels+release-rels+release-group-rels&limit=100&offset=$offset&fmt=json" | jq -r ".recordings[]" >> "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json"
-                sleep 1
+                sleep 2
             done
         fi
 }
@@ -604,10 +604,11 @@ AddFeaturedVideoArtists () {
         fi
         log "$loopCount of $videoArtistsCount :: $artistName :: Processing url :: https://imvdb.com/n/$slug"
         query_data=$(curl -s -A "$agent" "https://musicbrainz.org/ws/2/url?query=url:%22https://imvdb.com/n/$slug%22&fmt=json")
+	sleep 2
         count=$(echo "$query_data" | jq -r ".count")			
         if [ "$count" != "0" ]; then
             musicbrainzArtistId="$(echo "$query_data" | jq -r ".urls[].\"relation-list\"[].relations[].artist.id")"
-            sleep 1
+            sleep 2
         else
             log "$loopCount of $videoArtistsCount :: $artistName :: ERROR : Musicbrainz ID Not Found, skipping..."
             continue
@@ -691,7 +692,7 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
         log "$processCount of $lidarrArtistIdsCount :: $lidarrArtistName :: IMVDB Slug Not Found..."
         log "$processCount of $lidarrArtistIdsCount :: $lidarrArtistName :: Fallback to Musicbrainz for IMVDB Slug"
         tempmbzartistinfo="$(curl -s -A "$agent" "$musicbrainzMirror/ws/2/artist/$lidarrArtistMusicbrainzId?inc=url-rels+genres&fmt=json")"
-        sleep 1
+        sleep 2
         artistImvdbUrl="$(echo "$tempmbzartistinfo" | jq -r ".relations | .[] | .url | select(.resource | contains(\"imvdb\")) | .resource")"
         artistImvdbSlug=$(basename "$artistImvdbUrl")
     fi
@@ -910,7 +911,7 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
                             if [ "$count" != "0" ]; then
                                 featuredArtistName="$(echo "$query_data" | jq -r ".urls[].\"relation-list\"[].relations[].artist.name")"
                                 echo -n "$featuredArtistName" > /config/extended/cache/imvdb/$featuredArtistSlug
-                                sleep 1
+                                sleep 2
                             fi
                         fi
                         find /config/extended/cache/imvdb -type f -empty -delete # delete empty files
