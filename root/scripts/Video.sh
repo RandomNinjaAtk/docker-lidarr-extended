@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.5"
+scriptVersion="1.0.6"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -462,7 +462,7 @@ AddFeaturedVideoArtists () {
 
 		artistNameEncoded="$(jq -R -r @uri <<<"$artistName")"
 		lidarrArtistSearchData="$(curl -s "$lidarrUrl/api/v1/search?term=${artistNameEncoded}&apikey=${lidarrApiKey}")"
-		lidarrArtistMatchedData=$(echo $lidarrArtistSearchData | jq -r ".[] | select(.artist) | select(.artist.links[].url==\"https://imvdb.com/n/${slug}\")" 2>/dev/null)
+		lidarrArtistMatchedData=$(echo $lidarrArtistSearchData | jq -r ".[] | select(.artist) | select(.artist.links[].url | contains (\"imvdb.com/n/${slug}\"))" 2>/dev/null)
 							
 		if [ ! -z "$lidarrArtistMatchedData" ]; then
 	        data="$lidarrArtistMatchedData"		
@@ -487,11 +487,11 @@ AddFeaturedVideoArtists () {
 			\"addOptions\":{\"searchForMissingAlbums\":false}
 			}"
 
-		if echo "$lidarrArtistIds" | grep "^${musicbrainzArtistId}$" | read; then
-			log "$loopCount of $videoArtistsCount :: $artistName :: Already in Lidarr ($musicbrainzArtistId), skipping..."
+		if echo "$lidarrArtistIds" | grep "^${foreignId}$" | read; then
+			log "$loopCount of $videoArtistsCount :: $artistName :: Already in Lidarr ($foreignId), skipping..."
 			continue
 		fi
-		log "$loopCount of $videoArtistsCount :: $artistName :: Adding $artistName to Lidarr ($musicbrainzArtistId)..."
+		log "$loopCount of $videoArtistsCount :: $artistName :: Adding $artistName to Lidarr ($foreignId)..."
 		LidarrTaskStatusCheck
 		lidarrAddArtist=$(curl -s "$lidarrUrl/api/v1/artist" -X POST -H 'Content-Type: application/json' -H "X-Api-Key: $lidarrApiKey" --data-raw "$data")
     done
