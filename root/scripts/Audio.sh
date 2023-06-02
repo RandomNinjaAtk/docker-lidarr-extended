@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.5"
+scriptVersion="1.0.6"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -12,9 +12,6 @@ if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrPort="$(cat /config/config.xml | xq | jq -r .Config.Port)"
 	lidarrUrl="http://localhost:${lidarrPort}${lidarrUrlBase}"
 fi
-agent="lidarr-extended ( https://github.com/RandomNinjaAtk/docker-lidarr-extended )"
-musicbrainzMirror=https://musicbrainz.org
-musicbrainzSleep=5
 
 # Debugging settings
 #dlClientSource="tidal"
@@ -1153,14 +1150,6 @@ SearchProcess () {
 
 		if [ "$skipDeezer" == "false" ]; then
 
-			# fallback to musicbrainz db for link
-			if [ -z "$deezerArtistUrl" ]; then
-				log "$page :: $wantedAlbumListSource :: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: DEEZER :: Fallback to musicbrainz for Deezer ID"
-				musicbrainzArtistData=$(curl -s -A "$agent" "https://musicbrainz.org/ws/2/artist/${lidarrArtistForeignArtistId}?inc=url-rels&fmt=json")
-				sleep $musicbrainzSleep
-				deezerArtistUrl=$(echo "$musicbrainzArtistData" | jq -r '.relations | .[] | .url | select(.resource | contains("deezer")) | .resource')
-			fi
-
 			if [ -z "$deezerArtistUrl" ]; then 
 				log "$page :: $wantedAlbumListSource :: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: DEEZER :: ERROR :: musicbrainz id: $lidarrArtistForeignArtistId is missing Deezer link, see: \"/config/logs/deezer-artist-id-not-found.txt\" for more detail..."
 				touch "/config/logs/deezer-artist-id-not-found.txt"
@@ -1177,13 +1166,6 @@ SearchProcess () {
 		fi
 
         if [ "$skipTidal" == "false" ]; then
-			# fallback to musicbrainz db for link
-			if [ -z "$tidalArtistUrl" ]; then
-				log "$page :: $wantedAlbumListSource :: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: TIDAL :: Fallback to musicbrainz for Tidal ID"
-				musicbrainzArtistData=$(curl -s -A "$agent" "https://musicbrainz.org/ws/2/artist/${lidarrArtistForeignArtistId}?inc=url-rels&fmt=json")
-				sleep $musicbrainzSleep
-				tidalArtistUrl=$(echo "$musicbrainzArtistData" | jq -r '.relations | .[] | .url | select(.resource | contains("tidal")) | .resource')
-			fi
 
 			if [ -z "$tidalArtistUrl" ]; then 
 				log "$page :: $wantedAlbumListSource :: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: TIDAL :: ERROR :: musicbrainz id: $lidarrArtistForeignArtistId is missing Tidal link, see: \"/config/logs/tidal-artist-id-not-found.txt\" for more detail..."
@@ -1338,82 +1320,11 @@ SearchProcess () {
 			continue
 		fi
 
-		# Search Musicbrainz for Tidal Album ID
-		if [ "$audioLyricType" == "both" ]; then
-			if [ "$skipTidal" == "false" ]; then
-				
-				# Search Musicbrainz
-				log "$page :: $wantedAlbumListSource :: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Tidal :: Searching for Album ID..."
-				msuicbrainzTidalDownloadAlbumID=$(curl -s -A "$agent" "https://musicbrainz.org/ws/2/release?release-group=$lidarrAlbumForeignAlbumId&inc=url-rels&fmt=json" | jq -r | grep "tidal.com" | head -n 1 | sed -e "s%[^[:digit:]]%%g")
-				sleep $musicbrainzSleep
-				# Process Album ID if found
-				if [ ! -z $msuicbrainzTidalDownloadAlbumID ]; then
-					log "$page :: $wantedAlbumListSource :: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Tidal ::: FOUND!"
-					tidalArtistAlbumData="$(curl -s "https://api.tidal.com/v1/albums/${msuicbrainzTidalDownloadAlbumID}?countryCode=$tidalCountryCode" -H 'x-tidal-token: CzET4vdadNUFQ5JU')"
-					tidalAlbumTrackCount="$(echo "$tidalArtistAlbumData" | jq -r .numberOfTracks)"
-					downloadedAlbumTitle="$(echo "${tidalArtistAlbumData}" | jq -r .title)"
-					downloadedReleaseDate="$(echo "${tidalArtistAlbumData}" | jq -r .releaseDate)"
-					if [ "$downloadedReleaseDate" == "null" ]; then
-						downloadedReleaseDate=$(echo "$tidalArtistAlbumData" | jq -r '.streamStartDate')
-					fi
-					downloadedReleaseYear="${downloadedReleaseDate:0:4}"
-					log "$page :: $wantedAlbumListSource :: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Tidal :: Downloading $tidalAlbumTrackCount Tracks :: $downloadedAlbumTitle ($downloadedReleaseYear)"
-					DownloadProcess "$msuicbrainzTidalDownloadAlbumID" "TIDAL" "$downloadedReleaseYear" "$downloadedAlbumTitle" "$tidalAlbumTrackCount"
-
-					# Verify it was successfully imported into Lidarr
-					LidarrTaskStatusCheck
-					CheckLidarrBeforeImport "$checkLidarrAlbumId"
-					if [ "$alreadyImported" == "true" ]; then
-						log "$page :: $wantedAlbumListSource :: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
-						continue
-					fi
-				else
-					sleep 1.5
-					log "$page :: $wantedAlbumListSource :: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Tidal :: NOT FOUND!"
-					NotifyWebhook "AlbumError" "$lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Tidal :: NOT FOUND! Please add it manually"
-				fi
-			fi
-		fi
-
 		LidarrTaskStatusCheck
 		CheckLidarrBeforeImport "$checkLidarrAlbumId"
 		if [ "$alreadyImported" == "true" ]; then
 			log "$page :: $wantedAlbumListSource :: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
 			continue
-		fi
-
-		# Search Musicbrainz for Deezer Album ID
-		if [ "$audioLyricType" == "both" ]; then
-			if [ "$skipDeezer" == "false" ]; then
-			
-				# Search Musicbrainz
-				log "$page :: $wantedAlbumListSource :: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Deezer :: Searching for Album ID..."
-				musicbrainzDeezerDownloadAlbumID=$(curl -s -A "$agent" "https://musicbrainz.org/ws/2/release?release-group=$lidarrAlbumForeignAlbumId&inc=url-rels&fmt=json" | jq -r | grep "deezer.com" | grep "album" | head -n 1 | sed -e "s%[^[:digit:]]%%g")
-				sleep $musicbrainzSleep
-				# Process Album ID if found
-				if [ ! -z $musicbrainzDeezerDownloadAlbumID ]; then
-					log "$page :: $wantedAlbumListSource :: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Deezer :: FOUND!"
-					GetDeezerAlbumInfo "${musicbrainzDeezerDownloadAlbumID}"
-					deezerArtistAlbumData=$(cat "/config/extended/cache/deezer/$musicbrainzDeezerDownloadAlbumID.json")
-					deezerAlbumTrackCount="$(echo "$deezerArtistAlbumData" | jq -r .nb_tracks)"
-					deezerAlbumTitle="$(echo "$deezerArtistAlbumData"| jq -r .title)"
-					downloadedReleaseDate="$(echo "$deezerArtistAlbumData" | jq -r .release_date)"
-					downloadedReleaseYear="${downloadedReleaseDate:0:4}"
-					log "$page :: $wantedAlbumListSource :: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Deezer :: Downloading $deezerAlbumTrackCount Tracks :: $deezerAlbumTitle ($downloadedReleaseYear)"
-					DownloadProcess "$musicbrainzDeezerDownloadAlbumID" "DEEZER" "$downloadedReleaseYear" "$deezerAlbumTitle" "$deezerAlbumTrackCount"
-
-					# Verify it was successfully imported into Lidarr
-					LidarrTaskStatusCheck
-					CheckLidarrBeforeImport "$checkLidarrAlbumId"
-					if [ "$alreadyImported" == "true" ]; then
-						log "$page :: $wantedAlbumListSource :: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Already Imported, skipping..."
-						continue
-					fi
-				else
-					log "$page :: $wantedAlbumListSource :: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Deezer :: NOT FOUND!"
-					NotifyWebhook "AlbumError" "$lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Musicbrainz URL :: Deezer :: NOT FOUND! Please add it manually"
-				fi
-			fi
 		fi
 		
 		LidarrTaskStatusCheck
