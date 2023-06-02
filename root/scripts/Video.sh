@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.3"
+scriptVersion="1.0.4"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -13,9 +13,6 @@ if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrPort="$(cat /config/config.xml | xq | jq -r .Config.Port)"
 	lidarrUrl="http://localhost:${lidarrPort}${lidarrUrlBase}"
 fi
-agent="lidarr-extended ( https://github.com/RandomNinjaAtk/docker-lidarr-extended )"
-musicbrainzMirror=https://musicbrainz.org
-musicbrainzSleep=5
 
 # Debugging Settings
 #addFeaturedVideoArtists=true
@@ -106,148 +103,6 @@ Configuration () {
 		cookiesFile=""
 	    fi
 	log "CONFIG :: Complete"
-}
-
-CacheMusicbrainzRecords () {
-
-
-        log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: Processing..."
-        log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: Checking Musicbrainz for recordings..."
-        musicbrainzArtistRecordings=$(curl -s -A "$agent" "$musicbrainzMirror/ws/2/recording?artist=$lidarrArtistMusicbrainzId&limit=1&offset=0&fmt=json")
-        sleep $musicbrainzSleep
-        musicbrainzArtistRecordingsCount=$(echo "$musicbrainzArtistRecordings" | jq -r '."recording-count"')
-        log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: $musicbrainzArtistRecordingsCount recordings found..."
-        
-        if [ ! -d /config/extended/cache/musicbrainz ]; then
-            mkdir -p /config/extended/cache/musicbrainz
-            chmod 777 /config/extended/cache/musicbrainz
-        fi
-
-        if [ -f "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json" ]; then
-            musicbrainzArtistDownloadedRecordingsCount=$(cat "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json" | jq -r .id | wc -l)
-            if [ $musicbrainzArtistRecordingsCount -ne $musicbrainzArtistDownloadedRecordingsCount  ]; then
-                log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: Previously cached, data needs to be updated..."
-                rm "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json"               
-            else
-                log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: Chache is already up-to-date, skipping..."
-                return
-            fi
-        fi
-        
-        if [ -f "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json" ]; then
-            if ! cat "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json" | grep -i "artist-credit" | read; then
-                log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: Previously cached, data needs to be updated..."
-                rm "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json"
-            else
-                log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: Chache is already up-to-date, skipping..."
-                return
-            fi
-        fi 
-
-        if [ -f "/config/extended/logs/video/complete/$lidarrArtistMusicbrainzId" ]; then
-            log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: Removing Artist completed log file to allow artist re-processing..."
-            rm "/config/extended/logs/video/complete/$lidarrArtistMusicbrainzId"
-        fi
-
-        if [ ! -f "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json" ]; then
-            offsetcount=$(( $musicbrainzArtistRecordingsCount / 100 ))
-            for ((i=0;i<=$offsetcount;i++)); do
-                if [ $i != 0 ]; then
-                    offset=$(( $i * 100 ))
-                    dlnumber=$(( $offset + 100))
-                else
-                    offset=0
-                    dlnumber=$(( $offset + 100))
-                fi
-
-                log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: Downloading page $i... ($offset - $dlnumber Results)"
-                curl -s -A "$agent" "$musicbrainzMirror/ws/2/recording?artist=$lidarrArtistMusicbrainzId&inc=artist-credits+url-rels+recording-rels+release-rels+release-group-rels&limit=100&offset=$offset&fmt=json" | jq -r ".recordings[]" >> "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json"
-                sleep $musicbrainzSleep
-            done
-        fi
-}
-
-TidalClientSetup () {
-	log "TIDAL :: Verifying tidal-dl configuration"
-	touch /config/xdg/.tidal-dl.log
-	if [ -f /config/xdg/.tidal-dl.json ]; then
-		rm /config/xdg/.tidal-dl.json
-	fi
-	if [ ! -f /config/xdg/.tidal-dl.json ]; then
-		log "TIDAL :: No default config found, importing default config \"tidal.json\""
-		if [ -f /config/extended/scripts/tidal-dl.json ]; then
-			cp /config/extended/scripts/tidal-dl.json /config/xdg/.tidal-dl.json
-			chmod 777 -R /config/xdg/
-		fi
-
-	fi
-	TidaldlStatusCheck
-	tidal-dl -o "$downloadPath/incomplete"
-		
-	if [ ! -f /config/xdg/.tidal-dl.token.json ]; then
-		TidaldlStatusCheck
-		#log "TIDAL :: ERROR :: Downgrade tidal-dl for workaround..."
-		#pip install tidal-dl==2022.3.4.2 --no-cache-dir &>/dev/null
-		TidaldlStatusCheck
-		log "TIDAL :: ERROR :: Loading client for required authentication, please authenticate, then exit the client..."
-		NotifyWebhook "VideoError" "TIDAL requires authentication, please authenticate now (check logs)"
-		tidal-dl
-	fi
-		
-	if [ ! -d "$downloadPath/incomplete" ]; then
-		mkdir -p $downloadPath/incomplete
-		chmod 777 $downloadPath/incomplete
-	fi
-	
-    TidaldlStatusCheck
-	#log "TIDAL :: Upgrade tidal-dl to newer version..."
-	#pip install tidal-dl==2022.07.06.1 --no-cache-dir &>/dev/null
-	
-}
-
-TidalClientTest () { 
-	log "TIDAL :: tidal-dl client setup verification..."
-	i=0
-	while [ $i -lt 3 ]; do
-		i=$(( $i + 1 ))
-		TidaldlStatusCheck
-		tidal-dl -q Normal -o "$downloadPath"/incomplete -l "166356219"
-		downloadCount=$(find "$downloadPath"/incomplete -type f -regex ".*/.*\.\(flac\|opus\|m4a\|mp3\)" | wc -l)
-		if [ $downloadCount -le 0 ]; then
-			continue
-		else
-			break
-		fi
-	done
-
-	if [ $downloadCount -le 0 ]; then
-		if [ -f /config/xdg/.tidal-dl.token.json ]; then
-			rm /config/xdg/.tidal-dl.token.json
-		fi
-		log "TIDAL :: ERROR :: Download failed"
-		log "TIDAL :: ERROR :: You will need to re-authenticate on next script run..."
-		log "TIDAL :: ERROR :: Exiting..."
-		rm -rf "$downloadPath"/incomplete/*
-		NotifyWebhook "VideoError" "TIDAL not authenticated but configured"
-		exit
-	else
-		rm -rf "$downloadPath"/incomplete/*
-		log "TIDAL :: Successfully Verified"
-	fi
-}
-
-TidaldlStatusCheck () {
-	until false
-	do
-        running=no
-        if ps aux | grep "tidal-dl" | grep -v "grep" | read; then 
-            running=yes
-            log "STATUS :: TIDAL-DL :: BUSY :: Pausing/waiting for all active tidal-dl tasks to end..."
-            sleep $musicbrainzSleep
-            continue
-        fi
-		break
-	done
 }
 
 ImvdbCache () {
@@ -653,10 +508,7 @@ NotifyWebhook () {
 }
 
 Configuration
-if [ "$sourcePreference" == "tidal" ]; then
-    TidalClientSetup
-fi
-AddFeaturedVideoArtists
+# AddFeaturedVideoArtists # Disabled until a better method is found...
 
 log "-----------------------------------------------------------------------------"
 log "Finding Videos"    
@@ -688,21 +540,14 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
     log "$processCount of $lidarrArtistIdsCount :: $lidarrArtistName :: Checking for IMVDB Slug"
     artistImvdbUrl=$(echo $lidarrArtistData | jq -r '.links[] | select(.name=="imvdb") | .url')
     artistImvdbSlug=$(basename "$artistImvdbUrl")
-    
-    if [ -z "$artistImvdbSlug" ]; then
-        log "$processCount of $lidarrArtistIdsCount :: $lidarrArtistName :: IMVDB Slug Not Found..."
-        log "$processCount of $lidarrArtistIdsCount :: $lidarrArtistName :: Fallback to Musicbrainz for IMVDB Slug"
-        tempmbzartistinfo="$(curl -s -A "$agent" "$musicbrainzMirror/ws/2/artist/$lidarrArtistMusicbrainzId?inc=url-rels+genres&fmt=json")"
-        sleep $musicbrainzSleep
-        artistImvdbUrl="$(echo "$tempmbzartistinfo" | jq -r ".relations | .[] | .url | select(.resource | contains(\"imvdb\")) | .resource")"
-        artistImvdbSlug=$(basename "$artistImvdbUrl")
-    fi
 
     if [ ! -z "$artistImvdbSlug" ]; then
         log "$processCount of $lidarrArtistIdsCount :: $lidarrArtistName :: IMVDB Slug :: $artistImvdbSlug"
-    fi 
+    else
+    	log "$processCount of $lidarrArtistIdsCount :: $lidarrArtistName :: IMVDB Slug Not Found..."
+	continue
+    fi
     
-    CacheMusicbrainzRecords
     ImvdbCache
     
     if [ -d /config/extended/logs/video/complete ]; then
@@ -712,131 +557,7 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
         fi
     fi
 
-    log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: Checking records for videos..."
-    musicbrainzArtistVideoRecordings=$(cat "/config/extended/cache/musicbrainz/$lidarrArtistId--$lidarrArtistMusicbrainzId--recordings.json" | jq -r "select(.video==true)")
-    musicbrainzArtistVideoRecordingsCount=$(echo "$musicbrainzArtistVideoRecordings" | jq -r .id | wc -l)
-    log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: $musicbrainzArtistVideoRecordingsCount videos found..."
-    musicbrainzArtistVideoRecordingsDataWithUrl=$(echo "$musicbrainzArtistVideoRecordings" | jq -r "select(.relations[].url)" | jq -s "." | jq -r "unique | .[] | select(.disambiguation | test(\"official\";\"i\"))")
-    musicbrainzArtistVideoRecordingsDataWithUrlIds=$(echo "$musicbrainzArtistVideoRecordingsDataWithUrl" | jq -r ".id")
-    musicbrainzArtistVideoRecordingsDataWithUrlIdsCount=$(echo -n "$musicbrainzArtistVideoRecordingsDataWithUrlIds" | wc -l)
-    log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: $musicbrainzArtistVideoRecordingsDataWithUrlIdsCount \"Official\" videos found with URL..."
-
-    if [ $musicbrainzArtistVideoRecordingsDataWithUrlIdsCount = 0 ]; then
-        log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: No vidoes with URLs to process, skipping..."
-    else
-        for musicbrainzVideoId in $(echo "$musicbrainzArtistVideoRecordingsDataWithUrlIds"); do
-            musicbrainzVideoRecordingData=$(echo "$musicbrainzArtistVideoRecordingsDataWithUrl" | jq -r "select(.id==\"$musicbrainzVideoId\")")
-            musicbrainzVideoTitle="$(echo "$musicbrainzVideoRecordingData" | jq -r .title)"
-            musicbrainzVideoTitleClean="$(echo "$musicbrainzVideoTitle" | sed -e "s/[^[:alpha:][:digit:]$^&_+=()'%;{},.@#]/ /g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g')"
-            musicbrainzVideoArtistCredits="$(echo "$musicbrainzVideoRecordingData" |  jq -r ".\"artist-credit\"[]")"
-            musicbrainzVideoArtistCreditsNames="$(echo "$musicbrainzVideoArtistCredits" |  jq -r ".artist.name")"
-            musicbrainzVideoArtistCreditId="$(echo "$musicbrainzVideoArtistCredits" |  jq -r ".artist.id" | head -n1)"
-            musicbrainzVideoDisambiguation=""
-            musicbrainzVideoDisambiguation="$(echo "$musicbrainzVideoRecordingData" | jq -r .disambiguation)"
-            if [ ! -z "$musicbrainzVideoDisambiguation" ]; then
-                musicbrainzVideoDisambiguation=" ($musicbrainzVideoDisambiguation)"
-                musicbrainzVideoDisambiguationClean=" ($(echo "$musicbrainzVideoDisambiguation" | sed -e "s%[^[:alpha:][:digit:]]% %g" -e "s/  */ /g" | sed 's/^[.]*//' | sed  's/[.]*$//g' | sed  's/^ *//g' | sed 's/ *$//g'))"
-            else
-                musicbrainzVideoDisambiguation=""
-                musicbrainzVideoDisambiguationClean=""
-            fi
-            musicbrainzVideoRelations="$(echo "$musicbrainzVideoRecordingData" | jq -r .relations[].url.resource)"
-
-            if [ "$sourcePreference" == "tidal" ]; then
-                if echo "$musicbrainzVideoRelations" | grep -i "tidal" | read; then
-                    videoDownloadUrl="$(echo "$musicbrainzVideoRelations" | grep -i "tidal" | head -n1)"
-                else
-                    videoDownloadUrl="$(echo "$musicbrainzVideoRelations" | grep -i "youtube" | head -n1)"
-                fi
-            else
-                videoDownloadUrl="$(echo "$musicbrainzVideoRelations" | grep -i "youtube" | head -n1)"
-            fi
-
-            if echo "$videoDownloadUrl" | grep -i "tidal" | read; then
-                videoId="$(echo "$videoDownloadUrl" | grep -o '[[:digit:]]*')"
-                videoData="$(curl -s "https://api.tidal.com/v1/videos/$videoId?countryCode=$tidalCountryCode" -H 'x-tidal-token: CzET4vdadNUFQ5JU' | jq -r)"
-                videoDate="$(echo "$videoData" | jq -r ".releaseDate")"
-                videoYear="${videoDate:0:4}"
-                videoImageId="$(echo "$videoData" | jq -r ".imageId")"
-                videoImageIdFix="$(echo "$videoImageId" | sed "s/-/\//g")"
-                videoThumbnail="https://resources.tidal.com/images/$videoImageIdFix/750x500.jpg"
-		        videoSource="tidal"
-            fi
-
-            if echo "$videoDownloadUrl" | grep -i "youtube" | read; then
-
-                if [ ! -z "$cookiesFile" ]; then
-                    videoData="$(yt-dlp --cookies "$cookiesFile" -j "$videoDownloadUrl")"
-                else
-                    videoData="$(yt-dlp -j "$videoDownloadUrl")"
-                fi
-                videoThumbnail="$(echo "$videoData" | jq -r .thumbnail)"
-                videoUploadDate="$(echo "$videoData" | jq -r .upload_date)"
-                videoYear="${videoUploadDate:0:4}"
-		videoSource="youtube"
-            fi
-
-            log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: ${musicbrainzVideoTitle}${musicbrainzVideoDisambiguation} :: $videoDownloadUrl..."
-
-            if echo "$musicbrainzVideoDisambiguation" | grep -i "lyric" | read; then
-                plexVideoType="-lyrics"
-                videoDisambiguationTitle=" (lyric)"
-            else
-                plexVideoType="-video"
-                videoDisambiguationTitle=""
-            fi
-            if [ -d "$videoPath/$lidarrArtistFolderNoDisambig" ]; then
-                if [ -f "$videoPath/$lidarrArtistFolderNoDisambig/${musicbrainzVideoTitleClean}${plexVideoType}.nfo" ]; then
-                    if cat "$videoPath/$lidarrArtistFolderNoDisambig/${musicbrainzVideoTitleClean}${plexVideoType}.nfo" | grep "source" | read; then
-                        sleep 0
-                    else
-                        log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: ${musicbrainzVideoTitle}${musicbrainzVideoDisambiguation} :: NFO Missing Source information adding source information..."
-                        sed -i '$d' "$videoPath/$lidarrArtistFolderNoDisambig/${musicbrainzVideoTitleClean}${plexVideoType}.nfo"
-                        echo "	<source>youtube</source>" >> "$videoPath/$lidarrArtistFolderNoDisambig/${musicbrainzVideoTitleClean}${plexVideoType}.nfo"
-                        echo "</musicvideo>" >> "$videoPath/$lidarrArtistFolderNoDisambig/${musicbrainzVideoTitleClean}${plexVideoType}.nfo"
-                        tidy -w 2000 -i -m -xml "$videoPath/$lidarrArtistFolderNoDisambig/${musicbrainzVideoTitleClean}${plexVideoType}.nfo" &>/dev/null
-                    fi
-                fi
-
-                if [ "$videoSource" == "tidal" ]; then
-                    if [ -f "$videoPath/$lidarrArtistFolderNoDisambig/${musicbrainzVideoTitleClean}${plexVideoType}.nfo" ]; then
-                        if cat "$videoPath/$lidarrArtistFolderNoDisambig/${musicbrainzVideoTitleClean}${plexVideoType}.nfo" | grep "<source>youtube</source>" | read; then
-                            log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: ${musicbrainzVideoTitle}${musicbrainzVideoDisambiguation} :: Previous download is youtube, upgrading to tidal version..."
-                            rm "$videoPath/$lidarrArtistFolderNoDisambig/${musicbrainzVideoTitleClean}${plexVideoType}"*
-                        fi
-                    fi
-                fi
-                if [[ -n $(find "$videoPath/$lidarrArtistFolderNoDisambig" -maxdepth 1 -iname "${musicbrainzVideoTitleClean}${plexVideoType}.mkv") ]] || [[ -n $(find "$videoPath/$lidarrArtistFolderNoDisambig" -maxdepth 1 -iname "${musicbrainzVideoTitleClean}${plexVideoType}.mp4") ]]; then
-                    log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: ${musicbrainzVideoTitle}${musicbrainzVideoDisambiguation} :: Previously Downloaded, skipping..."
-                    continue
-                fi
-            fi
-
-            if [ "$musicbrainzVideoArtistCreditId" != "$lidarrArtistMusicbrainzId" ]; then
-                log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: ${musicbrainzVideoTitle}${musicbrainzVideoDisambiguation} :: First artist does not match album arist, skipping..."
-                continue
-            fi
-
-            
-
-            DownloadVideo "$videoDownloadUrl" "$musicbrainzVideoTitleClean" "$plexVideoType" "MBZDB"
-            if [ "$downloadFailed" = "true" ]; then
-                log "$processCount of $lidarrArtistIdsCount :: MBZDB :: $lidarrArtistName :: ${musicbrainzVideoTitle}${musicbrainzVideoDisambiguation} :: Download failed, skipping..."
-                continue
-            fi
-            DownloadThumb "$videoThumbnail" "$musicbrainzVideoTitleClean" "$plexVideoType" "MBZDB"
-            VideoProcessWithSMA "MBZDB" "$musicbrainzVideoTitle"
-            VideoTagProcess "$musicbrainzVideoTitleClean" "$plexVideoType" "$videoYear" "MBZDB"
-            VideoNfoWriter "$musicbrainzVideoTitleClean" "$plexVideoType" "$musicbrainzVideoTitle" "" "musicbrainz" "$videoYear" "MBZDB" "$videoSource"
-                
-            if [ ! -d "$videoPath/$lidarrArtistFolderNoDisambig" ]; then
-                mkdir -p "$videoPath/$lidarrArtistFolderNoDisambig"
-                chmod 777 "$videoPath/$lidarrArtistFolderNoDisambig"
-            fi
-
-            mv $downloadPath/incomplete/* "$videoPath/$lidarrArtistFolderNoDisambig"/
-        done
-    fi
+    
 
     if [ -z "$artistImvdbSlug" ]; then
         log "$processCount of $lidarrArtistIdsCount :: IMVDB :: $lidarrArtistName :: No IMVDB artist link found, skipping..."
@@ -906,14 +627,6 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
                     for featuredArtistSlug in $(echo "$imvdbVideoFeaturedArtistsSlug"); do
                         if [ -f /config/extended/cache/imvdb/$featuredArtistSlug ]; then
                             featuredArtistName="$(cat /config/extended/cache/imvdb/$featuredArtistSlug)"
-                        else
-                            query_data=$(curl -s -A "$agent" "https://musicbrainz.org/ws/2/url?query=url:%22https://imvdb.com/n/$featuredArtistSlug%22&fmt=json")
-                            count=$(echo "$query_data" | jq -r ".count")			
-                            if [ "$count" != "0" ]; then
-                                featuredArtistName="$(echo "$query_data" | jq -r ".urls[].\"relation-list\"[].relations[].artist.name")"
-                                echo -n "$featuredArtistName" > /config/extended/cache/imvdb/$featuredArtistSlug
-                                sleep $musicbrainzSleep
-                            fi
                         fi
                         find /config/extended/cache/imvdb -type f -empty -delete # delete empty files
                         if [ -z "$featuredArtistName" ]; then
@@ -988,7 +701,6 @@ for lidarrArtistId in $(echo $lidarrArtistIds); do
     fi
 done
 
-#CacheMusicbrainzRecords
-#ImvdbCache
+
 
 exit
