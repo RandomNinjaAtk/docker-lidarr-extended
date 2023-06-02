@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.6"
+scriptVersion="1.0.7"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -454,7 +454,7 @@ AddFeaturedVideoArtists () {
     for slug in $(echo $videoArtists); do
         loopCount=$(( $loopCount + 1))
         artistName="$(cat /config/extended/cache/imvdb/$slug)"
-        if echo "$artistImvdbUrl" | grep -i "^https://imvdb.com/n/${slug}$" | read; then
+        if echo "$artistImvdbUrl" | grep -i "imvdb.com/n/${slug}$" | read; then
             log "$loopCount of $videoArtistsCount :: $artistName :: Already added to Lidarr, skipping..."
             continue
         fi
