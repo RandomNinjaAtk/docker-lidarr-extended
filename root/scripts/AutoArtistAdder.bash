@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.4"
+scriptVersion="1.0.5"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -235,7 +235,6 @@ AddTidalArtistToLidarr () {
 		fi
 		serviceArtistId="${serviceRelatedArtistsIds[$id]}"
 		serviceArtistName="$(echo "$serviceRelatedArtistData"| jq -r "select(.id==$serviceArtistId) | .name")"
-		serviceArtistNameEncoded="$(jq -R -r @uri <<<"$serviceArtistName")"
 		log "$artistNumber of $lidarrArtistTotal :: $lidarrArtistName :: $currentprocess of $numberOfRelatedArtistsToAddPerArtist :: $serviceArtistName :: Searching Musicbrainz for Tidal artist id ($serviceArtistId)"
 
 		if echo "$lidarrArtistLinkTidalIds" | grep "^${serviceArtistId}$" | read; then
@@ -243,12 +242,9 @@ AddTidalArtistToLidarr () {
 			continue
 		fi
 
-		echo "$serviceArtistNameEncoded"
+		serviceArtistNameEncoded="$(jq -R -r @uri <<<"$serviceArtistName")"
 		lidarrArtistSearchData="$(curl -s "$lidarrUrl/api/v1/search?term=${serviceArtistNameEncoded}&apikey=${lidarrApiKey}")"
-		
 		lidarrArtistMatchedData=$(echo $lidarrArtistSearchData | jq -r ".[] | select(.artist) | select(.artist.links[].name==\"tidal\") | select(.artist.links[].url | contains (\"artist/$serviceArtistId\"))" 2>/dev/null)
-
-
 							
 		if [ ! -z "$lidarrArtistMatchedData" ]; then
 			data="$lidarrArtistMatchedData"		
