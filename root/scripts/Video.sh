@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.4"
+scriptVersion="1.0.5"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -459,20 +459,19 @@ AddFeaturedVideoArtists () {
             continue
         fi
         log "$loopCount of $videoArtistsCount :: $artistName :: Processing url :: https://imvdb.com/n/$slug"
-        query_data=$(curl -s -A "$agent" "https://musicbrainz.org/ws/2/url?query=url:%22https://imvdb.com/n/$slug%22&fmt=json")
-	sleep $musicbrainzSleep
-        count=$(echo "$query_data" | jq -r ".count")			
-        if [ "$count" != "0" ]; then
-            musicbrainzArtistId="$(echo "$query_data" | jq -r ".urls[].\"relation-list\"[].relations[].artist.id")"
-            sleep $musicbrainzSleep
+
+		artistNameEncoded="$(jq -R -r @uri <<<"$artistName")"
+		lidarrArtistSearchData="$(curl -s "$lidarrUrl/api/v1/search?term=${artistNameEncoded}&apikey=${lidarrApiKey}")"
+		lidarrArtistMatchedData=$(echo $lidarrArtistSearchData | jq -r ".[] | select(.artist) | select(.artist.links[].url==\"https://imvdb.com/n/${slug}\")" 2>/dev/null)
+							
+		if [ ! -z "$lidarrArtistMatchedData" ]; then
+	        data="$lidarrArtistMatchedData"		
+			artistName="$(echo "$data" | jq -r ".artist.artistName")"
+			foreignId="$(echo "$data" | jq -r ".foreignId")"
         else
             log "$loopCount of $videoArtistsCount :: $artistName :: ERROR : Musicbrainz ID Not Found, skipping..."
             continue
         fi
-
-        data=$(curl -s "$lidarrUrl/api/v1/search?term=lidarr%3A$musicbrainzArtistId" -H "X-Api-Key: $lidarrApiKey" | jq -r ".[]")
-		artistName="$(echo "$data" | jq -r ".artist.artistName")"
-		foreignId="$(echo "$data" | jq -r ".foreignId")"
 		data=$(curl -s "$lidarrUrl/api/v1/rootFolder" -H "X-Api-Key: $lidarrApiKey" | jq -r ".[]")
 		path="$(echo "$data" | jq -r ".path")"
 		qualityProfileId="$(echo "$data" | jq -r ".defaultQualityProfileId")"
@@ -508,7 +507,7 @@ NotifyWebhook () {
 }
 
 Configuration
-# AddFeaturedVideoArtists # Disabled until a better method is found...
+AddFeaturedVideoArtists
 
 log "-----------------------------------------------------------------------------"
 log "Finding Videos"    
