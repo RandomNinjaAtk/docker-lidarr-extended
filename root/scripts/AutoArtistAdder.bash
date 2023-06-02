@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.3"
+scriptVersion="1.0.4"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -12,18 +12,15 @@ if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrPort="$(cat /config/config.xml | xq | jq -r .Config.Port)"
 	lidarrUrl="http://localhost:${lidarrPort}${lidarrUrlBase}"
 fi
-agent="lidarr-extended ( https://github.com/RandomNinjaAtk/docker-lidarr-extended )"
-musicbrainzMirror=https://musicbrainz.org
-musicbrainzSleep=5
 
 # Debugging settings
 #addRelatedArtists="true"
 #addDeezerTopArtists="true"
 #addDeezerTopAlbumArtists="true"
 #addDeezerTopTrackArtists="true"
-#topLimit="3"
+#topLimit="2"
 #addRelatedArtists="true"
-#numberOfRelatedArtistsToAddPerArtist="1"
+#numberOfRelatedArtistsToAddPerArtist="2"
 #lidarrSearchForMissing=false
 
 
@@ -84,6 +81,7 @@ AddDeezerArtistToLidarr () {
 		currentprocess=$(( $id + 1 ))
 		deezerArtistId="${getDeezerArtistsIds[$id]}"
 		deezerArtistName="$(curl -s https://api.deezer.com/artist/$deezerArtistId | jq -r .name)"
+		deezerArtistNameEncoded="$(jq -R -r @uri <<<"$deezerArtistName")"
 		sleep $sleepTimer
 		log "$currentprocess of $getDeezerArtistsIdsCount :: $deezerArtistName :: Searching Musicbrainz for Deezer artist id ($deezerArtistId)"
 
@@ -91,37 +89,14 @@ AddDeezerArtistToLidarr () {
 			log "$currentprocess of $getDeezerArtistsIdsCount :: $deezerArtistName :: $deezerArtistId already in Lidarr..."
 			continue
 		fi
+        lidarrArtistSearchData="$(curl -s "$lidarrUrl/api/v1/search?term=${deezerArtistNameEncoded}&apikey=${lidarrApiKey}")"
+		lidarrArtistMatchedData=$(echo $lidarrArtistSearchData | jq -r ".[] | select(.artist) | select(.artist.links[].name==\"deezer\") | select(.artist.links[].url | contains (\"artist/$deezerArtistId\"))" 2>/dev/null)
 
-		query_data=$(curl -s -A "$agent" "https://musicbrainz.org/ws/2/url?query=url:%22https://www.deezer.com/artist/${deezerArtistId}%22&fmt=json")
-		count=$(echo "$query_data" | jq -r ".count")
-		if [ "$count" == "0" ]; then
-			sleep $musicbrainzSleep
-			query_data=$(curl -s -A "$agent" "https://musicbrainz.org/ws/2/url?query=url:%22http://www.deezer.com/artist/${deezerArtistId}%22&fmt=json")
-			count=$(echo "$query_data" | jq -r ".count")
-			sleep $musicbrainzSleep
-		fi
+
 							
-		if [ "$count" == "0" ]; then
-			query_data=$(curl -s -A "$agent" "https://musicbrainz.org/ws/2/url?query=url:%22http://deezer.com/artist/${deezerArtistId}%22&fmt=json")
-			count=$(echo "$query_data" | jq -r ".count")
-			sleep $musicbrainzSleep
-		fi
-							
-		if [ "$count" == "0" ]; then
-			query_data=$(curl -s -A "$agent" "https://musicbrainz.org/ws/2/url?query=url:%22https://deezer.com/artist/${deezerArtistId}%22&fmt=json")
-			count=$(echo "$query_data" | jq -r ".count")
-		fi
-							
-		if [ "$count" != "0" ]; then
-			musicbrainz_main_artist_id=$(echo "$query_data" | jq -r '.urls[]."relation-list"[].relations[].artist.id' | head -n 1)
-			sleep $musicbrainzSleep
-			artist_data=$(curl -s -A "$agent" "https://musicbrainz.org/ws/2/artist/$musicbrainz_main_artist_id?fmt=json")
-			artist_sort_name="$(echo "$artist_data" | jq -r '."sort-name"')"
-			artist_formed="$(echo "$artist_data" | jq -r '."begin-area".name')"
-			artist_born="$(echo "$artist_data" | jq -r '."life-span".begin')"
-			gender="$(echo "$artist_data" | jq -r ".gender")"
-			matched_id=true
-			data=$(curl -s "$lidarrUrl/api/v1/search?term=lidarr%3A$musicbrainz_main_artist_id" -H "X-Api-Key: $lidarrApiKey" | jq -r ".[]")
+		if [ ! -z "$lidarrArtistMatchedData" ]; then
+			
+			data="$lidarrArtistMatchedData"
 			artistName="$(echo "$data" | jq -r ".artist.artistName")"
 			foreignId="$(echo "$data" | jq -r ".foreignId")"
 			importListExclusionData=$(curl -s "$lidarrUrl/api/v1/importlistexclusion" -H "X-Api-Key: $lidarrApiKey" | jq -r ".[].foreignId")
@@ -146,11 +121,11 @@ AddDeezerArtistToLidarr () {
 				\"rootFolderPath\": \"$path\",
 				\"addOptions\":{\"searchForMissingAlbums\":$lidarrSearchForMissing}
 				}"
-			if echo "$lidarrArtistIds" | grep "^${musicbrainz_main_artist_id}$" | read; then
-				log "$currentprocess of $getDeezerArtistsIdsCount :: $deezerArtistName :: Already in Lidarr ($musicbrainz_main_artist_id), skipping..."
+			if echo "$lidarrArtistIds" | grep "^${foreignId}$" | read; then
+				log "$currentprocess of $getDeezerArtistsIdsCount :: $deezerArtistName :: Already in Lidarr ($foreignId), skipping..."
 				continue
 			fi
-			log "$currentprocess of $getDeezerArtistsIdsCount :: $deezerArtistName :: Adding $artistName to Lidarr ($musicbrainz_main_artist_id)..."
+			log "$currentprocess of $getDeezerArtistsIdsCount :: $deezerArtistName :: Adding $artistName to Lidarr ($foreignId)..."
 			LidarrTaskStatusCheck
 			lidarrAddArtist=$(curl -s "$lidarrUrl/api/v1/artist" -X POST -H 'Content-Type: application/json' -H "X-Api-Key: $lidarrApiKey" --data-raw "$data")
 		else
@@ -260,6 +235,7 @@ AddTidalArtistToLidarr () {
 		fi
 		serviceArtistId="${serviceRelatedArtistsIds[$id]}"
 		serviceArtistName="$(echo "$serviceRelatedArtistData"| jq -r "select(.id==$serviceArtistId) | .name")"
+		serviceArtistNameEncoded="$(jq -R -r @uri <<<"$serviceArtistName")"
 		log "$artistNumber of $lidarrArtistTotal :: $lidarrArtistName :: $currentprocess of $numberOfRelatedArtistsToAddPerArtist :: $serviceArtistName :: Searching Musicbrainz for Tidal artist id ($serviceArtistId)"
 
 		if echo "$lidarrArtistLinkTidalIds" | grep "^${serviceArtistId}$" | read; then
@@ -267,29 +243,15 @@ AddTidalArtistToLidarr () {
 			continue
 		fi
 
-		query_data=$(curl -s -A "$agent" "https://musicbrainz.org/ws/2/url?query=url:%22https://listen.tidal.com/artist/${serviceArtistId}%22&fmt=json")
-		count=$(echo "$query_data" | jq -r ".count")
-		if [ "$count" == "0" ]; then
-			sleep $musicbrainzSleep
-			query_data=$(curl -s -A "$agent" "https://musicbrainz.org/ws/2/url?query=url:%22http://listen.tidal.com/artist/${serviceArtistId}%22&fmt=json")
-			count=$(echo "$query_data" | jq -r ".count")
-		fi
+		echo "$serviceArtistNameEncoded"
+		lidarrArtistSearchData="$(curl -s "$lidarrUrl/api/v1/search?term=${serviceArtistNameEncoded}&apikey=${lidarrApiKey}")"
+		
+		lidarrArtistMatchedData=$(echo $lidarrArtistSearchData | jq -r ".[] | select(.artist) | select(.artist.links[].name==\"tidal\") | select(.artist.links[].url | contains (\"artist/$serviceArtistId\"))" 2>/dev/null)
+
+
 							
-		if [ "$count" == "0" ]; then
-			sleep $musicbrainzSleep
-			query_data=$(curl -s -A "$agent" "https://musicbrainz.org/ws/2/url?query=url:%22https://tidal.com/artist/${serviceArtistId}%22&fmt=json")
-			count=$(echo "$query_data" | jq -r ".count")
-		fi
-							
-		if [ "$count" == "0" ]; then
-			sleep $musicbrainzSleep
-			query_data=$(curl -s -A "$agent" "https://musicbrainz.org/ws/2/url?query=url:%22http://tidal.com/artist/${serviceArtistId}%22&fmt=json")
-			count=$(echo "$query_data" | jq -r ".count")
-		fi
-							
-		if [ "$count" != "0" ]; then
-			musicbrainz_main_artist_id=$(echo "$query_data" | jq -r '.urls[]."relation-list"[].relations[].artist.id' | head -n 1)
-			data=$(curl -s "$lidarrUrl/api/v1/search?term=lidarr%3A$musicbrainz_main_artist_id" -H "X-Api-Key: $lidarrApiKey" | jq -r ".[]")
+		if [ ! -z "$lidarrArtistMatchedData" ]; then
+			data="$lidarrArtistMatchedData"		
 			artistName="$(echo "$data" | jq -r ".artist.artistName")"
 			foreignId="$(echo "$data" | jq -r ".foreignId")"
 			importListExclusionData=$(curl -s "$lidarrUrl/api/v1/importlistexclusion" -H "X-Api-Key: $lidarrApiKey" | jq -r ".[].foreignId")
@@ -314,11 +276,11 @@ AddTidalArtistToLidarr () {
 				\"rootFolderPath\": \"$path\",
 				\"addOptions\":{\"searchForMissingAlbums\":$lidarrSearchForMissing}
 				}"
-			if echo "$lidarrArtistIds" | grep "^${musicbrainz_main_artist_id}$" | read; then
-				log "$artistNumber of $lidarrArtistTotal :: $lidarrArtistName :: $currentprocess of $numberOfRelatedArtistsToAddPerArtist :: $serviceArtistName :: Already in Lidarr ($musicbrainz_main_artist_id), skipping..."
+			if echo "$lidarrArtistIds" | grep "^${foreignId}$" | read; then
+				log "$artistNumber of $lidarrArtistTotal :: $lidarrArtistName :: $currentprocess of $numberOfRelatedArtistsToAddPerArtist :: $serviceArtistName :: Already in Lidarr ($foreignId), skipping..."
 				continue
 			fi
-			log "$artistNumber of $lidarrArtistTotal :: $lidarrArtistName :: $currentprocess of $numberOfRelatedArtistsToAddPerArtist :: $serviceArtistName :: Adding $artistName to Lidarr ($musicbrainz_main_artist_id)..."
+			log "$artistNumber of $lidarrArtistTotal :: $lidarrArtistName :: $currentprocess of $numberOfRelatedArtistsToAddPerArtist :: $serviceArtistName :: Adding $artistName to Lidarr ($foreignId)..."
 			LidarrTaskStatusCheck
 			lidarrAddArtist=$(curl -s "$lidarrUrl/api/v1/artist" -X POST -H 'Content-Type: application/json' -H "X-Api-Key: $lidarrApiKey" --data-raw "$data")
 		else
@@ -328,6 +290,8 @@ AddTidalArtistToLidarr () {
 		LidarrTaskStatusCheck
 	done
 }
+
+
 
 if [ -z $lidarrSearchForMissing ]; then
 	lidarrSearchForMissing=true
