@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.8"
+scriptVersion="1.0.9"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -1062,6 +1062,8 @@ SearchProcess () {
 		lidarrAlbumType=$(echo "$lidarrAlbumData" | jq -r ".albumType")
 		lidarrAlbumTitle=$(echo "$lidarrAlbumData" | jq -r ".title")
 		lidarrAlbumForeignAlbumId=$(echo "$lidarrAlbumData" | jq -r ".foreignAlbumId")
+		
+		LidarrTaskStatusCheck
 				
 		if [ -f "/config/extended/logs/notfound/$wantedAlbumId--$lidarrArtistForeignArtistId--$lidarrAlbumForeignAlbumId" ]; then
 			log "$page :: $wantedAlbumListSource :: $processNumber of $wantedListAlbumTotal :: $wantedAlbumListSource :: $lidarrAlbumType :: $wantedAlbumListSource :: $lidarrArtistName :: $lidarrAlbumTitle :: Previously Not Found, skipping..."
@@ -1217,6 +1219,7 @@ SearchProcess () {
 		loopCount=0
 		until false
 		do
+			LidarrTaskStatusCheck
 			loopCount=$(( $loopCount + 1 ))
 			if [ "$loopCount" == "1" ]; then
 				# First loop is either explicit or clean depending on script settings
@@ -1240,7 +1243,7 @@ SearchProcess () {
 				lidarrAlbumReleaseTitleFirstWord="${lidarrAlbumReleaseTitleFirstWord:0:3}"
 				albumTitleSearch="$(jq -R -r @uri <<<"${lidarrAlbumReleaseTitleSearchClean}")"
 				#echo "Debugging :: $loopCount :: $releaseProcessCount :: $lidarrArtistForeignArtistId :: $lidarrReleaseTitle :: $lidarrAlbumReleasesMinTrackCount-$lidarrAlbumReleasesMaxTrackCount :: $lidarrAlbumReleaseTitleFirstWord :: $albumArtistNameSearch :: $albumTitleSearch"
-
+				LidarrTaskStatusCheck
 				# Skip Various Artists album search that is not supported...
 				if [ "$lidarrArtistForeignArtistId" != "89ad4ac3-39f7-470e-963a-56509c546377" ]; then
 					# Lidarr Status Check
@@ -1879,6 +1882,7 @@ else
 fi
 
 if [ "$addDeezerTopArtists" == "true" ] || [ "$addDeezerTopAlbumArtists" == "true" ] || [ "$addDeezerTopTrackArtists" == "true" ] || [ "$addRelatedArtists" == "true" ]; then
+	LidarrTaskStatusCheck
 	LidarrMissingAlbumSearch
 fi
 
