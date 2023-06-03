@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.7"
+scriptVersion="1.0.8"
 
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
@@ -419,8 +419,8 @@ LidarrTaskStatusCheck () {
 	alerted=no
 	until false
 	do
-		taskCount=$(curl -s "$lidarrUrl/api/v1/command?apikey=${lidarrApiKey}" | jq -r .[].status | grep -v completed | grep -v failed | wc -l)
-		if [ "$taskCount" -ge "3" ]; then
+		taskCount=$(curl -s "$lidarrUrl/api/v1/command?apikey=${lidarrApiKey}" | jq -r '.[] | select(.status=="started") | .name' | wc -l)
+		if [ "$taskCount" -ge "1" ]; then
 			if [ "$alerted" = "no" ]; then
 				alerted=yes
 				log "STATUS :: LIDARR BUSY :: Pausing/waiting for all active Lidarr tasks to end..."
