@@ -567,8 +567,10 @@ DownloadProcess () {
 		log "$page :: $wantedAlbumListSource :: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Setting ARTIST/ALBUMARTIST tag to \"$lidarrArtistName\" :: $file"
 		metaflac --remove-tag=ALBUMARTIST "$file"
 		metaflac --remove-tag=ARTIST "$file"
+		metaflac --remove-tag=MUSICBRAINZ_ARTISTID "$file"
 		metaflac --set-tag=ALBUMARTIST="$lidarrArtistName" "$file"
 		metaflac --set-tag=ARTIST="$lidarrArtistName" "$file"
+		metaflac --set-tag=MUSICBRAINZ_ARTISTID="$lidarrArtistForeignArtistId" "$file"
 	done
 
 	# Tag with beets
@@ -739,8 +741,10 @@ ProcessWithBeets () {
 			metaflac --remove-tag="ALBUM ARTIST" "$file"
 			metaflac --remove-tag=ARTISTSORT "$file"
 			metaflac --remove-tag=ARTIST "$file"
+			metaflac --remove-tag=MUSICBRAINZ_ARTISTID "$file"
 			metaflac --set-tag=ARTIST="$lidarrArtistName" "$file"
 			metaflac --set-tag=ALBUMARTIST="$lidarrArtistName" "$file"
+			metaflac --set-tag=MUSICBRAINZ_ARTISTID="$lidarrArtistForeignArtistId" "$file"
 		done
 	else
 		log "$page :: $wantedAlbumListSource :: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: ERROR :: Unable to match using beets to a musicbrainz release..."

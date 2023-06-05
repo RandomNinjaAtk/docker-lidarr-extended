@@ -56,6 +56,7 @@ RUN \
 		gcc \
 		opus-tools \
 		ffmpeg \
+		imagemagick \
 		python3-dev \
 		libc-dev \
 		py3-pip \

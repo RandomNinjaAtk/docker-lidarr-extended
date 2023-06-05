@@ -1,4 +1,4 @@
-plugins: chroma embedart lastgenre
+plugins: chroma embedart lastgenre fetchart embedart
 art_filename: folder
 threaded: no
 per_disc_numbering: yes
@@ -83,3 +83,25 @@ lastgenre:
     separator: ', '
     whitelist: /config/extended/scripts/beets-genre-whitelist.txt
     title_case: yes
+
+fetchart:
+  auto: no
+  cautious: no
+  enforce_ratio: yes
+  minwidth: 1000
+  maxwidth: 3000
+  sources:
+    - filesystem
+    - coverart
+    - albumart
+    # - fanarttv
+    - bandcamp
+#   fanarttv_key: yourAPIkey
+  store_source: yes
+
+embedart:
+  auto: no
+  compare_threshold: 50
+  ifempty: yes
+  maxwidth: 0
+  remove_art_file: no
