@@ -45,6 +45,7 @@ RUN \
 		git \
 		gcc \
 		ffmpeg \
+		imagemagick \
 		opus-tools \
 		python3-dev \
 		libc-dev \
