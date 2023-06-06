@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.6"
+scriptVersion="1.0.7"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -184,7 +184,7 @@ LidarrTaskStatusCheck () {
 				alerted=yes
 				log "STATUS :: LIDARR BUSY :: Pausing/waiting for all active Lidarr tasks to end..."
 			fi
-			sleep $musicbrainzSleep
+			sleep 2
 		else
 			break
 		fi
