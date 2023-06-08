@@ -74,7 +74,7 @@ RUN \
 	chgrp users ${SMA_PATH}/config/sma.log && \
 	chmod g+w ${SMA_PATH}/config/sma.log && \
 	echo "************ install pip dependencies ************" && \
-	python3 -m pip install --user --upgrade pip && \	
+	python3 -m pip install --upgrade pip && \	
 	pip3 install -r ${SMA_PATH}/setup/requirements.txt
 
 # copy local files
