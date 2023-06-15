@@ -72,7 +72,7 @@ embedart:
     auto: no
 
 lastgenre:
-    auto: yes
+    auto: no
     canonical: yes
     count: 1
     fallback: None
