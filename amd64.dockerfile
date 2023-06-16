@@ -60,6 +60,10 @@ RUN \
 	echo "*** install python packages ***" && \
 	pip install --upgrade --no-cache-dir \
 		yq \
+		pyacoustid \
+		requests \
+		pylast \
+		mutagen \
 		r128gain \
 		tidal-dl \
 		deemix && \
