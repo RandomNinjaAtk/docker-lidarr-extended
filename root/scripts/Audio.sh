@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-scriptVersion="1.0.9"
+scriptVersion="1.0.10"
 if [ -z "$lidarrUrl" ] || [ -z "$lidarrApiKey" ]; then
 	lidarrUrlBase="$(cat /config/config.xml | xq | jq -r .Config.UrlBase)"
 	if [ "$lidarrUrlBase" == "null" ]; then
@@ -24,7 +24,7 @@ fi
 #addRelatedArtists="true"
 #numberOfRelatedArtistsToAddPerArtist="1"
 #beetsMatchPercentage="90"
-#requireQuality="true"
+#requireQuality="false"
 #searchSort="album"
 #arlToken=""
 #matchDistance=10
@@ -172,6 +172,10 @@ Configuration () {
 		log "Beets Tagging Disabled"
 	fi
 	
+}
+
+DownloadClientFreyr () {
+	freyr -d /downloads-lidarr-extended/incomplete deezer:album:$1
 }
 
 DownloadFormat () {
@@ -434,7 +438,11 @@ DownloadProcess () {
 		log "$page :: $wantedAlbumListSource :: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Download Attempt number $downloadTry"
 		if [ "$2" == "DEEZER" ]; then
 			
-			deemix -b $deemixQuality -p "$downloadPath"/incomplete "https://www.deezer.com/album/$1"
+			if [ -z $arlToken ]; then
+				DownloadClientFreyr $1
+			else
+				deemix -b $deemixQuality -p "$downloadPath"/incomplete "https://www.deezer.com/album/$1"
+			fi
 			
 			if [ -d "/tmp/deemix-imgs" ]; then
 				rm -rf /tmp/deemix-imgs
@@ -524,13 +532,9 @@ DownloadProcess () {
 	done   
 
 	# Consolidate files to a single folder
-	if [ "$2" == "TIDAL" ]; then
-		log "$page :: $wantedAlbumListSource :: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Consolidating files to single folder"
-		find "$downloadPath/incomplete" -type f -exec mv "{}" "$downloadPath"/incomplete/ \;
-		if [ -d "$downloadPath"/incomplete/atd ]; then
-			rm -rf "$downloadPath"/incomplete/atd
-		fi
-	fi
+	log "$page :: $wantedAlbumListSource :: $processNumber of $wantedListAlbumTotal :: $lidarrArtistName :: $lidarrAlbumTitle :: $lidarrAlbumType :: Consolidating files to single folder"
+	find "$downloadPath/incomplete" -type f -exec mv "{}" "$downloadPath"/incomplete/ \;
+	find /downloads-lidarr-extended/incomplete/ -type d -mindepth 1 -maxdepth 1 -exec rm -rf {} \;
 
 	downloadCount=$(find "$downloadPath"/incomplete/ -type f -regex ".*/.*\.\(flac\|m4a\|mp3\)" | wc -l)
 	if [ "$downloadCount" -gt "0" ]; then
