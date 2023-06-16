@@ -126,7 +126,7 @@ Container images are configured using parameters passed at runtime (such as thos
 | `-e enableReplaygainTags=true` | true = enabled :: Downloads will be tagged with Replaygain Metadata |
 | `-e audioLyricType=both` | both or explicit or clean :: both, is explicit preferred  matching, explicit is explicit releases only matching and clean is clean releases only matching |
 | `-e dlClientSource=both` | deezer, tidal or both :: set to both, to use both clients, tidal requires extra steps, view logging output [(Authing information)](https://github.com/RandomNinjaAtk/docker-lidarr-extended/issues/96#issuecomment-1280672421)|
-| `-e arlToken=` | User ARL token for deemix client, see wiki: [Wiki URL](https://github.com/RandomNinjaAtk/docker-lidarr-extended/wiki/Extended-Audio-Script-Information#q-how-do-i-get-my-arl-token)|
+| `-e arlToken=` | OPTIONAL - User ARL token for deemix client, see wiki: [Wiki URL](https://github.com/RandomNinjaAtk/docker-lidarr-extended/wiki/Extended-Audio-Script-Information#q-how-do-i-get-my-arl-token)|
 | `-e tidalCountryCode=US` | Country Code required for tidal |
 | `-e addDeezerTopArtists=false` | true = enabled :: Enabling this will enable the extended script to automatically add artists that are on the Deezer Top Artist Chart to your existing Lidarr instance |
 | `-e addDeezerTopAlbumArtists=false` | true = enabled :: Enabling this will enable the extended script to automatically add artists that are on the Deezer Top Album Chart to your existing Lidarr instance |
@@ -170,7 +170,7 @@ docker create \
   -e searchSort=date \
   -e audioFormat=native \
   -e audioBitrate=lossless \
-  -e requireQuality=true \
+  -e requireQuality=false \
   -e enableReplaygainTags=true \
   -e audioLyricType=both \
   -e dlClientSource=both \
@@ -223,7 +223,7 @@ services:
       - searchSort=date
       - audioFormat=native
       - audioBitrate=lossless
-      - requireQuality=true
+      - requireQuality=false
       - enableReplaygainTags=true
       - audioLyricType=both
       - dlClientSource=both
