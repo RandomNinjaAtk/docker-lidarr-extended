@@ -253,7 +253,6 @@ services:
 # Credits
 - [LinuxServer.io Team](https://github.com/linuxserver/docker-lidarr)
 - [Lidarr](https://lidarr.audio/)
-- [Musicbrainz](https://musicbrainz.org/)
 - [Docker multi-arch example](https://github.com/ckulka/docker-multi-arch-example)
 - [Beets](https://beets.io/)
 - [Deemix download client](https://deemix.app/)
@@ -264,3 +263,4 @@ services:
 - [ffmpeg](https://ffmpeg.org/)
 - [yt-dlp](https://github.com/yt-dlp/yt-dlp)
 - [SMA Conversion/Tagging Automation Script](https://github.com/mdhiggins/sickbeard_mp4_automator)
+- [Freyr](https://github.com/miraclx/freyr-js)
