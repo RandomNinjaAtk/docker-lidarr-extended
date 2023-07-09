@@ -1,8 +1,8 @@
+# Deprecated
+
+This repository is now deprecated, will no longer be updated and is being archived. 
+
 # [RandomNinjaAtk/lidarr-extended](https://github.com/RandomNinjaAtk/docker-lidarr-extended)
-[![Docker Build](https://img.shields.io/docker/cloud/automated/randomninjaatk/lidarr-extended?style=flat-square)](https://hub.docker.com/r/randomninjaatk/lidarr-extended)
-[![Docker Pulls](https://img.shields.io/docker/pulls/randomninjaatk/lidarr-extended?style=flat-square)](https://hub.docker.com/r/randomninjaatk/lidarr-extended)
-[![Docker Stars](https://img.shields.io/docker/stars/randomninjaatk/lidarr-extended?style=flat-square)](https://hub.docker.com/r/randomninjaatk/lidarr-extended)
-[![Docker Hub](https://img.shields.io/badge/Open%20On-DockerHub-blue?style=flat-square)](https://hub.docker.com/r/randomninjaatk/lidarr-extended)
 
 <table>
   <tr>
