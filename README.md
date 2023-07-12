@@ -2,6 +2,8 @@
 
 This repository is now deprecated, will no longer be updated and is being archived. 
 
+Scripts/Project has moved to: https://github.com/RandomNinjaAtk/arr-scripts
+
 # [RandomNinjaAtk/lidarr-extended](https://github.com/RandomNinjaAtk/docker-lidarr-extended)
 
 <table>
